@@ -12,6 +12,7 @@ params.yml
 
 # binaries
 cli
+drmaa2ostest
 
 coverage.out
 
