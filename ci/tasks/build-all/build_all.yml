@@ -1,0 +1,25 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source: {repository: golang, tag: "1.8"}
+
+inputs:
+- name: drmaa2os 
+
+run:
+  path: sh
+  args:
+  - -exc
+  - |
+    set -e -x
+    export GOPATH=$PWD
+    mkdir -p ./src/github.com/dgruber/drmaa2os
+    cp -r ./drmaa2os ./src/github.com/dgruber/drmaa2os
+    cd src/github.com/dgruber/drmaa2os
+    go version
+    go build ./pkg/jobtracker/simpletracker
+    go build ./pkg/jobtracker/dockertracker
+    go build ./examples/simple
+     

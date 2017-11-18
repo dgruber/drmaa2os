@@ -1,0 +1,8 @@
+---
+applications:
+- name: gonfig
+  memory: 128M
+  host: frontend
+  env:
+     GOVERSION: go1.8
+     GOPACKAGENAME: github.com/dgruber/drmaa2os/examples/frontend

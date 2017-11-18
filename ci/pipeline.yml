@@ -1,0 +1,25 @@
+---
+resources:
+  - name: drmaa2os 
+    type: git
+    source:
+      uri: {{uri}}
+
+jobs:
+  - name: build_all
+    public: true
+    plan:
+      - get: drmaa2os
+        trigger: true
+      - task: build_all
+        file: drmaa2os/ci/tasks/build-all/build_all.yml
+
+  - name: test_simpletracker
+    public: true
+    plan:
+      - get: drmaa2os
+        passed: [build_all]
+        trigger: true
+      - task: test
+        file: drmaa2os/ci/tasks/test-tracker/test_simpletracker.yml
+

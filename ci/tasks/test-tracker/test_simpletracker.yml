@@ -1,0 +1,20 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source: {repository: golang, tag: "1.8"}
+
+inputs:
+- name: drmaa2os 
+
+run:
+  path: sh
+  args:
+  - -exc
+  - |
+    mkdir -p $GOPATH/src/github.com/dgruber/drmaa2os
+    cp -r ./drmaa2os $GOPATH/src/github.com/dgruber/drmaa2os
+    cd $GOPATH/src/github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker
+    go test -v 
+     
