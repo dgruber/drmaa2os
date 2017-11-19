@@ -32,5 +32,5 @@
 | WorkingDir           | v1.Container.WorkingDir         |
 
 Required:
-
-   - JobCategory as it specifies the image
+* RemoteCommand
+* JobCategory as it specifies the image

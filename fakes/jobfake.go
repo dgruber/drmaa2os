@@ -38,7 +38,7 @@ func (j *Job) GetState() drmaa2interface.JobState {
 func (j *Job) Suspend() error {
 	if j.ErrorWhenSuspend {
 		j.State = drmaa2interface.Running
-		return errors.New("Some error happend")
+		return errors.New("Some error happened")
 	}
 	j.State = drmaa2interface.Suspended
 	return nil

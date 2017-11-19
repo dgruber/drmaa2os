@@ -83,6 +83,14 @@ var _ = Describe("Convert", func() {
 			Ω(cc.Env[0]).Should(Or(Equal("env1=value1"), Equal("env2=value2")))
 			Ω(cc.Env[1]).Should(Or(Equal("env1=value1"), Equal("env2=value2")))
 		})
+
+		It("should set the user extension of JobTemplate", func() {
+			jt.ExtensionList = map[string]string{"user": "testuser"}
+			cc, err := jobTemplateToContainerConfig(jt)
+			Ω(err).Should(BeNil())
+			Ω(cc).ShouldNot(BeNil())
+			Ω(cc.User).Should(Equal("testuser"))
+		})
 	})
 
 	Context("JobState converter", func() {

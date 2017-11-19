@@ -38,7 +38,7 @@ A JobTemplate requires at least:
 
 ### Job Template Mapping
 
-Following mapping between the job template and the Cloud Foundry task request is done:
+A JobTemplate is mapped into the process creation process in the following way:
 
 | DRMAA2 JobTemplate   | OS Process                  |
 | :-------------------:|:---------------------------:|

@@ -32,7 +32,7 @@ var _ = Describe("OS specific functionality", func() {
 	)
 
 	BeforeEach(func() {
-		jt = drmaa2interface.JobTemplate{RemoteCommand: "/bin/sleep", Args: []string{"1"}}
+		jt = drmaa2interface.JobTemplate{RemoteCommand: "sleep", Args: []string{"1"}}
 		outCh = make(chan JobEvent, 1)
 	})
 

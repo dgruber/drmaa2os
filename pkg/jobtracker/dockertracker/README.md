@@ -53,6 +53,9 @@ Mapping between the job template and the Docker container config request:
 | WorkingDir           | WorkingDir                      |
 | JobEnvironment (k: v)| Env ("k=v")                     |
 | StageInFiles         | -v localPath:containerPath      |
+| Extension: "user"    | User                            |
+
+If more extensions needed just open an issue.
 
 Note that the image must be available (pulled already)!
 

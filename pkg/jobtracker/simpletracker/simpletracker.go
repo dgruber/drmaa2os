@@ -277,7 +277,7 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 		}
 		return drmaa2interface.Error{Message: "Job finished with different state", ID: drmaa2interface.Internal}
 	case <-timeoutCh:
-		return drmaa2interface.Error{Message: "Timeout occured while waiting for job state", ID: drmaa2interface.Timeout}
+		return drmaa2interface.Error{Message: "Timeout occurred while waiting for job state", ID: drmaa2interface.Timeout}
 	}
 }
 

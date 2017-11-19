@@ -11,8 +11,13 @@ params.yml
 *.db
 
 # binaries
-cli
-drmaa2ostest
+/cli
+/drmaa2ostest
+/jobinfo
+/counter
+/docker
+/many
+/simple
 
 coverage.out
 

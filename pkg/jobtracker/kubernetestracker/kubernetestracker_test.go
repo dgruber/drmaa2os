@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
 var _ = Describe("KubernetesTracker", func() {
@@ -30,7 +32,7 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(kt).ShouldNot(BeNil())
 
 			jobid, err := kt.AddJob(jt)
-			Ω(err).ShouldNot(BeNil())
+			Ω(err).Should(BeNil())
 			Ω(jobid).Should(Equal(""))
 		})
 

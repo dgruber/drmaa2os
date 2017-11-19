@@ -12,5 +12,5 @@ var (
 	ErrorUnsupportedOperation = DRMAA2Error{"This optional function is not suppported."}
 	ErrorJobNotExists         = DRMAA2Error{"The job does not exist."}
 	ErrorInvalidState         = DRMAA2Error{"Invalid state."}
-	ErrorInternal             = DRMAA2Error{"Internal error occured."}
+	ErrorInternal             = DRMAA2Error{"Internal error occurred."}
 )

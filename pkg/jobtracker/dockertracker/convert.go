@@ -49,6 +49,12 @@ func jobTemplateToContainerConfig(jt drmaa2interface.JobTemplate) (*container.Co
 
 	cc.Env = setEnv(jt.JobEnvironment)
 
+	// Docker specific settings in the extensions
+	if jt.ExtensionList != nil {
+		cc.User = jt.ExtensionList["user"]
+		// ports
+	}
+
 	// TODO extensions
 	// cc.Volumes
 

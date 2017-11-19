@@ -82,7 +82,7 @@ var _ = Describe("JobarrayHlp", func() {
 		It("should report an error when first job fails to get suspended", func() {
 			err := jobAction(suspend, jobs)
 			Ω(err).ShouldNot(BeNil())
-			Ω(err.Error()).Should(Equal("Job 1 error: Some error happend "))
+			Ω(err.Error()).Should(Equal("Job 1 error: Some error happened "))
 			Ω(jobs[1].GetState()).Should(Equal(drmaa2interface.Suspended))
 		})
 
@@ -102,7 +102,7 @@ var _ = Describe("JobarrayHlp", func() {
 
 			err := jobAction(suspend, jobs)
 			Ω(err).ShouldNot(BeNil())
-			Ω(err.Error()).Should(Equal("Job 2 error: Some error happend "))
+			Ω(err.Error()).Should(Equal("Job 2 error: Some error happened "))
 			Ω(jobs[0].GetState()).Should(Equal(drmaa2interface.Suspended))
 		})
 

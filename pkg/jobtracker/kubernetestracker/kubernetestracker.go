@@ -3,6 +3,7 @@ package kubernetestracker
 import (
 	"fmt"
 	"github.com/dgruber/drmaa2interface"
+	//"k8s.io/client-go/kubernetes"
 	"time"
 )
 
@@ -21,6 +22,18 @@ func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, err
 	if err != nil {
 		return "", fmt.Errorf("error during converting job template into a k8s job: %s", err.Error())
 	}
+	/*
+		cs, err := kubernetes.New(nil)
+		if err != nil {
+			return "", fmt.Errorf("error during k8s client initialization: %s", err.Error())
+		}
+		jc := cs.BatchV1().Jobs("default")
+		j, err := jc.Create(job)
+		if err != nil {
+			return "", fmt.Errorf("error during k8s client initialization: %s", err.Error())
+		}
+		j.UID */
+	// TODO add batch job
 	return "", nil
 }
 

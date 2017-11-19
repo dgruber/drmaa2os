@@ -15,10 +15,11 @@ var _ = Describe("Convert", func() {
 
 		BeforeEach(func() {
 			jt = drmaa2interface.JobTemplate{
-				JobName:       "name",
-				RemoteCommand: "command",
-				Args:          []string{"arg1", "arg2"},
-				JobCategory:   "category",
+				JobName:          "name",
+				RemoteCommand:    "command",
+				Args:             []string{"arg1", "arg2"},
+				JobCategory:      "category",
+				WorkingDirectory: "/workingdirectory",
 			}
 		})
 
@@ -27,6 +28,21 @@ var _ = Describe("Convert", func() {
 			Ω(err).Should(BeNil())
 			Ω(c).ShouldNot(BeNil())
 			Ω(len(c)).Should(BeNumerically("==", 1))
+
+			c0 := c[0]
+			Ω(c0.Name).Should(Equal(jt.JobName))
+			Ω(c0.Image).Should(Equal(jt.JobCategory))
+			Ω(c0.Command[0]).Should(Equal(jt.RemoteCommand))
+			Ω(c0.Args).Should(BeEquivalentTo(jt.Args))
+			Ω(c0.WorkingDir).Should(Equal(jt.WorkingDirectory))
+		})
+
+		It("should error when the RemoteCommand is not set in the JobTemplate", func() {
+			jt.RemoteCommand = ""
+			c, err := newContainers(jt)
+			Ω(c).Should(BeNil())
+			Ω(err).ShouldNot(BeNil())
+			Ω(err.Error()).Should(Equal("RemoteCommand not set in JobTemplate"))
 		})
 
 		It("should error when the JobCategory is not set in the JobTemplate", func() {
@@ -49,7 +65,6 @@ var _ = Describe("Convert", func() {
 
 			Ω(*job.Spec.Parallelism).Should(BeNumerically("==", 1))
 			Ω(*job.Spec.Completions).Should(BeNumerically("==", 1))
-
 		})
 
 	})
