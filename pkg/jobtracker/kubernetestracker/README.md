@@ -16,10 +16,16 @@
 
 ### State Mapping
 
-|  DRMAA2 State.        | Kubernetes Job State |
-| :--------------------:|:--------------------:|
-| Undetermined          | other                |
+Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitions/#_v1_jobstatus)
 
+|  DRMAA2 State.                | Kubernetes Job State  |
+| :----------------------------:|:---------------------:|
+| Done                          | status.Failed >= 1    |
+| Failed                        | status.Succeeded >= 1 |
+| Suspended                     | -                     |
+| Running                       | status.Active >= 1    |
+| Queued                        | -                     |
+| Undetermined                  | other                 |
 
 ### Job Template Mapping
 

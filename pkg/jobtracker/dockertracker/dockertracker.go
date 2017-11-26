@@ -95,15 +95,7 @@ func (dt *DockerTracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) 
 }
 
 func (dt *DockerTracker) AddArrayJob(jt drmaa2interface.JobTemplate, begin int, end int, step int, maxParallel int) (string, error) {
-	var guids []string
-	for i := begin; i <= end; i += step {
-		guid, err := dt.AddJob(jt)
-		if err != nil {
-			return helper.Guids2ArrayJobID(guids), err
-		}
-		guids = append(guids, guid)
-	}
-	return helper.Guids2ArrayJobID(guids), nil
+	return helper.AddArrayJobAsSingleJobs(jt, dt, begin, end, step)
 
 }
 

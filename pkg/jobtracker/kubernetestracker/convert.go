@@ -28,6 +28,12 @@ func newContainers(jt drmaa2interface.JobTemplate) ([]k8sv1.Container, error) {
 		Args:       jt.Args,
 		WorkingDir: jt.WorkingDirectory,
 	}
+
+	// spec.template.spec.containers[0].name: Required value"
+	if jt.JobName == "" {
+		c.Name = "drmaa2osstandardcontainer"
+	}
+
 	// if len(jt.CandidateMachines) == 1 {
 	//	c = jt.CandidateMachines[0]
 	// }
@@ -41,24 +47,22 @@ func newNodeSelector(jt drmaa2interface.JobTemplate) (map[string]string, error) 
 // https://github.com/kubernetes/kubernetes/blob/886e04f1fffbb04faf8a9f9ee141143b2684ae68/pkg/api/types.go
 func newPodSpec(v []k8sv1.Volume, c []k8sv1.Container, ns map[string]string) k8sv1.PodSpec {
 	return k8sv1.PodSpec{
-		Volumes:      v,
-		Containers:   c,
-		NodeSelector: ns,
+		Volumes:       v,
+		Containers:    c,
+		NodeSelector:  ns,
+		RestartPolicy: "Never",
 	}
 }
 
 func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
-
 	volumes, err := newVolumes(jt)
 	if err != nil {
 		return nil, fmt.Errorf("error converting job (newVolumes): %s", err)
 	}
-
 	containers, err := newContainers(jt)
 	if err != nil {
 		return nil, fmt.Errorf("error converting job (newContainer): %s", err)
 	}
-
 	nodeSelector, err := newNodeSelector(jt)
 	if err != nil {
 		return nil, fmt.Errorf("error converting job (newNodeSelector): %s", err)
@@ -79,6 +83,7 @@ func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 			Name: jt.JobName,
 			//Namespace: v1.NamespaceDefault,
 			//Labels: options.labels,
+			GenerateName: "drmaa2osjobtracker",
 		},
 		// Specification of the desired behavior of a job.
 		// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
@@ -95,11 +100,29 @@ func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 			// More info: https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: jt.JobName,
+					Name:         "drmaa2ospodname",
+					GenerateName: "drmaa2osjobtracker",
 					//Labels: options.labels,
 				},
 				Spec: podSpec,
 			},
 		},
 	}, nil
+}
+
+func convertJobStatus2JobState(status *batchv1.JobStatus) drmaa2interface.JobState {
+	if status == nil {
+		return drmaa2interface.Undetermined
+	}
+	// https://kubernetes.io/docs/api-reference/batch/v1/definitions/#_v1_jobstatus
+	if status.Succeeded >= 1 {
+		return drmaa2interface.Done
+	}
+	if status.Failed >= 1 {
+		return drmaa2interface.Failed
+	}
+	if status.Active >= 1 {
+		return drmaa2interface.Running
+	}
+	return drmaa2interface.Undetermined
 }

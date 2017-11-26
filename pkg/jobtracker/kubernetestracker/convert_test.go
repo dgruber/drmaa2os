@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/dgruber/drmaa2interface"
+	batchv1 "k8s.io/api/batch/v1"
 )
 
 var _ = Describe("Convert", func() {
@@ -65,6 +66,42 @@ var _ = Describe("Convert", func() {
 
 			Ω(*job.Spec.Parallelism).Should(BeNumerically("==", 1))
 			Ω(*job.Spec.Completions).Should(BeNumerically("==", 1))
+		})
+
+	})
+
+	Context("JobStatus conversion", func() {
+		var status batchv1.JobStatus
+
+		BeforeEach(func() {
+			status = batchv1.JobStatus{
+				Active:    0,
+				Succeeded: 0,
+				Failed:    0,
+			}
+		})
+
+		It("should convert nil to Undetermined state", func() {
+			Ω(convertJobStatus2JobState(nil)).Should(Equal(drmaa2interface.Undetermined))
+		})
+
+		It("should convert active to Running state", func() {
+			status.Active = 1
+			Ω(convertJobStatus2JobState(&status)).Should(Equal(drmaa2interface.Running))
+		})
+
+		It("should convert failed to Failed state", func() {
+			status.Failed = 1
+			Ω(convertJobStatus2JobState(&status)).Should(Equal(drmaa2interface.Failed))
+		})
+
+		It("should convert succeeded to Done state", func() {
+			status.Succeeded = 1
+			Ω(convertJobStatus2JobState(&status)).Should(Equal(drmaa2interface.Done))
+		})
+
+		It("should convert unset states to Undetermined state", func() {
+			Ω(convertJobStatus2JobState(&status)).Should(Equal(drmaa2interface.Undetermined))
 		})
 
 	})

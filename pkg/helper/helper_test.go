@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/dgruber/drmaa2os/pkg/simpletrackerfakes"
 )
 
 var _ = Describe("Helper", func() {
@@ -19,6 +21,19 @@ var _ = Describe("Helper", func() {
 
 			Ω(err).Should(BeNil())
 			Ω(guidsOut).Should(BeEquivalentTo(guids))
+		})
+
+	})
+
+	Context("Create array job out with single job submissions", func() {
+
+		It("AddArrayJobAsSingleJobs should work", func() {
+			fakeTracker := simpletrackerfakes.New("testsession")
+			id, err := AddArrayJobAsSingleJobs(fakeTracker, 10, 110, 2)
+			Ω(err).Should(BeNil())
+			jobs, errJobs := fakeTracker.ListJobs(id)
+			Ω(errJobs).Should(BeNil())
+			Ω(len(jobs)).Should(BeNumerically("==", 50))
 		})
 
 	})
