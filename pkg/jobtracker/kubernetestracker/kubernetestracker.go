@@ -22,7 +22,7 @@ func (kt *KubernetesTracker) ListJobCategories() ([]string, error) {
 }
 
 func (kt *KubernetesTracker) ListJobs() ([]string, error) {
-	cs, err := createClientSet()
+	cs, err := CreateClientSet()
 	if err != nil {
 		return nil, fmt.Errorf("error during addjob client creation: %s", err.Error())
 	}
@@ -43,7 +43,7 @@ func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, err
 	if err != nil {
 		return "", fmt.Errorf("error during converting job template into a k8s job: %s", err.Error())
 	}
-	cs, err := createClientSet()
+	cs, err := CreateClientSet()
 	if err != nil {
 		return "", fmt.Errorf("error during addjob client creation: %s", err.Error())
 	}
@@ -64,7 +64,7 @@ func (kt *KubernetesTracker) ListArrayJobs(id string) ([]string, error) {
 }
 
 func (kt *KubernetesTracker) JobState(jobid string) drmaa2interface.JobState {
-	cs, err := createClientSet()
+	cs, err := CreateClientSet()
 	if err != nil {
 		return drmaa2interface.Undetermined
 	}
@@ -82,7 +82,7 @@ func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, err
 }
 
 func (kt *KubernetesTracker) JobControl(jobid, state string) error {
-	cs, err := createClientSet()
+	cs, err := CreateClientSet()
 	if err != nil {
 		return err
 	}

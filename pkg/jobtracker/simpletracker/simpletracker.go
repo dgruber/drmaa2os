@@ -233,9 +233,8 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 	}
 
 	// jobid can be a job or array job task
-	jobidOrArrayJobId := jobid
 	jobparts := strings.Split(jobid, ".")
-	jobidOrArrayJobId = jobparts[0]
+	jobidOrArrayJobId := jobparts[0]
 
 	// check if job exists and if it is in an end state already which does not change
 	jt.Lock()

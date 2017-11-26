@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-func createClientSet() (*kubernetes.Clientset, error) {
+func CreateClientSet() (*kubernetes.Clientset, error) {
 	kubeconfig, err := kubeConfigFile()
 	if err != nil {
 		return nil, err

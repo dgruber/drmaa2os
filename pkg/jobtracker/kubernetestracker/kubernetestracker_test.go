@@ -30,25 +30,25 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(err).Should(BeNil())
 		})
 
-		It("should be possible to AddJob()", func() {
+		WhenK8sIsAvailableIt("should be possible to AddJob()", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
 		})
 
-		It("should be possible to AddArrayJob()", func() {
+		WhenK8sIsAvailableIt("should be possible to AddArrayJob()", func() {
 			jobid, err := kt.AddArrayJob(jt, 1, 2, 1, 0)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
 		})
 
-		It("should be possible to ListJobs()", func() {
+		WhenK8sIsAvailableIt("should be possible to ListJobs()", func() {
 			jobids, err := kt.ListJobs()
 			Ω(err).Should(BeNil())
 			Ω(jobids).ShouldNot(BeNil())
 		})
 
-		It("should be possible to ListArrayJobs()", func() {
+		WhenK8sIsAvailableIt("should be possible to ListArrayJobs()", func() {
 			jobids, err := kt.ListArrayJobs("123")
 			Ω(err).ShouldNot(BeNil())
 			Ω(jobids).Should(BeNil())
@@ -102,7 +102,7 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(err).Should(BeNil())
 		})
 
-		It("Should be possible to submit and delete a job", func() {
+		WhenK8sIsAvailableIt("Should be possible to submit and delete a job", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))

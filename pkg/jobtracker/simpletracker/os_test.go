@@ -80,12 +80,13 @@ var _ = Describe("OS specific functionality", func() {
 
 		It("should be possible to redirect stdout to file", func() {
 			file, err := ioutil.TempFile(os.TempDir(), "d2ostest")
+			Ω(err).Should(BeNil())
 
 			jt.RemoteCommand = "/bin/echo"
 			jt.Args = []string{"output"}
-
 			jt.OutputPath = file.Name()
 			_, err = StartProcess("1", jt, outCh)
+			Ω(err).Should(BeNil())
 
 			<-outCh
 
@@ -98,7 +99,9 @@ var _ = Describe("OS specific functionality", func() {
 
 		It("should be possible to redirect stdin from file", func() {
 			fileOut, err := ioutil.TempFile(os.TempDir(), "d2ostest")
+			Ω(err).Should(BeNil())
 			fileIn, err := ioutil.TempFile(os.TempDir(), "d2ostest")
+			Ω(err).Should(BeNil())
 
 			_, err = fileIn.WriteString("inout\n")
 			Ω(err).Should(BeNil())
@@ -109,6 +112,7 @@ var _ = Describe("OS specific functionality", func() {
 			jt.OutputPath = fileOut.Name()
 
 			_, err = StartProcess("1", jt, outCh)
+			Ω(err).Should(BeNil())
 
 			<-outCh
 
@@ -122,11 +126,13 @@ var _ = Describe("OS specific functionality", func() {
 
 		It("should be possible to redirect stderr to file", func() {
 			file, err := ioutil.TempFile(os.TempDir(), "d2ostest")
+			Ω(err).Should(BeNil())
 
 			jt.RemoteCommand = "./stderr.sh"
 
 			jt.OutputPath = file.Name()
 			_, err = StartProcess("1", jt, outCh)
+			Ω(err).Should(BeNil())
 
 			<-outCh
 
@@ -143,6 +149,7 @@ var _ = Describe("OS specific functionality", func() {
 
 		It("should not be possible to point stdin and stdout / stderr to same file", func() {
 			file, err := ioutil.TempFile(os.TempDir(), "d2ostest")
+			Ω(err).Should(BeNil())
 
 			jt.RemoteCommand = "/bin/echo"
 			jt.Args = []string{"output"}

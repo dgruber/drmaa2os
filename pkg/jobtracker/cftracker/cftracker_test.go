@@ -86,6 +86,7 @@ var _ = Describe("Cftracker", func() {
 			err = client.JobControl("GUID", "hold")
 			Ω(err).ShouldNot(BeNil())
 			err = client.JobControl("GUID", "release")
+			Ω(err).ShouldNot(BeNil())
 			// supported
 			err = client.JobControl("noerror", "terminate")
 			Ω(err).Should(BeNil())
