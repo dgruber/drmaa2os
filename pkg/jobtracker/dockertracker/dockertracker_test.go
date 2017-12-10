@@ -14,7 +14,7 @@ var _ = Describe("Dockertracker", func() {
 
 	Context("Creation and destruction", func() {
 
-		It("should be possible to create a tracker", func() {
+		It("should be possible to create a tracker when docker is available", func() {
 			tracker, err := New()
 			Ω(err).Should(BeNil())
 			Ω(tracker).ShouldNot(BeNil())

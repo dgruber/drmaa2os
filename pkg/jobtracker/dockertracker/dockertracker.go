@@ -28,6 +28,10 @@ func New() (*DockerTracker, error) {
 	if err != nil {
 		return nil, err
 	}
+	_, errPing := cli.Ping(context.Background())
+	if errPing != nil {
+		return nil, err
+	}
 	return &DockerTracker{cli: cli}, nil
 }
 
