@@ -83,7 +83,7 @@ func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 			Name: jt.JobName,
 			//Namespace: v1.NamespaceDefault,
 			//Labels: options.labels,
-			GenerateName: "drmaa2osjobtracker",
+			GenerateName: "drmaa2os",
 		},
 		// Specification of the desired behavior of a job.
 		// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
@@ -101,7 +101,7 @@ func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:         "drmaa2ospodname",
-					GenerateName: "drmaa2osjobtracker",
+					GenerateName: "drmaa2os",
 					//Labels: options.labels,
 				},
 				Spec: podSpec,

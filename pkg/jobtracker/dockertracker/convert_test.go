@@ -6,9 +6,46 @@ import (
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/go-connections/nat"
 )
 
 var _ = Describe("Convert", func() {
+
+	Context("Internal helper functions", func() {
+		It("should return a new PortSet", func() {
+			// ip:public:private/proto
+			ps := newPortSet("8080/tcp,1301/tcp")
+			Ω(ps).ShouldNot(BeNil())
+			Ω(len(ps)).Should(BeNumerically("==", 2))
+
+			ps = newPortSet("192.168.2.111:80:6444/tcp,192.168.2.11:8080:6445/tcp")
+			Ω(ps).ShouldNot(BeNil())
+			Ω(len(ps)).Should(BeNumerically("==", 2))
+
+			ps = newPortSet("80:6444/tcp,8080:6445/tcp")
+			Ω(ps).ShouldNot(BeNil())
+			Ω(len(ps)).Should(BeNumerically("==", 2))
+		})
+		It("should return a new PortMap", func() {
+			pm := newPortBindings("8080/tcp,1301/tcp")
+			Ω(pm).ShouldNot(BeNil())
+			Ω(len(pm)).Should(BeNumerically("==", 2))
+
+			pm = newPortBindings("192.168.2.111:80:6444/tcp,192.168.2.11:8080:6445/tcp")
+			Ω(pm).ShouldNot(BeNil())
+			Ω(len(pm)).Should(BeNumerically("==", 2))
+
+			pm = newPortBindings("80:6444/tcp,8080:6445/tcp")
+			Ω(pm).ShouldNot(BeNil())
+			Ω(len(pm)).Should(BeNumerically("==", 2))
+		})
+		It("should return nil with wrong syntax for exposedPorts", func() {
+			pm := newPortBindings("808-0/tcp,13+01/tcp")
+			Ω(pm).Should(BeNil())
+			ps := newPortSet("808-0/tcp,13+01/tcp")
+			Ω(ps).Should(BeNil())
+		})
+	})
 
 	Context("JobTemplate missing fields checks", func() {
 		It("should recognize when JobCategory (container image name) is missing", func() {
@@ -90,6 +127,27 @@ var _ = Describe("Convert", func() {
 			Ω(err).Should(BeNil())
 			Ω(cc).ShouldNot(BeNil())
 			Ω(cc.User).Should(Equal("testuser"))
+			Ω(cc.ExposedPorts).Should(BeNil())
+		})
+
+		It("should set the exposed ports when set in JobTemplate", func() {
+			jt.ExtensionList = map[string]string{"exposedPorts": "80:6445/tcp"}
+			cc, err := jobTemplateToContainerConfig(jt)
+			Ω(err).Should(BeNil())
+			Ω(cc).ShouldNot(BeNil())
+			Ω(cc.ExposedPorts).ShouldNot(BeNil())
+			portSet := cc.ExposedPorts
+			Ω(len(portSet)).Should(BeNumerically("==", 1))
+			Ω(portSet).Should(HaveKey(nat.Port("6445/tcp")))
+		})
+
+		It("should set the portBindings when exposedPorts set in JobTemplate", func() {
+			jt.ExtensionList = map[string]string{"exposedPorts": "80:6445/tcp"}
+			hc, err := jobTemplateToHostConfig(jt)
+			Ω(err).Should(BeNil())
+			Ω(hc).ShouldNot(BeNil())
+			Ω(len(hc.PortBindings)).Should(BeNumerically("==", 1))
+			Ω(hc.PortBindings).Should(HaveKey(nat.Port("6445/tcp")))
 		})
 	})
 

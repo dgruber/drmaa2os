@@ -54,6 +54,8 @@ var _ = Describe("Dockertracker", func() {
 			JobEnvironment: map[string]string{"test": "value"},
 		}
 
+		jt.ExtensionList = map[string]string{"exposedPorts": "8080/tcp"}
+
 		var tracker *DockerTracker
 
 		BeforeEach(func() { tracker, _ = New() })

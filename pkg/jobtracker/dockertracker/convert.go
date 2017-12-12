@@ -9,6 +9,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
+	"github.com/docker/go-connections/nat"
+	"strings"
 )
 
 func checkJobTemplate(jt drmaa2interface.JobTemplate) error {
@@ -32,6 +34,28 @@ func setEnv(env map[string]string) []string {
 	return envList
 }
 
+func newPortSet(ports string) nat.PortSet {
+	if ports == "" {
+		return nil
+	}
+	portSet, _, err := nat.ParsePortSpecs(strings.Split(ports, ","))
+	if err != nil {
+		return nil
+	}
+	return portSet
+}
+
+func newPortBindings(ports string) nat.PortMap {
+	if ports == "" {
+		return nil
+	}
+	_, portMap, err := nat.ParsePortSpecs(strings.Split(ports, ","))
+	if err != nil {
+		return nil
+	}
+	return portMap
+}
+
 // https://github.com/moby/moby/blob/master/api/types/container/config.go
 func jobTemplateToContainerConfig(jt drmaa2interface.JobTemplate) (*container.Config, error) {
 	var cc container.Config
@@ -52,9 +76,9 @@ func jobTemplateToContainerConfig(jt drmaa2interface.JobTemplate) (*container.Co
 	// Docker specific settings in the extensions
 	if jt.ExtensionList != nil {
 		cc.User = jt.ExtensionList["user"]
-		// ports
-	}
+		cc.ExposedPorts = newPortSet(jt.ExtensionList["exposedPorts"])
 
+	}
 	// TODO extensions
 	// cc.Volumes
 
@@ -68,6 +92,8 @@ func jobTemplateToHostConfig(jt drmaa2interface.JobTemplate) (*container.HostCon
 	for outer, inner := range jt.StageInFiles {
 		hc.Binds = append(hc.Binds, fmt.Sprintf("%s:%s", outer, inner))
 	}
+
+	hc.PortBindings = newPortBindings(jt.ExtensionList["exposedPorts"])
 	return &hc, nil
 }
 
