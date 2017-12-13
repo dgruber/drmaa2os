@@ -17,9 +17,9 @@ func checkJobTemplate(jt drmaa2interface.JobTemplate) error {
 	if jt.JobCategory == "" {
 		return errors.New("JobCategory must be set to container image name")
 	}
-	if jt.RemoteCommand == "" {
-		return errors.New("No remote command set")
-	}
+	//if jt.RemoteCommand == "" {
+	//	return errors.New("No remote command set")
+	//}
 	return nil
 }
 
@@ -67,9 +67,11 @@ func jobTemplateToContainerConfig(jt drmaa2interface.JobTemplate) (*container.Co
 		cc.Hostname = jt.CandidateMachines[0]
 	}
 
-	cmdSlice := strslice.StrSlice{jt.RemoteCommand}
-	cmdSlice = append(cmdSlice, jt.Args...)
-	cc.Cmd = cmdSlice
+	if jt.RemoteCommand != "" {
+		cmdSlice := strslice.StrSlice{jt.RemoteCommand}
+		cmdSlice = append(cmdSlice, jt.Args...)
+		cc.Cmd = cmdSlice
+	}
 
 	cc.Env = setEnv(jt.JobEnvironment)
 

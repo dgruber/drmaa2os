@@ -70,7 +70,7 @@ var _ = Describe("Dockertracker", func() {
 			Ω(state).Should(Equal(drmaa2interface.Running))
 		})
 
-		It("should fail adding the job when RemoteCommand in job template is missing", func() {
+		XIt("should fail adding the job when RemoteCommand in job template is missing", func() {
 			jt.RemoteCommand = ""
 			id, err := tracker.AddJob(jt)
 			Ω(err).ShouldNot(BeNil())
