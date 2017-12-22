@@ -8,6 +8,9 @@ import (
 
 	"fmt"
 	"github.com/dgruber/drmaa2interface"
+	"io/ioutil"
+	"os"
+	"time"
 )
 
 var _ = Describe("Dockertracker", func() {
@@ -46,19 +49,21 @@ var _ = Describe("Dockertracker", func() {
 
 	Context("Add job", func() {
 
-		jt := drmaa2interface.JobTemplate{
-			RemoteCommand:  "/bin/sleep",
-			Args:           []string{"1"},
-			JobCategory:    "golang",
-			StageInFiles:   map[string]string{"README.md": "/README.md"},
-			JobEnvironment: map[string]string{"test": "value"},
-		}
-
+		var jt drmaa2interface.JobTemplate
 		jt.ExtensionList = map[string]string{"exposedPorts": "8080/tcp"}
 
 		var tracker *DockerTracker
 
-		BeforeEach(func() { tracker, _ = New() })
+		BeforeEach(func() {
+			tracker, _ = New()
+			jt = drmaa2interface.JobTemplate{
+				RemoteCommand:  "/bin/sleep",
+				Args:           []string{"1"},
+				JobCategory:    "golang",
+				StageInFiles:   map[string]string{"README.md": "/README.md"},
+				JobEnvironment: map[string]string{"test": "value"},
+			}
+		})
 
 		It("should add the job without error", func() {
 			id, err := tracker.AddJob(jt)
@@ -84,6 +89,39 @@ var _ = Describe("Dockertracker", func() {
 			Ω(id).Should(Equal(""))
 		})
 
+		It("should print output to file", func() {
+			jt.RemoteCommand = "/bin/bash"
+			jt.Args = []string{"-c", `echo prost`}
+			jt.OutputPath = "./testfile"
+
+			id, err := tracker.AddJob(jt)
+
+			Ω(err).Should(BeNil())
+			Ω(id).ShouldNot(Equal(""))
+			err = tracker.Wait(id, 5*time.Second, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+			content, err := ioutil.ReadFile("./testfile")
+			Ω(err).Should(BeNil())
+			Ω(string(content)).Should(ContainSubstring("prost"))
+			os.Remove("./testfile")
+		})
+
+		It("should print stderr to file", func() {
+			jt.RemoteCommand = "/bin/bash"
+			jt.Args = []string{"-c", `date illegal`}
+			jt.ErrorPath = "./testfile"
+
+			id, err := tracker.AddJob(jt)
+
+			Ω(err).Should(BeNil())
+			Ω(id).ShouldNot(Equal(""))
+			err = tracker.Wait(id, 5*time.Second, drmaa2interface.Done, drmaa2interface.Failed)
+			Ω(err).Should(BeNil())
+			content, err := ioutil.ReadFile("./testfile")
+			Ω(err).Should(BeNil())
+			Ω(string(content)).Should(ContainSubstring("date: invalid date"))
+			os.Remove("./testfile")
+		})
 	})
 
 	Context("Array job", func() {
@@ -183,6 +221,10 @@ var _ = Describe("Dockertracker", func() {
 			Ω(err).ShouldNot(BeNil())
 			Ω(jobs).Should(BeNil())
 		})
+
+	})
+
+	Context("JobTemplate settings", func() {
 
 	})
 

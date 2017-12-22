@@ -8,6 +8,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"golang.org/x/net/context"
+	"io"
+	"os"
 	"strings"
 	"time"
 )
@@ -80,7 +82,6 @@ func (dt *DockerTracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) 
 	// if err != nil {
 	//	return "", fmt.Errorf("Error while pulling image: %s", err.Error())
 	// }
-
 	ccBody, err := dt.cli.ContainerCreate(context.Background(),
 		config,
 		hostConfig,
@@ -95,7 +96,44 @@ func (dt *DockerTracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) 
 	if err != nil {
 		return "", fmt.Errorf("Error while starting container: %s", err.Error())
 	}
+
+	if jt.OutputPath != "" || jt.ErrorPath != "" {
+		stdout := false
+		stderr := false
+		path := "" // output path == error path when both set (see checkJobTemplate())
+
+		if jt.OutputPath != "" {
+			stdout = true
+			path = jt.OutputPath
+		}
+		if jt.ErrorPath != "" {
+			stderr = true
+			path = jt.ErrorPath
+		}
+
+		handleInputOutput(dt.cli,
+			ccBody.ID,
+			types.ContainerAttachOptions{Stream: true, Stdout: stdout, Stderr: stderr, Logs: true},
+			path)
+	}
 	return ccBody.ID, nil
+}
+
+func handleInputOutput(cli *client.Client, id string, options types.ContainerAttachOptions, file string) {
+	res, _ := cli.ContainerAttach(context.Background(), id, options)
+	redirectOut(res.Reader, file)
+}
+
+func redirectOut(src io.Reader, outfilename string) {
+	go func() {
+		buf := make([]byte, 1)
+		outfile, err := os.Create(outfilename)
+		if err != nil {
+			panic(err)
+		}
+		io.CopyBuffer(outfile, src, buf)
+		outfile.Close()
+	}()
 }
 
 func (dt *DockerTracker) AddArrayJob(jt drmaa2interface.JobTemplate, begin int, end int, step int, maxParallel int) (string, error) {

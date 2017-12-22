@@ -17,9 +17,11 @@ func checkJobTemplate(jt drmaa2interface.JobTemplate) error {
 	if jt.JobCategory == "" {
 		return errors.New("JobCategory must be set to container image name")
 	}
-	//if jt.RemoteCommand == "" {
-	//	return errors.New("No remote command set")
-	//}
+	if jt.ErrorPath != "" && jt.OutputPath != "" {
+		if jt.ErrorPath != jt.OutputPath {
+			return errors.New("ErrorPath and OutputPath needs to point to same file if both are set")
+		}
+	}
 	return nil
 }
 
@@ -81,6 +83,11 @@ func jobTemplateToContainerConfig(jt drmaa2interface.JobTemplate) (*container.Co
 		cc.ExposedPorts = newPortSet(jt.ExtensionList["exposedPorts"])
 
 	}
+
+	//cc.Tty = true // merges stderr into stdout
+	cc.AttachStdout = true
+	cc.AttachStderr = true
+
 	// TODO extensions
 	// cc.Volumes
 

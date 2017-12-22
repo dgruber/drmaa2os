@@ -54,9 +54,9 @@ func (jt *JobTracker) ListJobs() ([]string, error) {
 
 func (jt *JobTracker) AddJob(t drmaa2interface.JobTemplate) (string, error) {
 	jt.Lock()
+	defer jt.Unlock()
 	jt.ps.Lock()
 	defer jt.ps.Unlock()
-	defer jt.Unlock()
 	jobid := GetNextJobID()
 	if pid, err := StartProcess(jobid, t, jt.ps.jobch); err != nil {
 		jt.ps.jobState[jobid] = drmaa2interface.Failed
@@ -129,9 +129,9 @@ func (jt *JobTracker) ListArrayJobs(id string) ([]string, error) {
 
 func (jt *JobTracker) JobState(jobid string) drmaa2interface.JobState {
 	jt.Lock()
+	defer jt.Unlock()
 	jt.ps.Lock()
 	defer jt.ps.Unlock()
-	defer jt.Unlock()
 
 	// job state:
 	// ----------
