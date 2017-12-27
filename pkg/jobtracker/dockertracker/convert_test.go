@@ -47,35 +47,11 @@ var _ = Describe("Convert", func() {
 			ps := newPortSet("808-0/tcp,13+01/tcp")
 			Ω(ps).Should(BeNil())
 		})
-
-		It("should be forbidden to set OutputPath and ErrorPath to different files", func() {
-			jt := drmaa2interface.JobTemplate{OutputPath: "xy", ErrorPath: "yx", JobCategory: "image"}
-			err := checkJobTemplate(jt)
-			Ω(err).ShouldNot(BeNil())
-
-			jt = drmaa2interface.JobTemplate{OutputPath: "", ErrorPath: "yx", JobCategory: "image"}
-			err = checkJobTemplate(jt)
-			Ω(err).Should(BeNil())
-
-			jt = drmaa2interface.JobTemplate{OutputPath: "xy", ErrorPath: "", JobCategory: "image"}
-			err = checkJobTemplate(jt)
-			Ω(err).Should(BeNil())
-
-			jt = drmaa2interface.JobTemplate{OutputPath: "", ErrorPath: "", JobCategory: "image"}
-			err = checkJobTemplate(jt)
-			Ω(err).Should(BeNil())
-		})
 	})
 
 	Context("JobTemplate missing fields checks", func() {
 		It("should recognize when JobCategory (container image name) is missing", func() {
 			jt := drmaa2interface.JobTemplate{RemoteCommand: "/bin/sleep"}
-			err := checkJobTemplate(jt)
-			Ω(err).ShouldNot(BeNil())
-		})
-
-		XIt("should recognize when RemoteCommand is missing", func() {
-			jt := drmaa2interface.JobTemplate{JobCategory: "image/image"}
 			err := checkJobTemplate(jt)
 			Ω(err).ShouldNot(BeNil())
 		})

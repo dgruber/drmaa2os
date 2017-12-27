@@ -17,11 +17,6 @@ func checkJobTemplate(jt drmaa2interface.JobTemplate) error {
 	if jt.JobCategory == "" {
 		return errors.New("JobCategory must be set to container image name")
 	}
-	if jt.ErrorPath != "" && jt.OutputPath != "" {
-		if jt.ErrorPath != jt.OutputPath {
-			return errors.New("ErrorPath and OutputPath needs to point to same file if both are set")
-		}
-	}
 	return nil
 }
 

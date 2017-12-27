@@ -109,7 +109,7 @@ var _ = Describe("Dockertracker", func() {
 		It("should print stderr to file", func() {
 			jt.RemoteCommand = "/bin/bash"
 			jt.Args = []string{"-c", `date illegal`}
-			jt.ErrorPath = "./testfile"
+			jt.ErrorPath = "./errtestfile"
 
 			id, err := tracker.AddJob(jt)
 
@@ -117,10 +117,10 @@ var _ = Describe("Dockertracker", func() {
 			Ω(id).ShouldNot(Equal(""))
 			err = tracker.Wait(id, 5*time.Second, drmaa2interface.Done, drmaa2interface.Failed)
 			Ω(err).Should(BeNil())
-			content, err := ioutil.ReadFile("./testfile")
+			content, err := ioutil.ReadFile("./errtestfile")
 			Ω(err).Should(BeNil())
 			Ω(string(content)).Should(ContainSubstring("date: invalid date"))
-			os.Remove("./testfile")
+			os.Remove("./errtestfile")
 		})
 	})
 

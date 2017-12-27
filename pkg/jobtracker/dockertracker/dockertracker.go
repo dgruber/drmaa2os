@@ -7,6 +7,8 @@ import (
 	"github.com/dgruber/drmaa2os/pkg/helper"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
+
 	"golang.org/x/net/context"
 	"io"
 	"os"
@@ -100,39 +102,65 @@ func (dt *DockerTracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) 
 	if jt.OutputPath != "" || jt.ErrorPath != "" {
 		stdout := false
 		stderr := false
-		path := "" // output path == error path when both set (see checkJobTemplate())
 
 		if jt.OutputPath != "" {
 			stdout = true
-			path = jt.OutputPath
 		}
 		if jt.ErrorPath != "" {
 			stderr = true
-			path = jt.ErrorPath
 		}
 
 		handleInputOutput(dt.cli,
 			ccBody.ID,
 			types.ContainerAttachOptions{Stream: true, Stdout: stdout, Stderr: stderr, Logs: true},
-			path)
+			jt.OutputPath,
+			jt.ErrorPath)
 	}
 	return ccBody.ID, nil
 }
 
-func handleInputOutput(cli *client.Client, id string, options types.ContainerAttachOptions, file string) {
-	res, _ := cli.ContainerAttach(context.Background(), id, options)
-	redirectOut(res.Reader, file)
+func handleInputOutput(cli *client.Client, id string, options types.ContainerAttachOptions, stdoutfile, stderrfile string) {
+	res, err := cli.ContainerAttach(context.Background(), id, options)
+	if err != nil {
+		panic(err)
+	}
+	if stdoutfile != "" && stderrfile != "" {
+		redirectOut(res, stdoutfile, stderrfile)
+	} else if stdoutfile != "" {
+		redirect(res, stdoutfile)
+	} else if stderrfile != "" {
+		redirect(res, stderrfile)
+	}
 }
 
-func redirectOut(src io.Reader, outfilename string) {
+func redirectOut(res types.HijackedResponse, outfilename, errfilename string) {
 	go func() {
-		buf := make([]byte, 1)
 		outfile, err := os.Create(outfilename)
 		if err != nil {
 			panic(err)
 		}
-		io.CopyBuffer(outfile, src, buf)
+		errfile, err := os.Create(errfilename)
+		if err != nil {
+			panic(err)
+		}
+
+		stdcopy.StdCopy(outfile, errfile, res.Reader)
 		outfile.Close()
+		errfile.Close()
+		res.Close()
+	}()
+}
+
+func redirect(res types.HijackedResponse, file string) {
+	go func() {
+		buf := make([]byte, 1)
+		file, err := os.Create(file)
+		if err != nil {
+			panic(err)
+		}
+		io.CopyBuffer(file, res.Reader, buf)
+		file.Close()
+		res.Close()
 	}()
 }
 

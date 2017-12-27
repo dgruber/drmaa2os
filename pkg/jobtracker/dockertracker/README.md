@@ -54,8 +54,8 @@ Mapping between the job template and the Docker container config request:
 | JobEnvironment (k: v)| Env ("k=v")                     |
 | StageInFiles         | -v localPath:containerPath      |
 | ErrorPath            | Writes stderr into a local file (not a file in container) |
-| OutputPath           | Writes stdout into a local file. If ErrorPath is set as well both needs to point to same file |
-| Extension: "user"    | User                            |
+| OutputPath           | Writes stdout into a local file. |
+| Extension: "user"    | User / must exist in container if set |
 | Extension: "exposedPorts" | -p / multiple entries are splitted with "," |
 
 If more extensions needed just open an issue.
