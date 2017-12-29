@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -16,7 +16,7 @@ import (
 
 //Client used to communicate with Cloud Foundry
 type Client struct {
-	config   Config
+	Config   Config
 	Endpoint Endpoint
 }
 
@@ -98,40 +98,77 @@ func NewClient(config *Config) (client *Client, err error) {
 	if len(config.UserAgent) == 0 {
 		config.UserAgent = defConfig.UserAgent
 	}
-	ctx := context.Background()
-	if config.SkipSslValidation == false {
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, defConfig.HttpClient)
-	} else {
-		tr := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, &http.Client{Transport: tr})
+
+	if config.HttpClient == nil {
+		config.HttpClient = defConfig.HttpClient
 	}
+
+	if config.HttpClient.Transport == nil {
+		config.HttpClient.Transport = shallowDefaultTransport()
+	}
+
+	var tp *http.Transport
+
+	switch t := config.HttpClient.Transport.(type) {
+	case *http.Transport:
+		tp = t
+	case *oauth2.Transport:
+		if bt, ok := t.Base.(*http.Transport); ok {
+			tp = bt
+		}
+	}
+
+	if tp != nil {
+		if tp.TLSClientConfig == nil {
+			tp.TLSClientConfig = &tls.Config{}
+		}
+		tp.TLSClientConfig.InsecureSkipVerify = config.SkipSslValidation
+	}
+
+	// we want to keep the Timeout value from config.HttpClient
+	timeout := config.HttpClient.Timeout
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, config.HttpClient)
 
 	endpoint, err := getInfo(config.ApiAddress, oauth2.NewClient(ctx, nil))
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not get api /v2/info: %v", err)
+		return nil, errors.Wrap(err, "Could not get api /v2/info")
 	}
 
 	switch {
+	case config.Token != "":
+		config = getUserTokenAuth(ctx, config, endpoint)
 	case config.ClientID != "":
-		config = getClientAuth(config, endpoint, ctx)
+		config = getClientAuth(ctx, config, endpoint)
 	default:
-		config, err = getUserAuth(config, endpoint, ctx)
+		config, err = getUserAuth(ctx, config, endpoint)
 		if err != nil {
 			return nil, err
 		}
 	}
-
+	// make sure original Timeout value will be used
+	if config.HttpClient.Timeout != timeout {
+		config.HttpClient.Timeout = timeout
+	}
 	client = &Client{
-		config:   *config,
+		Config:   *config,
 		Endpoint: *endpoint,
 	}
 	return client, nil
 }
 
-func getUserAuth(config *Config, endpoint *Endpoint, ctx context.Context) (*Config, error) {
+func shallowDefaultTransport() *http.Transport {
+	defaultTransport := http.DefaultTransport.(*http.Transport)
+	return &http.Transport{
+		Proxy:                 defaultTransport.Proxy,
+		TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
+		ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
+	}
+}
+
+func getUserAuth(ctx context.Context, config *Config, endpoint *Endpoint) (*Config, error) {
 	authConfig := &oauth2.Config{
 		ClientID: "cf",
 		Scopes:   []string{""},
@@ -144,7 +181,7 @@ func getUserAuth(config *Config, endpoint *Endpoint, ctx context.Context) (*Conf
 	token, err := authConfig.PasswordCredentialsToken(ctx, config.Username, config.Password)
 
 	if err != nil {
-		return nil, fmt.Errorf("Error getting token: %v", err)
+		return nil, errors.Wrap(err, "Error getting token")
 	}
 
 	config.TokenSource = authConfig.TokenSource(ctx, token)
@@ -153,7 +190,7 @@ func getUserAuth(config *Config, endpoint *Endpoint, ctx context.Context) (*Conf
 	return config, err
 }
 
-func getClientAuth(config *Config, endpoint *Endpoint, ctx context.Context) *Config {
+func getClientAuth(ctx context.Context, config *Config, endpoint *Endpoint) *Config {
 	authConfig := &clientcredentials.Config{
 		ClientID:     config.ClientID,
 		ClientSecret: config.ClientSecret,
@@ -162,6 +199,28 @@ func getClientAuth(config *Config, endpoint *Endpoint, ctx context.Context) *Con
 
 	config.TokenSource = authConfig.TokenSource(ctx)
 	config.HttpClient = authConfig.Client(ctx)
+	return config
+}
+
+// getUserTokenAuth initializes client credentials from existing bearer token.
+func getUserTokenAuth(ctx context.Context, config *Config, endpoint *Endpoint) *Config {
+	authConfig := &oauth2.Config{
+		ClientID: "cf",
+		Scopes:   []string{""},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  endpoint.AuthEndpoint + "/oauth/auth",
+			TokenURL: endpoint.TokenEndpoint + "/oauth/token",
+		},
+	}
+
+	// Token is expected to have no "bearer" prefix
+	token := &oauth2.Token{
+		AccessToken: config.Token,
+		TokenType:   "Bearer"}
+
+	config.TokenSource = authConfig.TokenSource(ctx, token)
+	config.HttpClient = oauth2.NewClient(ctx, config.TokenSource)
+
 	return config
 }
 
@@ -190,7 +249,7 @@ func getInfo(api string, httpClient *http.Client) (*Endpoint, error) {
 func (c *Client) NewRequest(method, path string) *request {
 	r := &request{
 		method: method,
-		url:    c.config.ApiAddress + path,
+		url:    c.Config.ApiAddress + path,
 		params: make(map[string][]string),
 	}
 	return r
@@ -213,9 +272,25 @@ func (c *Client) DoRequest(r *request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", c.config.UserAgent)
-	resp, err := c.config.HttpClient.Do(req)
-	return resp, err
+	req.Header.Set("User-Agent", c.Config.UserAgent)
+	if r.body != nil {
+		req.Header.Set("Content-type", "application/json")
+	}
+
+	resp, err := c.Config.HttpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		var cfErr CloudFoundryError
+		if err := decodeBody(resp, &cfErr); err != nil {
+			return resp, errors.Wrap(err, "Unable to decode body")
+		}
+		return nil, cfErr
+	}
+
+	return resp, nil
 }
 
 // toHTTP converts the request to an HTTP request
@@ -252,9 +327,9 @@ func encodeBody(obj interface{}) (io.Reader, error) {
 }
 
 func (c *Client) GetToken() (string, error) {
-	token, err := c.config.TokenSource.Token()
+	token, err := c.Config.TokenSource.Token()
 	if err != nil {
-		return "", fmt.Errorf("Error getting bearer token: %v", err)
+		return "", errors.Wrap(err, "Error getting bearer token")
 	}
 	return "bearer " + token.AccessToken, nil
 }
