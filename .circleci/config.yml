@@ -19,6 +19,7 @@ jobs:
     ####   /go/src/bitbucket.org/circleci/go-tool
     working_directory: /go/src/github.com/dgruber/drmaa2os
     steps:
+      - checkout
       - run: go get github.com/dgruber/drmaa2interface
       - run: go build ./...
       - run: go test -v 
