@@ -115,8 +115,6 @@ func NewClient(config *Config) (client *Client, err error) {
 	}
 
 	switch {
-	case config.Token != "":
-		config = getUserTokenAuth(config, endpoint, ctx)
 	case config.ClientID != "":
 		config = getClientAuth(config, endpoint, ctx)
 	default:
@@ -164,29 +162,6 @@ func getClientAuth(config *Config, endpoint *Endpoint, ctx context.Context) *Con
 
 	config.TokenSource = authConfig.TokenSource(ctx)
 	config.HttpClient = authConfig.Client(ctx)
-	return config
-}
-
-// Initialize client credentials from existing bearer token
-func getUserTokenAuth(config *Config, endpoint *Endpoint, ctx context.Context) *Config {
-	authConfig := &oauth2.Config{
-		ClientID: "cf",
-		Scopes:   []string{""},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  endpoint.AuthEndpoint + "/oauth/auth",
-			TokenURL: endpoint.TokenEndpoint + "/oauth/token",
-		},
-	}
-
-	// Token is expected to have no "bearer" prefix
-	token := &oauth2.Token{
-		AccessToken: config.Token,
-		TokenType:   "Bearer"}
-
-
-	config.TokenSource = authConfig.TokenSource(ctx, token)
-	config.HttpClient = oauth2.NewClient(ctx, config.TokenSource)
-
 	return config
 }
 
@@ -239,10 +214,6 @@ func (c *Client) DoRequest(r *request) (*http.Response, error) {
 		return nil, err
 	}
 	req.Header.Set("User-Agent", c.config.UserAgent)
-	if r.body != nil {
-		req.Header.Set("Content-type", "application/json")
-	}
-
 	resp, err := c.config.HttpClient.Do(req)
 	return resp, err
 }
