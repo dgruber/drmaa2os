@@ -58,6 +58,7 @@ func (jt *JobTracker) AddJob(t drmaa2interface.JobTemplate) (string, error) {
 	jt.ps.Lock()
 	defer jt.ps.Unlock()
 	jobid := GetNextJobID()
+
 	if pid, err := StartProcess(jobid, t, jt.ps.jobch); err != nil {
 		jt.ps.jobState[jobid] = drmaa2interface.Failed
 		return "", err
