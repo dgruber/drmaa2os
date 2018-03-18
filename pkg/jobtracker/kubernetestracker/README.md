@@ -20,12 +20,13 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 
 |  DRMAA2 State.                | Kubernetes Job State  |
 | :----------------------------:|:---------------------:|
-| Done                          | status.Failed >= 1    |
-| Failed                        | status.Succeeded >= 1 |
+| Done                          | status.Succeeded >= 1 |
+| Failed                        | status.Failed >= 1    |
 | Suspended                     | -                     |
 | Running                       | status.Active >= 1    |
 | Queued                        | -                     |
 | Undetermined                  | other                 |
+
 
 ### Job Template Mapping
 

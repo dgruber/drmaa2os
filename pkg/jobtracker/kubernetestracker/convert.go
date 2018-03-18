@@ -44,6 +44,7 @@ func newNodeSelector(jt drmaa2interface.JobTemplate) (map[string]string, error) 
 	return nil, nil
 }
 
+// https://godoc.org/k8s.io/api/core/v1#PodSpec
 // https://github.com/kubernetes/kubernetes/blob/886e04f1fffbb04faf8a9f9ee141143b2684ae68/pkg/api/types.go
 func newPodSpec(v []k8sv1.Volume, c []k8sv1.Container, ns map[string]string) k8sv1.PodSpec {
 	return k8sv1.PodSpec{
@@ -68,6 +69,7 @@ func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 		return nil, fmt.Errorf("error converting job (newNodeSelector): %s", err)
 	}
 
+	// settings for command etc.
 	podSpec := newPodSpec(volumes, containers, nodeSelector)
 
 	var one int32 = 1
@@ -124,5 +126,6 @@ func convertJobStatus2JobState(status *batchv1.JobStatus) drmaa2interface.JobSta
 	if status.Active >= 1 {
 		return drmaa2interface.Running
 	}
+	//fmt.Println(status.String())
 	return drmaa2interface.Undetermined
 }

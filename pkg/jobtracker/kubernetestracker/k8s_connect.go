@@ -3,6 +3,8 @@ package kubernetestracker
 import (
 	"errors"
 	"fmt"
+	"k8s.io/api/batch/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
@@ -23,6 +25,19 @@ func CreateClientSet() (*kubernetes.Clientset, error) {
 		return nil, fmt.Errorf("error during k8s client initialization (clientset nil)")
 	}
 	return cs, nil
+}
+
+func getJobByID(cs *kubernetes.Clientset, jobid string) (*v1.Job, error) {
+	jobs, err := cs.BatchV1().Jobs("default").List(meta_v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for _, job := range jobs.Items {
+		if jobid == string(job.GetUID()) {
+			return &job, nil
+		}
+	}
+	return nil, fmt.Errorf("job with jobid %s not found", jobid)
 }
 
 func kubeConfigFile() (string, error) {

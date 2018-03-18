@@ -21,9 +21,9 @@ var _ = Describe("KubernetesTracker", func() {
 		BeforeEach(func() {
 			jt = drmaa2interface.JobTemplate{
 				//JobName:       "name1",
-				RemoteCommand: "command",
+				RemoteCommand: "/bin/sh",
 				JobCategory:   "golang:latest",
-				Args:          []string{"0"},
+				Args:          []string{"-c", "sleep 0"},
 			}
 			var err error
 			kt, err = New()
@@ -93,25 +93,54 @@ var _ = Describe("KubernetesTracker", func() {
 
 		BeforeEach(func() {
 			jt = drmaa2interface.JobTemplate{
-				RemoteCommand: "command",
+				//JobName:       "workfloadtestjob",
+				RemoteCommand: "/bin/sh",
 				JobCategory:   "golang:latest",
-				Args:          []string{"1"},
 			}
 			var err error
 			kt, err = New()
 			Ω(err).Should(BeNil())
 		})
 
-		WhenK8sIsAvailableIt("Should be possible to submit and delete a job", func() {
+		WhenK8sIsAvailableIt("Should be possible to track the states of a job life-cycle", func() {
+			jt.Args = []string{"-c", "sleep 1"}
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
-			<-time.After(time.Millisecond * 100)
-			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Running))
+
+			Eventually(func() drmaa2interface.JobState {
+				return kt.JobState(jobid)
+			}, time.Second*2, time.Millisecond*10).Should(Equal(drmaa2interface.Undetermined))
+
+			Eventually(func() drmaa2interface.JobState {
+				return kt.JobState(jobid)
+			}, time.Second*2, time.Millisecond*10).Should(Equal(drmaa2interface.Running))
+
+			Eventually(func() drmaa2interface.JobState {
+				return kt.JobState(jobid)
+			}, time.Second*10, time.Millisecond*10).Should(Equal(drmaa2interface.Done))
+		})
+
+		WhenK8sIsAvailableIt("Should be possible to terminate a job", func() {
+			jt.Args = []string{"-c", "sleep 10"}
+			jobid, err := kt.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			Eventually(func() drmaa2interface.JobState {
+				return kt.JobState(jobid)
+			}, time.Second*2, time.Millisecond*1).Should(Equal(drmaa2interface.Undetermined))
+
+			Eventually(func() drmaa2interface.JobState {
+				return kt.JobState(jobid)
+			}, time.Second*2, time.Millisecond*2).Should(Equal(drmaa2interface.Running))
+
 			err = kt.JobControl(jobid, "terminate")
 			Ω(err).Should(BeNil())
-			<-time.After(time.Millisecond * 100)
-			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Failed))
+
+			Eventually(func() drmaa2interface.JobState {
+				return kt.JobState(jobid)
+			}, time.Second*10, time.Millisecond*10).Should(Equal(drmaa2interface.Undetermined))
 		})
 
 	})

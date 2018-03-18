@@ -68,13 +68,7 @@ func (kt *KubernetesTracker) JobState(jobid string) drmaa2interface.JobState {
 	if err != nil {
 		return drmaa2interface.Undetermined
 	}
-	jc := cs.BatchV1().Jobs("default")
-
-	job, err := jc.Get(jobid, meta_v1.GetOptions{})
-	if err != nil || job == nil {
-		return drmaa2interface.Undetermined
-	}
-	return convertJobStatus2JobState(&job.Status)
+	return DRMAA2State(cs, jobid)
 }
 
 func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
@@ -88,6 +82,11 @@ func (kt *KubernetesTracker) JobControl(jobid, state string) error {
 	}
 	jc := cs.BatchV1().Jobs("default")
 
+	job, err := getJobByID(cs, jobid)
+	if err != nil {
+		return err
+	}
+
 	switch state {
 	case "suspend":
 		return errors.New("Unsupported Operation")
@@ -98,7 +97,7 @@ func (kt *KubernetesTracker) JobControl(jobid, state string) error {
 	case "release":
 		return errors.New("Unsupported Operation")
 	case "terminate":
-		return jc.Delete(jobid, &meta_v1.DeleteOptions{})
+		return jc.Delete(job.GetName(), &meta_v1.DeleteOptions{})
 	}
 	return errors.New("undefined state")
 }
