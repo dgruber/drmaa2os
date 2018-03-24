@@ -126,6 +126,5 @@ func convertJobStatus2JobState(status *batchv1.JobStatus) drmaa2interface.JobSta
 	if status.Active >= 1 {
 		return drmaa2interface.Running
 	}
-	//fmt.Println(status.String())
 	return drmaa2interface.Undetermined
 }

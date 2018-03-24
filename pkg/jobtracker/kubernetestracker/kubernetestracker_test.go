@@ -54,6 +54,13 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(jobids).Should(BeNil())
 		})
 
+		WhenK8sIsAvailableIt("should be possible ListJobsCategories()", func() {
+			cats, err := kt.ListJobCategories()
+			Ω(err).Should(BeNil())
+			Ω(cats).ShouldNot(BeNil())
+			Ω(len(cats)).Should(BeNumerically("==", 0))
+		})
+
 	})
 
 	Context("Unsupported interface functions", func() {
@@ -110,15 +117,16 @@ var _ = Describe("KubernetesTracker", func() {
 
 			Eventually(func() drmaa2interface.JobState {
 				return kt.JobState(jobid)
-			}, time.Second*2, time.Millisecond*10).Should(Equal(drmaa2interface.Undetermined))
+			}, time.Second*10, time.Millisecond*5).Should(Equal(drmaa2interface.Undetermined))
 
 			Eventually(func() drmaa2interface.JobState {
 				return kt.JobState(jobid)
-			}, time.Second*2, time.Millisecond*10).Should(Equal(drmaa2interface.Running))
+			}, time.Second*10, time.Millisecond*50).Should(Equal(drmaa2interface.Running))
 
 			Eventually(func() drmaa2interface.JobState {
 				return kt.JobState(jobid)
-			}, time.Second*10, time.Millisecond*10).Should(Equal(drmaa2interface.Done))
+			}, time.Second*30, time.Millisecond*50).Should(Equal(drmaa2interface.Done))
+
 		})
 
 		WhenK8sIsAvailableIt("Should be possible to terminate a job", func() {
@@ -129,18 +137,14 @@ var _ = Describe("KubernetesTracker", func() {
 
 			Eventually(func() drmaa2interface.JobState {
 				return kt.JobState(jobid)
-			}, time.Second*2, time.Millisecond*1).Should(Equal(drmaa2interface.Undetermined))
-
-			Eventually(func() drmaa2interface.JobState {
-				return kt.JobState(jobid)
-			}, time.Second*2, time.Millisecond*2).Should(Equal(drmaa2interface.Running))
+			}, time.Second*10, time.Millisecond*20).Should(Equal(drmaa2interface.Running))
 
 			err = kt.JobControl(jobid, "terminate")
 			Ω(err).Should(BeNil())
 
 			Eventually(func() drmaa2interface.JobState {
 				return kt.JobState(jobid)
-			}, time.Second*10, time.Millisecond*10).Should(Equal(drmaa2interface.Undetermined))
+			}, time.Second*30, time.Millisecond*10).Should(Equal(drmaa2interface.Undetermined))
 		})
 
 	})

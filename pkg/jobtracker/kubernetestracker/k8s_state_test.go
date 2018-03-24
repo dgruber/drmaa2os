@@ -16,7 +16,7 @@ var _ = Describe("K8sState", func() {
 		It("should return undetermined as state when job is not found", func() {
 			cs, err := CreateClientSet()
 			Ω(err).Should(BeNil())
-			state := DRMAA2State(cs, "doesnotexist")
+			state := DRMAA2State(cs.BatchV1().Jobs("default"), "doesnotexist")
 			Ω(state).Should(Equal(drmaa2interface.Undetermined))
 		})
 

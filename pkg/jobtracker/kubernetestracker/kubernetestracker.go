@@ -6,7 +6,6 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/helper"
 	k8sapi "k8s.io/apimachinery/pkg/apis/meta/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 )
 
@@ -17,19 +16,17 @@ func New() (*KubernetesTracker, error) {
 }
 
 func (kt *KubernetesTracker) ListJobCategories() ([]string, error) {
-	// external registry
-	return nil, nil
+	return []string{}, nil
 }
 
 func (kt *KubernetesTracker) ListJobs() ([]string, error) {
-	cs, err := CreateClientSet()
+	jc, err := getJobsClient()
 	if err != nil {
-		return nil, fmt.Errorf("error during addjob client creation: %s", err.Error())
+		return nil, fmt.Errorf("ListJobs: %s", err.Error())
 	}
-	jobsClient := cs.BatchV1().Jobs("default")
-	jobsList, err := jobsClient.List(k8sapi.ListOptions{})
+	jobsList, err := jc.List(k8sapi.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("error during listing jobs with client: %s", err.Error())
+		return nil, fmt.Errorf("listing jobs with client: %s", err.Error())
 	}
 	ids := make([]string, 0, len(jobsList.Items))
 	for _, job := range jobsList.Items {
@@ -41,16 +38,15 @@ func (kt *KubernetesTracker) ListJobs() ([]string, error) {
 func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) {
 	job, err := convertJob(jt)
 	if err != nil {
-		return "", fmt.Errorf("error during converting job template into a k8s job: %s", err.Error())
+		return "", fmt.Errorf("converting job template into a k8s job: %s", err.Error())
 	}
-	cs, err := CreateClientSet()
+	jc, err := getJobsClient()
 	if err != nil {
-		return "", fmt.Errorf("error during addjob client creation: %s", err.Error())
+		return "", fmt.Errorf("adding job: %s", err.Error())
 	}
-	jc := cs.BatchV1().Jobs("default")
 	j, err := jc.Create(job)
 	if err != nil {
-		return "", fmt.Errorf("error during k8s job client initialization: %s", err.Error())
+		return "", fmt.Errorf("k8s job client initialization: %s", err.Error())
 	}
 	return string(j.UID), nil
 }
@@ -64,11 +60,11 @@ func (kt *KubernetesTracker) ListArrayJobs(id string) ([]string, error) {
 }
 
 func (kt *KubernetesTracker) JobState(jobid string) drmaa2interface.JobState {
-	cs, err := CreateClientSet()
+	jc, err := getJobsClient()
 	if err != nil {
 		return drmaa2interface.Undetermined
 	}
-	return DRMAA2State(cs, jobid)
+	return DRMAA2State(jc, jobid)
 }
 
 func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
@@ -76,13 +72,12 @@ func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, err
 }
 
 func (kt *KubernetesTracker) JobControl(jobid, state string) error {
-	cs, err := CreateClientSet()
+	jc, err := getJobsClient()
 	if err != nil {
-		return err
+		return fmt.Errorf("JobControl: %s", err.Error())
 	}
-	jc := cs.BatchV1().Jobs("default")
 
-	job, err := getJobByID(cs, jobid)
+	job, err := getJobByID(jc, jobid)
 	if err != nil {
 		return err
 	}
@@ -97,7 +92,7 @@ func (kt *KubernetesTracker) JobControl(jobid, state string) error {
 	case "release":
 		return errors.New("Unsupported Operation")
 	case "terminate":
-		return jc.Delete(job.GetName(), &meta_v1.DeleteOptions{})
+		return jc.Delete(job.GetName(), &k8sapi.DeleteOptions{})
 	}
 	return errors.New("undefined state")
 }
