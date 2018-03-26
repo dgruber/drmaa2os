@@ -2,8 +2,10 @@ package helper
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
+	"time"
 )
 
 func ArrayJobID2GUIDs(id string) ([]string, error) {
@@ -33,4 +35,49 @@ func AddArrayJobAsSingleJobs(jt drmaa2interface.JobTemplate, t jobtracker.JobTra
 		guids = append(guids, guid)
 	}
 	return Guids2ArrayJobID(guids), nil
+}
+
+func IsInExpectedState(state drmaa2interface.JobState, states ...drmaa2interface.JobState) bool {
+	for _, expectedState := range states {
+		if state == expectedState {
+			return true
+		}
+	}
+	return false
+}
+
+func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration, states ...drmaa2interface.JobState) error {
+	ticker := time.NewTicker(timeout)
+	defer ticker.Stop()
+
+	hasStateCh := make(chan bool, 1)
+	defer close(hasStateCh)
+
+	quit := make(chan bool)
+
+	go func() {
+		t := time.NewTicker(time.Millisecond * 200)
+		defer t.Stop()
+		for {
+			select {
+			case <-t.C:
+				currentState := jt.JobState(jobid)
+				if IsInExpectedState(currentState, states...) {
+					hasStateCh <- true
+					return
+				}
+			case <-quit:
+				return
+			}
+		}
+	}()
+
+	select {
+	case <-ticker.C:
+		quit <- true
+		return errors.New("timeout while waiting for job state")
+	case <-hasStateCh:
+		return nil
+	}
+	return errors.New("unreachable code in WaitForState()")
 }

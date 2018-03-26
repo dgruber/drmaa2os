@@ -82,11 +82,6 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(err).Should(BeNil())
 		})
 
-		It("Unsupported Wait()", func() {
-			err := kt.Wait("jobid", time.Second*0, drmaa2interface.Done)
-			Ω(err).Should(BeNil())
-		})
-
 		It("Unsupported DeleteJob()", func() {
 			err := kt.DeleteJob("jobid")
 			Ω(err).Should(BeNil())
@@ -145,6 +140,23 @@ var _ = Describe("KubernetesTracker", func() {
 			Eventually(func() drmaa2interface.JobState {
 				return kt.JobState(jobid)
 			}, time.Second*30, time.Millisecond*10).Should(Equal(drmaa2interface.Undetermined))
+		})
+
+		WhenK8sIsAvailableIt("Should be possible to wait for termination of a job", func() {
+			jt.Args = []string{"-c", "sleep 10"}
+			jobid, err := kt.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			go func() {
+				<-time.Tick(time.Millisecond * 100)
+				kt.JobControl(jobid, "terminate")
+			}()
+
+			err = kt.Wait(jobid, time.Second, drmaa2interface.Failed, drmaa2interface.Undetermined)
+			Ω(err).Should(BeNil())
+			// TODO(DG) test time = 0
+			// TODO(DG) terminate should lead to failed state not undetermined
 		})
 
 	})

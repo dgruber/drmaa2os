@@ -97,8 +97,8 @@ func (kt *KubernetesTracker) JobControl(jobid, state string) error {
 	return errors.New("undefined state")
 }
 
-func (kt *KubernetesTracker) Wait(jobid string, timeout time.Duration, state ...drmaa2interface.JobState) error {
-	return nil
+func (kt *KubernetesTracker) Wait(jobid string, timeout time.Duration, states ...drmaa2interface.JobState) error {
+	return helper.WaitForState(kt, jobid, timeout, states...)
 }
 
 func (kt *KubernetesTracker) DeleteJob(jobid string) error {

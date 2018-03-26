@@ -7,7 +7,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletrackerfakes"
+	"time"
 )
 
 var _ = Describe("Helper", func() {
@@ -48,6 +50,60 @@ var _ = Describe("Helper", func() {
 			Ω(err).ShouldNot(BeNil())
 			Ω(ajid).Should(BeEmpty())
 		})
+
+	})
+
+	Context("State", func() {
+
+		It("should signal when a state is matched", func() {
+			state := IsInExpectedState(drmaa2interface.Done, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(state).Should(BeTrue())
+			state = IsInExpectedState(drmaa2interface.Done, drmaa2interface.Done, drmaa2interface.Failed)
+			Ω(state).Should(BeTrue())
+			state = IsInExpectedState(drmaa2interface.Done, drmaa2interface.Done)
+			Ω(state).Should(BeTrue())
+		})
+
+		It("should signal when a state is not matched", func() {
+			state := IsInExpectedState(drmaa2interface.Failed, drmaa2interface.Queued, drmaa2interface.Done)
+			Ω(state).Should(BeFalse())
+			state = IsInExpectedState(drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(state).Should(BeFalse())
+			state = IsInExpectedState(drmaa2interface.Failed, drmaa2interface.Requeued)
+			Ω(state).Should(BeFalse())
+			state = IsInExpectedState(drmaa2interface.Failed, drmaa2interface.Undetermined)
+			Ω(state).Should(BeFalse())
+		})
+
+		StateAfter := func(t jobtracker.JobTracker, id string, d time.Duration, operation string) {
+			go func() {
+				<-time.Tick(d)
+				t.JobControl(id, operation)
+			}()
+		}
+
+		WaitFor := func(tracker jobtracker.JobTracker, jobid, operation string, expectedStates ...drmaa2interface.JobState) error {
+			StateAfter(tracker, jobid, time.Millisecond*50, operation)
+			return WaitForState(tracker, jobid, time.Second*1, expectedStates...)
+		}
+
+		It("", func() {
+			tracker := simpletrackerfakes.New("testsession")
+			jobid, err := tracker.AddJob(drmaa2interface.JobTemplate{
+				JobName: "testjob",
+			})
+			Ω(err).Should(BeNil())
+
+			Ω(WaitFor(tracker, jobid, "terminate", drmaa2interface.Failed)).Should(BeNil())
+			Ω(WaitFor(tracker, jobid, "suspend", drmaa2interface.Done, drmaa2interface.Suspended)).Should(BeNil())
+			Ω(WaitFor(tracker, jobid, "terminate", drmaa2interface.Done, drmaa2interface.Failed)).Should(BeNil())
+
+			// timeout
+			Ω(WaitFor(tracker, jobid, "terminate", drmaa2interface.Suspended)).ShouldNot(BeNil())
+			Ω(WaitFor(tracker, jobid, "terminate", drmaa2interface.Done, drmaa2interface.Suspended, drmaa2interface.Running)).ShouldNot(BeNil())
+
+		})
+
 	})
 
 })
