@@ -112,11 +112,7 @@ var _ = Describe("KubernetesTracker", func() {
 
 			Eventually(func() drmaa2interface.JobState {
 				return kt.JobState(jobid)
-			}, time.Second*10, time.Millisecond*5).Should(Equal(drmaa2interface.Undetermined))
-
-			Eventually(func() drmaa2interface.JobState {
-				return kt.JobState(jobid)
-			}, time.Second*10, time.Millisecond*50).Should(Equal(drmaa2interface.Running))
+			}, time.Second*20, time.Millisecond*50).Should(Equal(drmaa2interface.Running))
 
 			Eventually(func() drmaa2interface.JobState {
 				return kt.JobState(jobid)
@@ -157,6 +153,52 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(err).Should(BeNil())
 			// TODO(DG) test time = 0
 			// TODO(DG) terminate should lead to failed state not undetermined
+		})
+
+		WhenK8sIsAvailableIt("Should end in a failed state for a failing job", func() {
+			jt.Args = []string{"-c", `exit 1`}
+			jobid, err := kt.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+			err = kt.Wait(jobid, time.Second*30, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Failed))
+		})
+
+		WhenK8sIsAvailableIt("Should end in a done state for a successful job", func() {
+			jt.Args = []string{"-c", `exit 0`}
+			jobid, err := kt.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+			err = kt.Wait(jobid, time.Second*20, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+		})
+
+	})
+
+	Context("Regression tests", func() {
+		var kt jobtracker.JobTracker
+		var jt drmaa2interface.JobTemplate
+
+		BeforeEach(func() {
+			jt = drmaa2interface.JobTemplate{
+				//JobName:       "workfloadtestjob",
+				RemoteCommand: "/bin/sh",
+				JobCategory:   "golang:latest",
+			}
+			var err error
+			kt, err = New()
+			Ω(err).Should(BeNil())
+		})
+
+		WhenK8sIsAvailableIt("Should not crash when wait time is 0", func() {
+			jt.Args = []string{"-c", `exit 0`}
+			jobid, err := kt.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			kt.Wait(jobid, 0, drmaa2interface.Failed, drmaa2interface.Done, drmaa2interface.Undetermined)
 		})
 
 	})

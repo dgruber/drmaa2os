@@ -47,6 +47,10 @@ func IsInExpectedState(state drmaa2interface.JobState, states ...drmaa2interface
 }
 
 func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration, states ...drmaa2interface.JobState) error {
+	if timeout == 0 {
+		timeout = time.Millisecond * 200
+	}
+
 	ticker := time.NewTicker(timeout)
 	defer ticker.Stop()
 
@@ -56,13 +60,18 @@ func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration,
 	quit := make(chan bool)
 
 	go func() {
-		t := time.NewTicker(time.Millisecond * 200)
+		t := time.NewTicker(time.Millisecond * 100)
 		defer t.Stop()
+
+		if IsInExpectedState(jt.JobState(jobid), states...) {
+			hasStateCh <- true
+			return
+		}
+
 		for {
 			select {
 			case <-t.C:
-				currentState := jt.JobState(jobid)
-				if IsInExpectedState(currentState, states...) {
+				if IsInExpectedState(jt.JobState(jobid), states...) {
 					hasStateCh <- true
 					return
 				}
@@ -73,11 +82,11 @@ func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration,
 	}()
 
 	select {
+	case <-hasStateCh:
+		return nil
 	case <-ticker.C:
 		quit <- true
 		return errors.New("timeout while waiting for job state")
-	case <-hasStateCh:
-		return nil
 	}
 	return errors.New("unreachable code in WaitForState()")
 }
