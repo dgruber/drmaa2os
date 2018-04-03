@@ -1,5 +1,7 @@
 # Kubernetes Tracker
 
+Implements the tracker interface for kubernetes.
+
 ## Introduction
 
 ## Functionality
@@ -10,7 +12,7 @@
 | :-----------------:|:---------------:|
 | Suspend            | *Unsupported*   |
 | Resume             | *Unsupported*   |
-| Terminate          | *Unsupported*.  |
+| Terminate          | Delete() - leads to Undetermined state |
 | Hold               | *Unsupported*   |
 | Release            | *Unsupported*   |
 
@@ -25,7 +27,7 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 | Suspended                     | -                     |
 | Running                       | status.Active >= 1    |
 | Queued                        | -                     |
-| Undetermined                  | other                 |
+| Undetermined                  | other  / Terminate()  |
 
 
 ### Job Template Mapping
@@ -47,4 +49,3 @@ Required:
 | DRMAA2 JobInfo.      | Kubernetes                           |
 | :-------------------:|:------------------------------------:|
 | ExitStatus           |  0 or 1 (1 if between 1 and 255 / not supported in Status)  |
-
