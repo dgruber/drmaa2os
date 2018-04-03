@@ -68,7 +68,11 @@ func (kt *KubernetesTracker) JobState(jobid string) drmaa2interface.JobState {
 }
 
 func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
-	return drmaa2interface.JobInfo{}, nil
+	jc, err := getJobsClient()
+	if err != nil {
+		return drmaa2interface.JobInfo{}, err
+	}
+	return JobToJobInfo(jc, jobid)
 }
 
 func (kt *KubernetesTracker) JobControl(jobid, state string) error {

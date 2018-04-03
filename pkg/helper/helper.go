@@ -47,26 +47,21 @@ func IsInExpectedState(state drmaa2interface.JobState, states ...drmaa2interface
 }
 
 func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration, states ...drmaa2interface.JobState) error {
-	if timeout == 0 {
-		timeout = time.Millisecond * 200
+	if IsInExpectedState(jt.JobState(jobid), states...) {
+		return nil
 	}
-
-	ticker := time.NewTicker(timeout)
-	defer ticker.Stop()
+	if timeout == 0 {
+		return errors.New("timeout while waiting for job state")
+	}
 
 	hasStateCh := make(chan bool, 1)
 	defer close(hasStateCh)
 
-	quit := make(chan bool)
+	quit := make(chan bool, 1)
 
 	go func() {
 		t := time.NewTicker(time.Millisecond * 100)
 		defer t.Stop()
-
-		if IsInExpectedState(jt.JobState(jobid), states...) {
-			hasStateCh <- true
-			return
-		}
 
 		for {
 			select {
@@ -80,6 +75,9 @@ func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration,
 			}
 		}
 	}()
+
+	ticker := time.NewTicker(timeout)
+	defer ticker.Stop()
 
 	select {
 	case <-hasStateCh:

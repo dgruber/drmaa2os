@@ -12,20 +12,39 @@ import (
 	"path/filepath"
 )
 
-func CreateClientSet() (*kubernetes.Clientset, error) {
+var (
+	clientSet *kubernetes.Clientset
+)
+
+func init() {
 	kubeconfig, err := kubeConfigFile()
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		return nil, fmt.Errorf("error during k8s client initialization: %s", err.Error())
+		panic(err)
 	}
-	cs, err := kubernetes.NewForConfig(config)
+	clientSet, err = kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("error during k8s client initialization (clientset nil)")
+		panic(err)
 	}
-	return cs, nil
+}
+
+func kubeConfigFile() (string, error) {
+	home := homeDir()
+	if home == "" {
+		return "", errors.New("home dir not found")
+	}
+	kubeconfig := filepath.Join(homeDir(), ".kube", "config")
+	if _, err := os.Stat(kubeconfig); err != nil {
+		return "", errors.New("home does not contain .kube config file")
+	}
+	return kubeconfig, nil
+}
+
+func CreateClientSet() (*kubernetes.Clientset, error) {
+	return clientSet, nil
 }
 
 func getJobByID(jc batchv1.JobInterface, jobid string) (*v1.Job, error) {
@@ -41,23 +60,10 @@ func getJobByID(jc batchv1.JobInterface, jobid string) (*v1.Job, error) {
 	return nil, fmt.Errorf("job with jobid %s not found", jobid)
 }
 
-func kubeConfigFile() (string, error) {
-	home := homeDir()
-	if home == "" {
-		return "", errors.New("home dir not found")
-	}
-	kubeconfig := filepath.Join(homeDir(), ".kube", "config")
-	if _, err := os.Stat(kubeconfig); err != nil {
-		return "", errors.New("home does not contain .kube config file")
-	}
-	return kubeconfig, nil
-}
-
 func homeDir() string {
 	if home := os.Getenv("HOME"); home != "" {
 		return home
 	}
-	// windows
 	return os.Getenv("USERPROFILE")
 }
 

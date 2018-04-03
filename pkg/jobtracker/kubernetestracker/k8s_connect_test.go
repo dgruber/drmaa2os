@@ -27,6 +27,9 @@ var _ = Describe("K8Connect", func() {
 			cs, err := CreateClientSet()
 			Ω(err).Should(BeNil())
 			Ω(cs).ShouldNot(BeNil())
+			cs, err = CreateClientSet()
+			Ω(err).Should(BeNil())
+			Ω(cs).ShouldNot(BeNil())
 		})
 
 		Context("errors of helper functions", func() {

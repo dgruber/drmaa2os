@@ -41,3 +41,10 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 Required:
 * RemoteCommand
 * JobCategory as it specifies the image
+
+### Job Info Mapping
+
+| DRMAA2 JobInfo.      | Kubernetes                           |
+| :-------------------:|:------------------------------------:|
+| ExitStatus           |  0 or 1 (1 if between 1 and 255 / not supported in Status)  |
+

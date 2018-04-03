@@ -111,20 +111,3 @@ func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 		},
 	}, nil
 }
-
-func convertJobStatus2JobState(status *batchv1.JobStatus) drmaa2interface.JobState {
-	if status == nil {
-		return drmaa2interface.Undetermined
-	}
-	// https://kubernetes.io/docs/api-reference/batch/v1/definitions/#_v1_jobstatus
-	if status.Succeeded >= 1 {
-		return drmaa2interface.Done
-	}
-	if status.Failed >= 1 {
-		return drmaa2interface.Failed
-	}
-	if status.Active >= 1 {
-		return drmaa2interface.Running
-	}
-	return drmaa2interface.Undetermined
-}
