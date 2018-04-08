@@ -24,10 +24,10 @@ var _ = Describe("K8Connect", func() {
 		})
 
 		It("should create a k8s client set (requires a kubernetes config)", func() {
-			cs, err := CreateClientSet()
+			cs, err := NewClientSet()
 			Ω(err).Should(BeNil())
 			Ω(cs).ShouldNot(BeNil())
-			cs, err = CreateClientSet()
+			cs, err = NewClientSet()
 			Ω(err).Should(BeNil())
 			Ω(cs).ShouldNot(BeNil())
 		})

@@ -6,13 +6,25 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/helper"
 	k8sapi "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"time"
 )
 
-type KubernetesTracker struct{}
+type KubernetesTracker struct {
+	clientSet *kubernetes.Clientset
+}
 
-func New() (*KubernetesTracker, error) {
-	return &KubernetesTracker{}, nil
+func New(cs *kubernetes.Clientset) (*KubernetesTracker, error) {
+	if cs == nil {
+		var err error
+		cs, err = NewClientSet()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &KubernetesTracker{
+		clientSet: cs,
+	}, nil
 }
 
 func (kt *KubernetesTracker) ListJobCategories() ([]string, error) {
@@ -20,7 +32,7 @@ func (kt *KubernetesTracker) ListJobCategories() ([]string, error) {
 }
 
 func (kt *KubernetesTracker) ListJobs() ([]string, error) {
-	jc, err := getJobsClient()
+	jc, err := getJobsClient(kt.clientSet)
 	if err != nil {
 		return nil, fmt.Errorf("ListJobs: %s", err.Error())
 	}
@@ -40,13 +52,13 @@ func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, err
 	if err != nil {
 		return "", fmt.Errorf("converting job template into a k8s job: %s", err.Error())
 	}
-	jc, err := getJobsClient()
+	jc, err := getJobsClient(kt.clientSet)
 	if err != nil {
-		return "", fmt.Errorf("adding job: %s", err.Error())
+		return "", fmt.Errorf("get client: %s", err.Error())
 	}
 	j, err := jc.Create(job)
 	if err != nil {
-		return "", fmt.Errorf("k8s job client initialization: %s", err.Error())
+		return "", fmt.Errorf("creating new job: %s", err.Error())
 	}
 	return string(j.UID), nil
 }
@@ -60,7 +72,7 @@ func (kt *KubernetesTracker) ListArrayJobs(id string) ([]string, error) {
 }
 
 func (kt *KubernetesTracker) JobState(jobid string) drmaa2interface.JobState {
-	jc, err := getJobsClient()
+	jc, err := getJobsClient(kt.clientSet)
 	if err != nil {
 		return drmaa2interface.Undetermined
 	}
@@ -68,7 +80,7 @@ func (kt *KubernetesTracker) JobState(jobid string) drmaa2interface.JobState {
 }
 
 func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
-	jc, err := getJobsClient()
+	jc, err := getJobsClient(kt.clientSet)
 	if err != nil {
 		return drmaa2interface.JobInfo{}, err
 	}
@@ -76,7 +88,7 @@ func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, err
 }
 
 func (kt *KubernetesTracker) JobControl(jobid, state string) error {
-	jc, err := getJobsClient()
+	jc, err := getJobsClient(kt.clientSet)
 	if err != nil {
 		return fmt.Errorf("JobControl: %s", err.Error())
 	}

@@ -26,7 +26,7 @@ var _ = Describe("KubernetesTracker", func() {
 				Args:          []string{"-c", "sleep 0"},
 			}
 			var err error
-			kt, err = New()
+			kt, err = New(nil)
 			Ω(err).Should(BeNil())
 		})
 
@@ -68,7 +68,7 @@ var _ = Describe("KubernetesTracker", func() {
 
 		BeforeEach(func() {
 			var err error
-			kt, err = New()
+			kt, err = New(nil)
 			Ω(err).Should(BeNil())
 		})
 
@@ -95,7 +95,7 @@ var _ = Describe("KubernetesTracker", func() {
 				JobCategory:   "golang:latest",
 			}
 			var err error
-			kt, err = New()
+			kt, err = New(nil)
 			Ω(err).Should(BeNil())
 		})
 
@@ -212,7 +212,7 @@ var _ = Describe("KubernetesTracker", func() {
 				JobCategory:   "golang:latest",
 			}
 			var err error
-			kt, err = New()
+			kt, err = New(nil)
 			Ω(err).Should(BeNil())
 		})
 

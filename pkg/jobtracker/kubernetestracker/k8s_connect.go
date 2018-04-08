@@ -12,23 +12,20 @@ import (
 	"path/filepath"
 )
 
-var (
-	clientSet *kubernetes.Clientset
-)
-
-func init() {
+func NewClientSet() (*kubernetes.Clientset, error) {
 	kubeconfig, err := kubeConfigFile()
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("reading .kube/config file: %s", err.Error())
 	}
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("reading .kube/config file: %s", err.Error())
 	}
-	clientSet, err = kubernetes.NewForConfig(config)
+	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("reading .kube/config file: %s", err.Error())
 	}
+	return clientSet, nil
 }
 
 func kubeConfigFile() (string, error) {
@@ -41,10 +38,6 @@ func kubeConfigFile() (string, error) {
 		return "", errors.New("home does not contain .kube config file")
 	}
 	return kubeconfig, nil
-}
-
-func CreateClientSet() (*kubernetes.Clientset, error) {
-	return clientSet, nil
 }
 
 func getJobByID(jc batchv1.JobInterface, jobid string) (*v1.Job, error) {
@@ -67,10 +60,6 @@ func homeDir() string {
 	return os.Getenv("USERPROFILE")
 }
 
-func getJobsClient() (batchv1.JobInterface, error) {
-	cs, err := CreateClientSet()
-	if err != nil {
-		return nil, fmt.Errorf("jobs client creation: %s", err.Error())
-	}
+func getJobsClient(cs *kubernetes.Clientset) (batchv1.JobInterface, error) {
 	return cs.BatchV1().Jobs("default"), nil
 }

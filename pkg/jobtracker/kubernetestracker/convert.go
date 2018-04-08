@@ -58,15 +58,15 @@ func newPodSpec(v []k8sv1.Volume, c []k8sv1.Container, ns map[string]string) k8s
 func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 	volumes, err := newVolumes(jt)
 	if err != nil {
-		return nil, fmt.Errorf("error converting job (newVolumes): %s", err)
+		return nil, fmt.Errorf("converting job (newVolumes): %s", err)
 	}
 	containers, err := newContainers(jt)
 	if err != nil {
-		return nil, fmt.Errorf("error converting job (newContainer): %s", err)
+		return nil, fmt.Errorf("converting job (newContainer): %s", err)
 	}
 	nodeSelector, err := newNodeSelector(jt)
 	if err != nil {
-		return nil, fmt.Errorf("error converting job (newNodeSelector): %s", err)
+		return nil, fmt.Errorf("converting job (newNodeSelector): %s", err)
 	}
 
 	// settings for command etc.
@@ -102,7 +102,7 @@ func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 			// More info: https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:         "drmaa2ospodname",
+					Name:         "drmaa2osjob",
 					GenerateName: "drmaa2os",
 					//Labels: options.labels,
 				},

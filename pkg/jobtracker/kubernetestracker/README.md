@@ -39,10 +39,15 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 | CandidateMachines[0] | v1.Container.Hostname           |
 | JobCategory          | v1.Container.Image              |
 | WorkingDir           | v1.Container.WorkingDir         |
+| JobName              | Note: If set and a job with the same name exists in history submission will fail. metadata: Name |
 
 Required:
 * RemoteCommand
 * JobCategory as it specifies the image
+
+Other settings:
+* parallelism: 1
+* completions: 1
 
 ### Job Info Mapping
 

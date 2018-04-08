@@ -20,7 +20,7 @@ func k8sIsAvailable() bool {
 	if k8sChecked {
 		return k8savailable
 	}
-	_, err := kubernetestracker.CreateClientSet()
+	_, err := kubernetestracker.NewClientSet()
 	if err != nil {
 		k8sChecked = true
 		k8savailable = false
