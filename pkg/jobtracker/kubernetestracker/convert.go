@@ -95,8 +95,9 @@ func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 			Selector: &unversioned.LabelSelector{
 				MatchLabels: options.labels,
 			}, */
-			Parallelism: &one,
-			Completions: &one,
+			Parallelism:  &one,
+			Completions:  &one,
+			BackoffLimit: &one,
 
 			// Describes the pod that will be created when executing a job.
 			// More info: https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/

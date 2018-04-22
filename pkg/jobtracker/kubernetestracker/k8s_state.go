@@ -4,6 +4,7 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"k8s.io/api/batch/v1"
 	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
+	"time"
 )
 
 func convertJobStatus2JobState(status *v1.JobStatus) drmaa2interface.JobState {
@@ -20,7 +21,10 @@ func convertJobStatus2JobState(status *v1.JobStatus) drmaa2interface.JobState {
 	if status.Active >= 1 {
 		return drmaa2interface.Running
 	}
-	return drmaa2interface.Undetermined
+	if status.CompletionTime != nil && status.CompletionTime.Time.Before(time.Now()) {
+		return drmaa2interface.Failed
+	}
+	return drmaa2interface.Running
 }
 
 func DRMAA2State(jc batchv1.JobInterface, jobid string) drmaa2interface.JobState {
