@@ -8,14 +8,17 @@ import (
 	"unsafe"
 )
 
-func encoderOfStruct(cfg *frozenConfig, prefix string, typ reflect.Type) ValEncoder {
+func encoderOfStruct(cfg *frozenConfig, typ reflect.Type) (ValEncoder, error) {
 	type bindingTo struct {
 		binding *Binding
 		toName  string
 		ignored bool
 	}
 	orderedBindings := []*bindingTo{}
-	structDescriptor := describeStruct(cfg, prefix, typ)
+	structDescriptor, err := describeStruct(cfg, typ)
+	if err != nil {
+		return nil, err
+	}
 	for _, binding := range structDescriptor.Fields {
 		for _, toName := range binding.ToNames {
 			new := &bindingTo{
@@ -32,7 +35,7 @@ func encoderOfStruct(cfg *frozenConfig, prefix string, typ reflect.Type) ValEnco
 		}
 	}
 	if len(orderedBindings) == 0 {
-		return &emptyStructEncoder{}
+		return &emptyStructEncoder{}, nil
 	}
 	finalOrderedFields := []structFieldTo{}
 	for _, bindingTo := range orderedBindings {
@@ -43,8 +46,7 @@ func encoderOfStruct(cfg *frozenConfig, prefix string, typ reflect.Type) ValEnco
 			})
 		}
 	}
-	return &structEncoder{typ, structDescriptor.onePtrEmbedded,
-		structDescriptor.onePtrOptimization, finalOrderedFields}
+	return &structEncoder{structDescriptor.onePtrEmbedded, structDescriptor.onePtrOptimization, finalOrderedFields}, nil
 }
 
 func resolveConflictBinding(cfg *frozenConfig, old, new *Binding) (ignoreOld, ignoreNew bool) {
@@ -76,9 +78,12 @@ func resolveConflictBinding(cfg *frozenConfig, old, new *Binding) (ignoreOld, ig
 	}
 }
 
-func decoderOfStruct(cfg *frozenConfig, prefix string, typ reflect.Type) ValDecoder {
+func decoderOfStruct(cfg *frozenConfig, typ reflect.Type) (ValDecoder, error) {
 	bindings := map[string]*Binding{}
-	structDescriptor := describeStruct(cfg, prefix, typ)
+	structDescriptor, err := describeStruct(cfg, typ)
+	if err != nil {
+		return nil, err
+	}
 	for _, binding := range structDescriptor.Fields {
 		for _, fromName := range binding.FromNames {
 			old := bindings[fromName]
@@ -126,7 +131,6 @@ func (encoder *structFieldEncoder) IsEmpty(ptr unsafe.Pointer) bool {
 }
 
 type structEncoder struct {
-	typ                reflect.Type
 	onePtrEmbedded     bool
 	onePtrOptimization bool
 	fields             []structFieldTo
@@ -152,9 +156,6 @@ func (encoder *structEncoder) Encode(ptr unsafe.Pointer, stream *Stream) {
 		isNotFirst = true
 	}
 	stream.WriteObjectEnd()
-	if stream.Error != nil && stream.Error != io.EOF {
-		stream.Error = fmt.Errorf("%v.%s", encoder.typ, stream.Error.Error())
-	}
 }
 
 func (encoder *structEncoder) EncodeInterface(val interface{}, stream *Stream) {

@@ -7,17 +7,23 @@ import (
 	"unsafe"
 )
 
-func decoderOfSlice(cfg *frozenConfig, prefix string, typ reflect.Type) ValDecoder {
-	decoder := decoderOfType(cfg, prefix+"[slice]->", typ.Elem())
-	return &sliceDecoder{typ, typ.Elem(), decoder}
+func decoderOfSlice(cfg *frozenConfig, typ reflect.Type) (ValDecoder, error) {
+	decoder, err := decoderOfType(cfg, typ.Elem())
+	if err != nil {
+		return nil, err
+	}
+	return &sliceDecoder{typ, typ.Elem(), decoder}, nil
 }
 
-func encoderOfSlice(cfg *frozenConfig, prefix string, typ reflect.Type) ValEncoder {
-	encoder := encoderOfType(cfg, prefix+"[slice]->", typ.Elem())
-	if typ.Elem().Kind() == reflect.Map {
-		encoder = &OptionalEncoder{encoder}
+func encoderOfSlice(cfg *frozenConfig, typ reflect.Type) (ValEncoder, error) {
+	encoder, err := encoderOfType(cfg, typ.Elem())
+	if err != nil {
+		return nil, err
 	}
-	return &sliceEncoder{typ, typ.Elem(), encoder}
+	if typ.Elem().Kind() == reflect.Map {
+		encoder = &optionalEncoder{encoder}
+	}
+	return &sliceEncoder{typ, typ.Elem(), encoder}, nil
 }
 
 type sliceEncoder struct {
@@ -118,14 +124,15 @@ func growOne(slice *sliceHeader, sliceType reflect.Type, elementType reflect.Typ
 			}
 		}
 	}
-	newVal := reflect.MakeSlice(sliceType, newLen, newCap).Interface()
-	newValPtr := extractInterface(newVal).word
-	dst := (*sliceHeader)(newValPtr).Data
+	newVal := reflect.MakeSlice(sliceType, newLen, newCap)
+	dst := unsafe.Pointer(newVal.Pointer())
 	// copy old array into new array
-	originalBytesCount := slice.Len * int(elementType.Size())
-	srcSliceHeader := (unsafe.Pointer)(&sliceHeader{slice.Data, originalBytesCount, originalBytesCount})
-	dstSliceHeader := (unsafe.Pointer)(&sliceHeader{dst, originalBytesCount, originalBytesCount})
-	copy(*(*[]byte)(dstSliceHeader), *(*[]byte)(srcSliceHeader))
+	originalBytesCount := uintptr(slice.Len) * elementType.Size()
+	srcPtr := (*[1 << 30]byte)(slice.Data)
+	dstPtr := (*[1 << 30]byte)(dst)
+	for i := uintptr(0); i < originalBytesCount; i++ {
+		dstPtr[i] = srcPtr[i]
+	}
 	slice.Data = dst
 	slice.Len = newLen
 	slice.Cap = newCap
@@ -135,9 +142,8 @@ func reuseSlice(slice *sliceHeader, sliceType reflect.Type, expectedCap int) {
 	if expectedCap <= slice.Cap {
 		return
 	}
-	newVal := reflect.MakeSlice(sliceType, 0, expectedCap).Interface()
-	newValPtr := extractInterface(newVal).word
-	dst := (*sliceHeader)(newValPtr).Data
+	newVal := reflect.MakeSlice(sliceType, 0, expectedCap)
+	dst := unsafe.Pointer(newVal.Pointer())
 	slice.Data = dst
 	slice.Cap = expectedCap
 }

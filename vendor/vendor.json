@@ -462,15 +462,15 @@
 			"checksumSHA1": "g/V4qrXjUGG9B+e3hB+4NAYJ5Gs=",
 			"origin": "github.com/dgruber/drmaa2os/examples/frontend/vendor/github.com/gorilla/context",
 			"path": "github.com/gorilla/context",
-			"revision": "e0afaca2f1154d6d2bc01970ed7cc6f1d9add59a",
-			"revisionTime": "2018-04-22T18:18:51Z"
+			"revision": "d85e4ff5e51c923483717f8a07e960453f64e02f",
+			"revisionTime": "2018-07-22T15:40:18Z"
 		},
 		{
 			"checksumSHA1": "urMd7A9QPAJYY0GZJL9qBhlUmD8=",
 			"origin": "github.com/dgruber/drmaa2os/examples/frontend/vendor/github.com/gorilla/mux",
 			"path": "github.com/gorilla/mux",
-			"revision": "e0afaca2f1154d6d2bc01970ed7cc6f1d9add59a",
-			"revisionTime": "2018-04-22T18:18:51Z"
+			"revision": "d85e4ff5e51c923483717f8a07e960453f64e02f",
+			"revisionTime": "2018-07-22T15:40:18Z"
 		},
 		{
 			"checksumSHA1": "oiAXz4eNo8+dtIxI5Rw9hZ0L4h0=",

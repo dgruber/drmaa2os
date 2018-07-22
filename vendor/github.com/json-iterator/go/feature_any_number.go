@@ -1,9 +1,6 @@
 package jsoniter
 
-import (
-	"unsafe"
-	"io"
-)
+import "unsafe"
 
 type numberLazyAny struct {
 	baseAny
@@ -32,9 +29,7 @@ func (any *numberLazyAny) ToInt() int {
 	iter := any.cfg.BorrowIterator(any.buf)
 	defer any.cfg.ReturnIterator(iter)
 	val := iter.ReadInt()
-	if iter.Error != nil && iter.Error != io.EOF {
-		any.err = iter.Error
-	}
+	any.err = iter.Error
 	return val
 }
 
@@ -42,9 +37,7 @@ func (any *numberLazyAny) ToInt32() int32 {
 	iter := any.cfg.BorrowIterator(any.buf)
 	defer any.cfg.ReturnIterator(iter)
 	val := iter.ReadInt32()
-	if iter.Error != nil && iter.Error != io.EOF {
-		any.err = iter.Error
-	}
+	any.err = iter.Error
 	return val
 }
 
@@ -52,9 +45,7 @@ func (any *numberLazyAny) ToInt64() int64 {
 	iter := any.cfg.BorrowIterator(any.buf)
 	defer any.cfg.ReturnIterator(iter)
 	val := iter.ReadInt64()
-	if iter.Error != nil && iter.Error != io.EOF {
-		any.err = iter.Error
-	}
+	any.err = iter.Error
 	return val
 }
 
@@ -62,9 +53,7 @@ func (any *numberLazyAny) ToUint() uint {
 	iter := any.cfg.BorrowIterator(any.buf)
 	defer any.cfg.ReturnIterator(iter)
 	val := iter.ReadUint()
-	if iter.Error != nil && iter.Error != io.EOF {
-		any.err = iter.Error
-	}
+	any.err = iter.Error
 	return val
 }
 
@@ -72,9 +61,7 @@ func (any *numberLazyAny) ToUint32() uint32 {
 	iter := any.cfg.BorrowIterator(any.buf)
 	defer any.cfg.ReturnIterator(iter)
 	val := iter.ReadUint32()
-	if iter.Error != nil && iter.Error != io.EOF {
-		any.err = iter.Error
-	}
+	any.err = iter.Error
 	return val
 }
 
@@ -82,9 +69,7 @@ func (any *numberLazyAny) ToUint64() uint64 {
 	iter := any.cfg.BorrowIterator(any.buf)
 	defer any.cfg.ReturnIterator(iter)
 	val := iter.ReadUint64()
-	if iter.Error != nil && iter.Error != io.EOF {
-		any.err = iter.Error
-	}
+	any.err = iter.Error
 	return val
 }
 
@@ -92,9 +77,7 @@ func (any *numberLazyAny) ToFloat32() float32 {
 	iter := any.cfg.BorrowIterator(any.buf)
 	defer any.cfg.ReturnIterator(iter)
 	val := iter.ReadFloat32()
-	if iter.Error != nil && iter.Error != io.EOF {
-		any.err = iter.Error
-	}
+	any.err = iter.Error
 	return val
 }
 
@@ -102,9 +85,7 @@ func (any *numberLazyAny) ToFloat64() float64 {
 	iter := any.cfg.BorrowIterator(any.buf)
 	defer any.cfg.ReturnIterator(iter)
 	val := iter.ReadFloat64()
-	if iter.Error != nil && iter.Error != io.EOF {
-		any.err = iter.Error
-	}
+	any.err = iter.Error
 	return val
 }
 

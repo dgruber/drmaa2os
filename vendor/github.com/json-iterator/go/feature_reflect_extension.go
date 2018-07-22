@@ -161,26 +161,17 @@ func RegisterExtension(extension Extension) {
 	extensions = append(extensions, extension)
 }
 
-func getTypeDecoderFromExtension(cfg *frozenConfig, typ reflect.Type) ValDecoder {
-	decoder := _getTypeDecoderFromExtension(cfg, typ)
+func getTypeDecoderFromExtension(typ reflect.Type) ValDecoder {
+	decoder := _getTypeDecoderFromExtension(typ)
 	if decoder != nil {
 		for _, extension := range extensions {
-			decoder = extension.DecorateDecoder(typ, decoder)
-		}
-		for _, extension := range cfg.extensions {
 			decoder = extension.DecorateDecoder(typ, decoder)
 		}
 	}
 	return decoder
 }
-func _getTypeDecoderFromExtension(cfg *frozenConfig, typ reflect.Type) ValDecoder {
+func _getTypeDecoderFromExtension(typ reflect.Type) ValDecoder {
 	for _, extension := range extensions {
-		decoder := extension.CreateDecoder(typ)
-		if decoder != nil {
-			return decoder
-		}
-	}
-	for _, extension := range cfg.extensions {
 		decoder := extension.CreateDecoder(typ)
 		if decoder != nil {
 			return decoder
@@ -194,33 +185,24 @@ func _getTypeDecoderFromExtension(cfg *frozenConfig, typ reflect.Type) ValDecode
 	if typ.Kind() == reflect.Ptr {
 		decoder := typeDecoders[typ.Elem().String()]
 		if decoder != nil {
-			return &OptionalDecoder{typ.Elem(), decoder}
+			return &optionalDecoder{typ.Elem(), decoder}
 		}
 	}
 	return nil
 }
 
-func getTypeEncoderFromExtension(cfg *frozenConfig, typ reflect.Type) ValEncoder {
-	encoder := _getTypeEncoderFromExtension(cfg, typ)
+func getTypeEncoderFromExtension(typ reflect.Type) ValEncoder {
+	encoder := _getTypeEncoderFromExtension(typ)
 	if encoder != nil {
 		for _, extension := range extensions {
-			encoder = extension.DecorateEncoder(typ, encoder)
-		}
-		for _, extension := range cfg.extensions {
 			encoder = extension.DecorateEncoder(typ, encoder)
 		}
 	}
 	return encoder
 }
 
-func _getTypeEncoderFromExtension(cfg *frozenConfig, typ reflect.Type) ValEncoder {
+func _getTypeEncoderFromExtension(typ reflect.Type) ValEncoder {
 	for _, extension := range extensions {
-		encoder := extension.CreateEncoder(typ)
-		if encoder != nil {
-			return encoder
-		}
-	}
-	for _, extension := range cfg.extensions {
 		encoder := extension.CreateEncoder(typ)
 		if encoder != nil {
 			return encoder
@@ -234,28 +216,28 @@ func _getTypeEncoderFromExtension(cfg *frozenConfig, typ reflect.Type) ValEncode
 	if typ.Kind() == reflect.Ptr {
 		encoder := typeEncoders[typ.Elem().String()]
 		if encoder != nil {
-			return &OptionalEncoder{encoder}
+			return &optionalEncoder{encoder}
 		}
 	}
 	return nil
 }
 
-func describeStruct(cfg *frozenConfig, prefix string, typ reflect.Type) *StructDescriptor {
+func describeStruct(cfg *frozenConfig, typ reflect.Type) (*StructDescriptor, error) {
 	embeddedBindings := []*Binding{}
 	bindings := []*Binding{}
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
-		tag, hastag := field.Tag.Lookup(cfg.getTagKey())
-		if cfg.onlyTaggedField && !hastag {
-			continue
-		}
+		tag := field.Tag.Get(cfg.getTagKey())
 		tagParts := strings.Split(tag, ",")
 		if tag == "-" {
 			continue
 		}
 		if field.Anonymous && (tag == "" || tagParts[0] == "") {
 			if field.Type.Kind() == reflect.Struct {
-				structDescriptor := describeStruct(cfg, prefix, field.Type)
+				structDescriptor, err := describeStruct(cfg, field.Type)
+				if err != nil {
+					return nil, err
+				}
 				for _, binding := range structDescriptor.Fields {
 					binding.levels = append([]int{i}, binding.levels...)
 					omitempty := binding.Encoder.(*structFieldEncoder).omitempty
@@ -265,13 +247,16 @@ func describeStruct(cfg *frozenConfig, prefix string, typ reflect.Type) *StructD
 				}
 				continue
 			} else if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
-				structDescriptor := describeStruct(cfg, prefix, field.Type.Elem())
+				structDescriptor, err := describeStruct(cfg, field.Type.Elem())
+				if err != nil {
+					return nil, err
+				}
 				for _, binding := range structDescriptor.Fields {
 					binding.levels = append([]int{i}, binding.levels...)
 					omitempty := binding.Encoder.(*structFieldEncoder).omitempty
-					binding.Encoder = &dereferenceEncoder{binding.Encoder}
+					binding.Encoder = &optionalEncoder{binding.Encoder}
 					binding.Encoder = &structFieldEncoder{&field, binding.Encoder, omitempty}
-					binding.Decoder = &dereferenceDecoder{field.Type.Elem(), binding.Decoder}
+					binding.Decoder = &deferenceDecoder{field.Type.Elem(), binding.Decoder}
 					binding.Decoder = &structFieldDecoder{&field, binding.Decoder}
 					embeddedBindings = append(embeddedBindings, binding)
 				}
@@ -282,15 +267,22 @@ func describeStruct(cfg *frozenConfig, prefix string, typ reflect.Type) *StructD
 		fieldCacheKey := fmt.Sprintf("%s/%s", typ.String(), field.Name)
 		decoder := fieldDecoders[fieldCacheKey]
 		if decoder == nil {
-			decoder = decoderOfType(cfg, prefix+typ.String()+"."+field.Name+"->", field.Type)
+			var err error
+			decoder, err = decoderOfType(cfg, field.Type)
+			if err != nil {
+				return nil, err
+			}
 		}
 		encoder := fieldEncoders[fieldCacheKey]
 		if encoder == nil {
-			encoder = encoderOfType(cfg, prefix+typ.String()+"."+field.Name+"->", field.Type)
-			// map is stored as pointer in the struct,
-			// and treat nil or empty map as empty field
-			if encoder != nil && field.Type.Kind() == reflect.Map {
-				encoder = &optionalMapEncoder{encoder}
+			var err error
+			encoder, err = encoderOfType(cfg, field.Type)
+			if err != nil {
+				return nil, err
+			}
+			// map is stored as pointer in the struct
+			if field.Type.Kind() == reflect.Map {
+				encoder = &optionalEncoder{encoder}
 			}
 		}
 		binding := &Binding{
@@ -303,7 +295,7 @@ func describeStruct(cfg *frozenConfig, prefix string, typ reflect.Type) *StructD
 		binding.levels = []int{i}
 		bindings = append(bindings, binding)
 	}
-	return createStructDescriptor(cfg, typ, bindings, embeddedBindings)
+	return createStructDescriptor(cfg, typ, bindings, embeddedBindings), nil
 }
 func createStructDescriptor(cfg *frozenConfig, typ reflect.Type, bindings []*Binding, embeddedBindings []*Binding) *StructDescriptor {
 	onePtrEmbedded := false
@@ -329,9 +321,6 @@ func createStructDescriptor(cfg *frozenConfig, typ reflect.Type, bindings []*Bin
 		Fields:             bindings,
 	}
 	for _, extension := range extensions {
-		extension.UpdateStructDescriptor(structDescriptor)
-	}
-	for _, extension := range cfg.extensions {
 		extension.UpdateStructDescriptor(structDescriptor)
 	}
 	processTags(structDescriptor, cfg)
