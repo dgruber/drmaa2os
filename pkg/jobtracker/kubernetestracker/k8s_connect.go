@@ -12,10 +12,12 @@ import (
 	"path/filepath"
 )
 
+// NewClientSet create a new clientset by parsing the .kube/config file
+// in the home directory.
 func NewClientSet() (*kubernetes.Clientset, error) {
 	kubeconfig, err := kubeConfigFile()
 	if err != nil {
-		return nil, fmt.Errorf("reading .kube/config file: %s", err.Error())
+		return nil, fmt.Errorf("opening .kube/config file: %s", err.Error())
 	}
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
@@ -23,7 +25,7 @@ func NewClientSet() (*kubernetes.Clientset, error) {
 	}
 	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("reading .kube/config file: %s", err.Error())
+		return nil, fmt.Errorf("creating ClientSet from .kube/config file: %s", err.Error())
 	}
 	return clientSet, nil
 }
@@ -33,7 +35,7 @@ func kubeConfigFile() (string, error) {
 	if home == "" {
 		return "", errors.New("home dir not found")
 	}
-	kubeconfig := filepath.Join(homeDir(), ".kube", "config")
+	kubeconfig := filepath.Join(home, ".kube", "config")
 	if _, err := os.Stat(kubeconfig); err != nil {
 		return "", errors.New("home does not contain .kube config file")
 	}

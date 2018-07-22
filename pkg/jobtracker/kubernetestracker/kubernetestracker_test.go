@@ -9,6 +9,7 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 
+	"os"
 	"time"
 )
 
@@ -223,6 +224,19 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(jobid).ShouldNot(Equal(""))
 
 			kt.Wait(jobid, 0, drmaa2interface.Failed, drmaa2interface.Done, drmaa2interface.Undetermined)
+		})
+
+	})
+
+	Context("Standard error cases", func() {
+
+		WhenK8sIsAvailableIt("should fail to create a new tracker if k8s clientset can't be build", func() {
+			home := os.Getenv("HOME")
+			defer os.Setenv("HOME", home)
+			os.Setenv("HOME", os.TempDir())
+			track, err := New(nil)
+			Ω(err).ShouldNot(BeNil())
+			Ω(track).Should(BeNil())
 		})
 
 	})

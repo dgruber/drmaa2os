@@ -24,7 +24,7 @@ func convertJobStatus2JobState(status *v1.JobStatus) drmaa2interface.JobState {
 	if status.CompletionTime != nil && status.CompletionTime.Time.Before(time.Now()) {
 		return drmaa2interface.Failed
 	}
-	return drmaa2interface.Running
+	return drmaa2interface.Undetermined
 }
 
 func DRMAA2State(jc batchv1.JobInterface, jobid string) drmaa2interface.JobState {

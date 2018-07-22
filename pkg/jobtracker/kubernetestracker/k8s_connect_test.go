@@ -9,6 +9,25 @@ import (
 
 var _ = Describe("K8Connect", func() {
 
+	Context("Clientset creation", func() {
+
+		It("should be possible to create a new Clientset", func() {
+			cs, err := NewClientSet()
+			Ω(err).Should(BeNil())
+			Ω(cs).ShouldNot(BeNil())
+		})
+
+		It("should create an error when .kube/config file is missing", func() {
+			home := os.Getenv("HOME")
+			os.Setenv("HOME", os.TempDir())
+			defer os.Setenv("HOME", home)
+			cs, err := NewClientSet()
+			Ω(err).ShouldNot(BeNil())
+			Ω(cs).Should(BeNil())
+		})
+
+	})
+
 	Context("Helper functions", func() {
 
 		It("Home directory should be returned and not empty", func() {

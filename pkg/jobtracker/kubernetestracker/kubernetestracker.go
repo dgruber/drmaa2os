@@ -1,7 +1,6 @@
 package kubernetestracker
 
 import (
-	"errors"
 	"fmt"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/helper"
@@ -14,6 +13,8 @@ type KubernetesTracker struct {
 	clientSet *kubernetes.Clientset
 }
 
+// New creates a new KubernetesTracker either by using a given kubernetes Clientset
+// or by allocating a new one (if the parameter is zero).
 func New(cs *kubernetes.Clientset) (*KubernetesTracker, error) {
 	if cs == nil {
 		var err error
@@ -87,32 +88,22 @@ func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, err
 	return JobToJobInfo(jc, jobid)
 }
 
+// JobControl changes the state of the given job by execution the given action
+// (suspend, resume, hold, release, terminate).
 func (kt *KubernetesTracker) JobControl(jobid, state string) error {
 	jc, err := getJobsClient(kt.clientSet)
 	if err != nil {
-		return fmt.Errorf("JobControl: %s", err.Error())
+		return fmt.Errorf("JobControl can't get k8s client: %s", err.Error())
 	}
-
 	job, err := getJobByID(jc, jobid)
 	if err != nil {
-		return err
+		return fmt.Errorf("JobControl can't find job: %s", err.Error())
 	}
-
-	switch state {
-	case "suspend":
-		return errors.New("Unsupported Operation")
-	case "resume":
-		return errors.New("Unsupported Operation")
-	case "hold":
-		return errors.New("Unsupported Operation")
-	case "release":
-		return errors.New("Unsupported Operation")
-	case "terminate":
-		return jc.Delete(job.GetName(), &k8sapi.DeleteOptions{})
-	}
-	return errors.New("undefined state")
+	return jobStateChange(jc, job, state)
 }
 
+// Wait returns when the job is in one of the given states or when a timeout
+// occurs (errors then).
 func (kt *KubernetesTracker) Wait(jobid string, timeout time.Duration, states ...drmaa2interface.JobState) error {
 	return helper.WaitForState(kt, jobid, timeout, states...)
 }

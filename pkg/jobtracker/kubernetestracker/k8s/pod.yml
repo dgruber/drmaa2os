@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+    name: test-jo3b
+spec:
+    completions: 1
+    parallelism: 1 
+    template:
+        spec:
+            containers:
+            - name: my-job
+              image: golang:latest
+              args:
+              - /bin/sleep
+            restartPolicy: OnFailure
+
