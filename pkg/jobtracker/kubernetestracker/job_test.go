@@ -39,6 +39,20 @@ var _ = Describe("Job", func() {
 			Ω(err).ShouldNot(BeNil())
 		})
 
+		It("should error when job is not found", func() {
+			ji, jc, err := getJobInterfaceAndJob(nil, "x")
+			Ω(err).ShouldNot(BeNil())
+			Ω(ji).Should(BeNil())
+			Ω(jc).Should(BeNil())
+		})
+
+	})
+
+	Context("Standard error cases", func() {
+		It("should error when given job is nil", func() {
+			err := deleteJob(nil, nil)
+			Ω(err).ShouldNot(BeNil())
+		})
 	})
 
 })

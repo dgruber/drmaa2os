@@ -91,13 +91,9 @@ func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, err
 // JobControl changes the state of the given job by execution the given action
 // (suspend, resume, hold, release, terminate).
 func (kt *KubernetesTracker) JobControl(jobid, state string) error {
-	jc, err := getJobsClient(kt.clientSet)
+	jc, job, err := getJobInterfaceAndJob(kt.clientSet, jobid)
 	if err != nil {
-		return fmt.Errorf("JobControl can't get k8s client: %s", err.Error())
-	}
-	job, err := getJobByID(jc, jobid)
-	if err != nil {
-		return fmt.Errorf("JobControl can't find job: %s", err.Error())
+		return fmt.Errorf("JobControl: %s", err.Error())
 	}
 	return jobStateChange(jc, job, state)
 }
@@ -108,6 +104,11 @@ func (kt *KubernetesTracker) Wait(jobid string, timeout time.Duration, states ..
 	return helper.WaitForState(kt, jobid, timeout, states...)
 }
 
+// DeleteJob removes a job from kubernetes.
 func (kt *KubernetesTracker) DeleteJob(jobid string) error {
-	return nil
+	jc, job, err := getJobInterfaceAndJob(kt.clientSet, jobid)
+	if err != nil {
+		return fmt.Errorf("DeleteJob: %s", err.Error())
+	}
+	return deleteJob(jc, job)
 }

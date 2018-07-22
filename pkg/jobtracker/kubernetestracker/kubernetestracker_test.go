@@ -37,6 +37,15 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(jobid).ShouldNot(Equal(""))
 		})
 
+		WhenK8sIsAvailableIt("should be possible to DeleteJob()", func() {
+			jobid, err := kt.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			err = kt.DeleteJob(jobid)
+			Ω(err).Should(BeNil())
+		})
+
 		WhenK8sIsAvailableIt("should be possible to AddArrayJob()", func() {
 			jobid, err := kt.AddArrayJob(jt, 1, 2, 1, 0)
 			Ω(err).Should(BeNil())
@@ -75,11 +84,6 @@ var _ = Describe("KubernetesTracker", func() {
 
 		It("Unsupported ListJobCategories()", func() {
 			_, err := kt.ListJobCategories()
-			Ω(err).Should(BeNil())
-		})
-
-		It("Unsupported DeleteJob()", func() {
-			err := kt.DeleteJob("jobid")
 			Ω(err).Should(BeNil())
 		})
 
