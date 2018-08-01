@@ -34,7 +34,7 @@ func (jt *JobTracker) ListJobs() ([]string, error) {
 }
 
 func (jt *JobTracker) ListJobCategories() ([]string, error) {
-	return nil, nil
+	return []string{"image", "otherimage"}, nil
 }
 
 func (jt *JobTracker) AddJob(t drmaa2interface.JobTemplate) (string, error) {

@@ -38,3 +38,11 @@ func WhenK8sIsAvailableIt(description string, f interface{}) {
 		PIt(description, f)
 	}
 }
+
+func WhenK8sIsAvailableFIt(description string, f interface{}) {
+	if k8sIsAvailable() {
+		FIt(description, f)
+	} else {
+		PIt(description, f)
+	}
+}

@@ -6,6 +6,12 @@ Implements the tracker interface for kubernetes.
 
 ## Functionality
 
+## Notes
+
+At this point in time Kubernetes batch jobs don't play very well with sidecars.
+So when using things like _istio_ you might run in state issues (sidecar container
+is [still running](https://github.com/istio/istio/issues/6324) after batch job finished).
+
 ### Job Control Mapping
 
 | DRMAA2 Job Control | Kubernetes      |

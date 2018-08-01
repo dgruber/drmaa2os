@@ -41,7 +41,7 @@ func (sm *SessionManager) newJobTracker(name string) (jobtracker.JobTracker, err
 	case DefaultSession:
 		return simpletracker.New(name), nil
 	case DockerSession:
-		return dockertracker.New()
+		return dockertracker.New(name)
 	case CloudFoundrySession:
 		return cftracker.New(sm.cf.addr, sm.cf.username, sm.cf.password, name)
 	case KubernetesSession:

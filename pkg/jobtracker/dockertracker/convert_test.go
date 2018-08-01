@@ -6,7 +6,10 @@ import (
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+
+	"time"
 )
 
 var _ = Describe("Convert", func() {
@@ -25,6 +28,7 @@ var _ = Describe("Convert", func() {
 			ps = newPortSet("80:6444/tcp,8080:6445/tcp")
 			Ω(ps).ShouldNot(BeNil())
 			Ω(len(ps)).Should(BeNumerically("==", 2))
+
 		})
 
 		It("should return a new PortMap", func() {
@@ -47,6 +51,25 @@ var _ = Describe("Convert", func() {
 			ps := newPortSet("808-0/tcp,13+01/tcp")
 			Ω(ps).Should(BeNil())
 		})
+
+		It("should return true when job state is in any given state", func() {
+			match := isInExpectedState(drmaa2interface.Done, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(match).Should(BeTrue())
+			match = isInExpectedState(drmaa2interface.Done, drmaa2interface.Done)
+			Ω(match).Should(BeTrue())
+			match = isInExpectedState(drmaa2interface.Done, drmaa2interface.Done, drmaa2interface.Undetermined)
+			Ω(match).Should(BeTrue())
+		})
+
+		It("should return false when job state is not in any given state", func() {
+			match := isInExpectedState(drmaa2interface.Done, drmaa2interface.Failed, drmaa2interface.Undetermined)
+			Ω(match).Should(BeFalse())
+			match = isInExpectedState(drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(match).Should(BeFalse())
+			match = isInExpectedState(drmaa2interface.Undetermined, drmaa2interface.Done, drmaa2interface.Failed)
+			Ω(match).Should(BeFalse())
+		})
+
 	})
 
 	Context("JobTemplate missing fields checks", func() {
@@ -88,7 +111,7 @@ var _ = Describe("Convert", func() {
 		}
 
 		It("should convert the JobTemplate settings", func() {
-			cc, err := jobTemplateToContainerConfig(jt)
+			cc, err := jobTemplateToContainerConfig("session", jt)
 			Ω(err).Should(BeNil())
 			Ω(cc).ShouldNot(BeNil())
 			Ω(cc.Cmd[0]).Should(Equal("/bin/sleep"))
@@ -96,7 +119,9 @@ var _ = Describe("Convert", func() {
 			Ω(cc.Image).Should(Equal("my/image"))
 			Ω(cc.WorkingDir).Should(Equal("/working/dir"))
 			Ω(cc.Hostname).Should(Equal("hostname"))
-
+			jsLabel, exists := cc.Labels["drmaa2_jobsession"]
+			Ω(exists).Should(BeTrue())
+			Ω(jsLabel).Should(Equal("session"))
 			hc, err := jobTemplateToHostConfig(jt)
 			Ω(err).Should(BeNil())
 			Ω(hc.Binds).ShouldNot(BeNil())
@@ -108,7 +133,7 @@ var _ = Describe("Convert", func() {
 				"env1": "value1",
 				"env2": "value2",
 			}
-			cc, err := jobTemplateToContainerConfig(jt)
+			cc, err := jobTemplateToContainerConfig("jobsession", jt)
 			Ω(err).Should(BeNil())
 			Ω(cc).ShouldNot(BeNil())
 			Ω(cc.Env).ShouldNot(BeNil())
@@ -119,7 +144,7 @@ var _ = Describe("Convert", func() {
 
 		It("should set the user extension of JobTemplate", func() {
 			jt.ExtensionList = map[string]string{"user": "testuser"}
-			cc, err := jobTemplateToContainerConfig(jt)
+			cc, err := jobTemplateToContainerConfig("", jt)
 			Ω(err).Should(BeNil())
 			Ω(cc).ShouldNot(BeNil())
 			Ω(cc.User).Should(Equal("testuser"))
@@ -128,7 +153,7 @@ var _ = Describe("Convert", func() {
 
 		It("should set the exposed ports when set in JobTemplate", func() {
 			jt.ExtensionList = map[string]string{"exposedPorts": "80:6445/tcp"}
-			cc, err := jobTemplateToContainerConfig(jt)
+			cc, err := jobTemplateToContainerConfig("", jt)
 			Ω(err).Should(BeNil())
 			Ω(cc).ShouldNot(BeNil())
 			Ω(cc.ExposedPorts).ShouldNot(BeNil())
@@ -221,6 +246,42 @@ var _ = Describe("Convert", func() {
 			Ω(containerToDRMAA2State(paused)).Should(Equal(drmaa2interface.Suspended))
 			Ω(containerToDRMAA2State(restarting)).Should(Equal(drmaa2interface.Queued))
 			Ω(containerToDRMAA2State(running)).Should(Equal(drmaa2interface.Running))
+		})
+	})
+
+	Context("Container to JobInfo", func() {
+
+		It("should convert basic information", func() {
+			c := types.ContainerJSON{}
+			c.ContainerJSONBase = &types.ContainerJSONBase{}
+			c.ID = "jobid"
+			c.Config = &container.Config{
+				Hostname: "hostname",
+			}
+
+			finished, err := time.Parse(time.RFC3339Nano, "2015-01-06T15:47:32.080254511Z")
+			Ω(err).Should(BeNil())
+			started, err := time.Parse(time.RFC3339Nano, "2015-01-06T15:47:32.072697474Z")
+			Ω(err).Should(BeNil())
+			created, err := time.Parse(time.RFC3339Nano, "2015-01-06T15:47:31.485331387Z")
+			Ω(err).Should(BeNil())
+
+			c.State = &types.ContainerState{
+				Status:     "exited",
+				ExitCode:   13,
+				FinishedAt: finished.Format(time.RFC3339Nano),
+				StartedAt:  started.Format(time.RFC3339Nano),
+			}
+			c.Created = created.Format(time.RFC3339Nano)
+
+			ji, _ := containerToDRMAA2JobInfo(c)
+			Ω(ji.ID).Should(Equal("jobid"))
+			Ω(ji.AllocatedMachines[0]).Should(Equal("hostname"))
+			Ω(ji.State).Should(BeNumerically("==", drmaa2interface.Failed))
+			Ω(ji.ExitStatus).Should(BeNumerically("==", 13))
+			Ω(ji.SubmissionTime).Should(BeTemporally("==", created))
+			Ω(ji.DispatchTime).Should(BeTemporally("==", started))
+			Ω(ji.FinishTime).Should(BeTemporally("==", finished))
 		})
 
 	})

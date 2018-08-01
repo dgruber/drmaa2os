@@ -21,6 +21,8 @@ params.yml
 
 coverage.out
 
+set_env.sh
+
 # Test binary, build with `go test -c`
 *.test
 

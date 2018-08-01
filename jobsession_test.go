@@ -44,9 +44,11 @@ var _ = Describe("Jobsession", func() {
 		})
 
 		It("should be to get the job categories", func() {
+			js = NewJobSession("testsession", []jobtracker.JobTracker{simpletrackerfakes.New("testsession")})
 			categories, err := js.GetJobCategories()
 			Ω(err).Should(BeNil())
 			Ω(categories).ShouldNot(BeNil())
+			Ω(len(categories)).Should(BeNumerically("==", 2))
 		})
 
 		It("should be able to submit a job and get access to it", func() {

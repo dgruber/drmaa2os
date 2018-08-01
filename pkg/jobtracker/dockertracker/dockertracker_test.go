@@ -18,7 +18,7 @@ var _ = Describe("Dockertracker", func() {
 	Context("Creation and destruction", func() {
 
 		It("should be possible to create a tracker when docker is available", func() {
-			tracker, err := New()
+			tracker, err := New("")
 			Ω(err).Should(BeNil())
 			Ω(tracker).ShouldNot(BeNil())
 		})
@@ -28,7 +28,7 @@ var _ = Describe("Dockertracker", func() {
 	Context("List container images as Job Classes", func() {
 
 		It("should list without errors", func() {
-			tracker, err := New()
+			tracker, err := New("")
 			Ω(err).Should(BeNil())
 			Ω(tracker).ShouldNot(BeNil())
 
@@ -55,7 +55,7 @@ var _ = Describe("Dockertracker", func() {
 		var tracker *DockerTracker
 
 		BeforeEach(func() {
-			tracker, _ = New()
+			tracker, _ = New("")
 			jt = drmaa2interface.JobTemplate{
 				RemoteCommand:  "/bin/sleep",
 				Args:           []string{"1"},
@@ -133,7 +133,7 @@ var _ = Describe("Dockertracker", func() {
 
 		var tracker *DockerTracker
 
-		BeforeEach(func() { tracker, _ = New() })
+		BeforeEach(func() { tracker, _ = New("") })
 
 		It("should add the job without error", func() {
 			ids, err := tracker.AddArrayJob(jt, 1, 10, 1, 0)
@@ -158,7 +158,7 @@ var _ = Describe("Dockertracker", func() {
 
 		var tracker *DockerTracker
 
-		BeforeEach(func() { tracker, _ = New() })
+		BeforeEach(func() { tracker, _ = New("") })
 
 		It("add job and wait until finished", func() {
 			id, err := tracker.AddJob(jt)
@@ -205,7 +205,7 @@ var _ = Describe("Dockertracker", func() {
 	Context("List containers as Jobs", func() {
 
 		It("should list without errors", func() {
-			tracker, err := New()
+			tracker, err := New("")
 			Ω(err).Should(BeNil())
 			Ω(tracker).ShouldNot(BeNil())
 
@@ -220,6 +220,47 @@ var _ = Describe("Dockertracker", func() {
 
 			Ω(err).ShouldNot(BeNil())
 			Ω(jobs).Should(BeNil())
+		})
+
+		It("should list jobs from the job session", func() {
+			tracker, err := New("testsessionXY")
+			Ω(err).Should(BeNil())
+			Ω(tracker).ShouldNot(BeNil())
+
+			jobs, err := tracker.ListJobs()
+			Ω(err).Should(BeNil())
+			// delete all remaining jobs
+			for _, id := range jobs {
+				tracker.DeleteJob(id)
+			}
+
+			jt := drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sleep",
+				Args:          []string{"1"},
+				JobCategory:   "golang",
+			}
+
+			jobid, err := tracker.AddJob(jt)
+			Ω(jobid).ShouldNot(Equal(""))
+			Ω(err).Should(BeNil())
+
+			jobs, err = tracker.ListJobs()
+			Ω(err).Should(BeNil())
+			Ω(len(jobs)).Should(BeNumerically("==", 1))
+
+			err = tracker.Wait(jobid, drmaa2interface.InfiniteTime, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+
+			jobs, err = tracker.ListJobs()
+			Ω(err).Should(BeNil())
+			Ω(len(jobs)).Should(BeNumerically("==", 1))
+
+			err = tracker.DeleteJob(jobid)
+			Ω(err).Should(BeNil())
+
+			jobs, err = tracker.ListJobs()
+			Ω(err).Should(BeNil())
+			Ω(len(jobs)).Should(BeNumerically("==", 0))
 		})
 
 	})

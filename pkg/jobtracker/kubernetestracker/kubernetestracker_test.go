@@ -105,18 +105,18 @@ var _ = Describe("KubernetesTracker", func() {
 		})
 
 		WhenK8sIsAvailableIt("Should be possible to track the states of a job life-cycle", func() {
-			jt.Args = []string{"-c", "sleep 1"}
+			jt.Args = []string{"-c", "sleep 2"}
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
 
 			Eventually(func() drmaa2interface.JobState {
 				return kt.JobState(jobid)
-			}, time.Second*60, time.Millisecond*50).Should(Equal(drmaa2interface.Running))
+			}, time.Second*30, time.Millisecond*50).Should(Equal(drmaa2interface.Running))
 
 			Eventually(func() drmaa2interface.JobState {
 				return kt.JobState(jobid)
-			}, time.Second*60, time.Millisecond*50).Should(Equal(drmaa2interface.Done))
+			}, time.Second*30, time.Millisecond*50).Should(Equal(drmaa2interface.Done))
 
 		})
 

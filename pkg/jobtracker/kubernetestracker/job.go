@@ -48,5 +48,6 @@ func deleteJob(jc clientBatchv1.JobInterface, job *batchv1.Job) error {
 	if jc == nil || job == nil {
 		return errors.New("internal error: can't delete job: job is nil")
 	}
-	return jc.Delete(job.GetName(), &k8sapi.DeleteOptions{})
+	policy := k8sapi.DeletePropagationBackground
+	return jc.Delete(job.GetName(), &k8sapi.DeleteOptions{PropagationPolicy: &policy})
 }

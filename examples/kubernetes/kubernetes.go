@@ -7,12 +7,7 @@ import (
 	"time"
 )
 
-func main() {
-	sm, err := drmaa2os.NewKubernetesSessionManager("testdb.db")
-	if err != nil {
-		panic(err)
-	}
-
+func createJobSession(sm drmaa2interface.SessionManager) drmaa2interface.JobSession {
 	js, err := sm.CreateJobSession("jobsession1", "")
 	if err != nil {
 		js, err = sm.OpenJobSession("jobsession1")
@@ -20,57 +15,65 @@ func main() {
 			panic(err)
 		}
 	}
+	return js
+}
+
+func print(ji drmaa2interface.JobInfo) {
+	fmt.Printf("Submission time: %s\n", ji.SubmissionMachine)
+	fmt.Printf("Dispatch time: %s\n", ji.DispatchTime)
+	fmt.Printf("End time: %s\n", ji.FinishTime)
+	fmt.Printf("State: %s\n", ji.State)
+	fmt.Printf("Job ID: %s\n", ji.ID)
+}
+
+func main() {
+	sm, err := drmaa2os.NewKubernetesSessionManager("testdb.db")
+	if err != nil {
+		panic(err)
+	}
+
+	js := createJobSession(sm)
+	defer js.Close()
 
 	jt := drmaa2interface.JobTemplate{
 		// JobName must be unique or not set ("").
-		//JobName:       "testjob",
+		// JobName:       "testjob",
 		RemoteCommand: "/bin/sh",
 		JobCategory:   "golang",
-		Args:          []string{"-c", `sleep 5`},
+		Args:          []string{"-c", `sleep 2`},
 	}
 
-	fmt.Printf("running job sleep 5\n")
+	fmt.Printf("running job \"sleep 1\"\n")
+
 	job, err := js.RunJob(jt)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("job submitted successfully")
 
-	job.WaitStarted(drmaa2interface.InfiniteTime)
-	<-time.After(time.Millisecond * 500)
-	fmt.Printf("Job State: %s\n", job.GetState())
+	fmt.Println("job submitted successfully / waiting until finished")
 
-	err = job.Terminate()
-	if err != nil {
-		fmt.Printf("Error during terminating job: %s\n", err)
-	} else {
-		fmt.Printf("succesfully terminated job %s\n", job.GetID())
-	}
+	job.WaitTerminated(drmaa2interface.InfiniteTime)
 
-	fmt.Printf("job state: %s\n", job.GetState().String())
-	err = job.WaitTerminated(drmaa2interface.InfiniteTime)
+	ji, err := job.GetJobInfo()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("final job state: %s\n", job.GetState().String())
-	ji, _ := job.GetJobInfo()
-	fmt.Printf("job info: %v\n", ji)
+	print(ji)
 
-	jt.Args = []string{"-c", "exit 1"}
-
-	fmt.Printf("running job exit 1\n")
-	job, err = js.RunJob(jt)
+	fmt.Println("Starting job array with 1000 jobs")
+	fmt.Println(time.Now())
+	jobs, err := js.RunBulkJobs(jt, 1, 100, 1, 100)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("job submitted successfully")
-
-	err = job.WaitTerminated(drmaa2interface.InfiniteTime)
-	if err != nil {
-		panic(err)
+	for _, j := range jobs.GetJobs() {
+		j.WaitTerminated(drmaa2interface.InfiniteTime)
+		fmt.Printf("Job %s finished\n", j.GetID())
 	}
-	fmt.Printf("final job state: %s\n", job.GetState().String())
-	ji, _ = job.GetJobInfo()
-	fmt.Printf("job info: %v\n", ji)
-
+	fmt.Println("All finished")
+	fmt.Println(time.Now())
+	for _, j := range jobs.GetJobs() {
+		j.Reap()
+	}
+	fmt.Println(time.Now())
 }
