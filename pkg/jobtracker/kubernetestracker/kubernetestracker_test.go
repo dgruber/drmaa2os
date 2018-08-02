@@ -27,7 +27,7 @@ var _ = Describe("KubernetesTracker", func() {
 				Args:          []string{"-c", "sleep 0"},
 			}
 			var err error
-			kt, err = New(nil)
+			kt, err = New("jobsession", nil)
 			Ω(err).Should(BeNil())
 		})
 
@@ -78,7 +78,7 @@ var _ = Describe("KubernetesTracker", func() {
 
 		BeforeEach(func() {
 			var err error
-			kt, err = New(nil)
+			kt, err = New("", nil)
 			Ω(err).Should(BeNil())
 		})
 
@@ -100,7 +100,7 @@ var _ = Describe("KubernetesTracker", func() {
 				JobCategory:   "golang:latest",
 			}
 			var err error
-			kt, err = New(nil)
+			kt, err = New("jobsession", nil)
 			Ω(err).Should(BeNil())
 		})
 
@@ -217,7 +217,7 @@ var _ = Describe("KubernetesTracker", func() {
 				JobCategory:   "golang:latest",
 			}
 			var err error
-			kt, err = New(nil)
+			kt, err = New("jobsession", nil)
 			Ω(err).Should(BeNil())
 		})
 
@@ -233,16 +233,14 @@ var _ = Describe("KubernetesTracker", func() {
 	})
 
 	Context("Standard error cases", func() {
-
 		WhenK8sIsAvailableIt("should fail to create a new tracker if k8s clientset can't be build", func() {
 			home := os.Getenv("HOME")
 			defer os.Setenv("HOME", home)
 			os.Setenv("HOME", os.TempDir())
-			track, err := New(nil)
+			track, err := New("", nil)
 			Ω(err).ShouldNot(BeNil())
 			Ω(track).Should(BeNil())
 		})
-
 	})
 
 })

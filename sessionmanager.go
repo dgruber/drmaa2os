@@ -45,7 +45,7 @@ func (sm *SessionManager) newJobTracker(name string) (jobtracker.JobTracker, err
 	case CloudFoundrySession:
 		return cftracker.New(sm.cf.addr, sm.cf.username, sm.cf.password, name)
 	case KubernetesSession:
-		return kubernetestracker.New(nil)
+		return kubernetestracker.New(name, nil)
 	}
 	return nil, errors.New("unknown job session type")
 }

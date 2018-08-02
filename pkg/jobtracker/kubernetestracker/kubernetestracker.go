@@ -10,12 +10,13 @@ import (
 )
 
 type KubernetesTracker struct {
-	clientSet *kubernetes.Clientset
+	clientSet  *kubernetes.Clientset
+	jobsession string
 }
 
 // New creates a new KubernetesTracker either by using a given kubernetes Clientset
 // or by allocating a new one (if the parameter is zero).
-func New(cs *kubernetes.Clientset) (*KubernetesTracker, error) {
+func New(jobsession string, cs *kubernetes.Clientset) (*KubernetesTracker, error) {
 	if cs == nil {
 		var err error
 		cs, err = NewClientSet()
@@ -24,7 +25,8 @@ func New(cs *kubernetes.Clientset) (*KubernetesTracker, error) {
 		}
 	}
 	return &KubernetesTracker{
-		clientSet: cs,
+		clientSet:  cs,
+		jobsession: jobsession,
 	}, nil
 }
 
@@ -37,7 +39,8 @@ func (kt *KubernetesTracker) ListJobs() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ListJobs: %s", err.Error())
 	}
-	jobsList, err := jc.List(k8sapi.ListOptions{})
+	labelSelector := fmt.Sprintf("drmaa2jobsession=%s", kt.jobsession)
+	jobsList, err := jc.List(k8sapi.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return nil, fmt.Errorf("listing jobs with client: %s", err.Error())
 	}
@@ -49,7 +52,7 @@ func (kt *KubernetesTracker) ListJobs() ([]string, error) {
 }
 
 func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) {
-	job, err := convertJob(jt)
+	job, err := convertJob(kt.jobsession, jt)
 	if err != nil {
 		return "", fmt.Errorf("converting job template into a k8s job: %s", err.Error())
 	}

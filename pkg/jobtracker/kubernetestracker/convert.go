@@ -55,7 +55,7 @@ func newPodSpec(v []k8sv1.Volume, c []k8sv1.Container, ns map[string]string) k8s
 	}
 }
 
-func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
+func convertJob(jobsession string, jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 	volumes, err := newVolumes(jt)
 	if err != nil {
 		return nil, fmt.Errorf("converting job (newVolumes): %s", err)
@@ -84,7 +84,7 @@ func convertJob(jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: jt.JobName,
 			//Namespace: v1.NamespaceDefault,
-			//Labels: options.labels,
+			Labels:       map[string]string{"drmaa2jobsession": jobsession},
 			GenerateName: "drmaa2os",
 		},
 		// Specification of the desired behavior of a job.

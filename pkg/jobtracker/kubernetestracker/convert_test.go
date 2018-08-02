@@ -54,29 +54,27 @@ var _ = Describe("Convert", func() {
 		})
 
 		It("should convert the JobTemplate into a Job", func() {
-			job, err := convertJob(jt)
+			job, err := convertJob("jobsession", jt)
 			Ω(err).Should(BeNil())
 			Ω(job).ShouldNot(BeNil())
-
 			Ω(job.TypeMeta.Kind).Should(Equal("Job"))
 			Ω(job.TypeMeta.APIVersion).Should(Equal("v1"))
-
 			Ω(job.ObjectMeta.Name).Should(Equal("name"))
-
+			Ω(job.Labels["drmaa2jobsession"]).Should(Equal("jobsession"))
 			Ω(*job.Spec.Parallelism).Should(BeNumerically("==", 1))
 			Ω(*job.Spec.Completions).Should(BeNumerically("==", 1))
 		})
 
 		It("should fail converting the JobTemplate when the JobCategory is missing", func() {
 			jt.JobCategory = ""
-			job, err := convertJob(jt)
+			job, err := convertJob("", jt)
 			Ω(err).ShouldNot(BeNil())
 			Ω(job).Should(BeNil())
 		})
 
 		It("should fail converting the JobTemplate when the RemoteCommand is missing", func() {
 			jt.RemoteCommand = ""
-			job, err := convertJob(jt)
+			job, err := convertJob("", jt)
 			Ω(err).ShouldNot(BeNil())
 			Ω(job).Should(BeNil())
 		})
