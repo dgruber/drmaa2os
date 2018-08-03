@@ -7,6 +7,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 )
 
 func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
@@ -44,15 +45,41 @@ func newNodeSelector(jt drmaa2interface.JobTemplate) (map[string]string, error) 
 	return nil, nil
 }
 
+/* 	deadlineTime returns the deadline of the job as int pointer converting from
+    AbsoluteTime to a relative time.
+	"
+	Specifies a deadline after which the implementation or the DRM system SHOULD change the job state to
+		any of the “Terminated” states (see Section 8.1).
+    	The support for this attribute is optional, as expressed by the
+       	- DrmaaCapability::JT_DEADLINE
+		DeadlineTime is defined as AbsoluteTime.
+	"
+*/
+func deadlineTime(jt drmaa2interface.JobTemplate) (*int64, error) {
+	var deadline int64
+	if !jt.DeadlineTime.IsZero() {
+		if jt.DeadlineTime.After(time.Now()) {
+			deadline = jt.DeadlineTime.Unix() - time.Now().Unix()
+		} else {
+			return nil, fmt.Errorf("deadlineTime (%s) in job template is in the past", jt.DeadlineTime.String())
+		}
+	}
+	return &deadline, nil
+}
+
 // https://godoc.org/k8s.io/api/core/v1#PodSpec
 // https://github.com/kubernetes/kubernetes/blob/886e04f1fffbb04faf8a9f9ee141143b2684ae68/pkg/api/types.go
-func newPodSpec(v []k8sv1.Volume, c []k8sv1.Container, ns map[string]string) k8sv1.PodSpec {
-	return k8sv1.PodSpec{
+func newPodSpec(v []k8sv1.Volume, c []k8sv1.Container, ns map[string]string, activeDeadline *int64) k8sv1.PodSpec {
+	spec := k8sv1.PodSpec{
 		Volumes:       v,
 		Containers:    c,
 		NodeSelector:  ns,
 		RestartPolicy: "Never",
 	}
+	if *activeDeadline > 0 {
+		spec.ActiveDeadlineSeconds = activeDeadline
+	}
+	return spec
 }
 
 func convertJob(jobsession string, jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
@@ -70,7 +97,11 @@ func convertJob(jobsession string, jt drmaa2interface.JobTemplate) (*batchv1.Job
 	}
 
 	// settings for command etc.
-	podSpec := newPodSpec(volumes, containers, nodeSelector)
+	dl, err := deadlineTime(jt)
+	if err != nil {
+		return nil, err
+	}
+	podSpec := newPodSpec(volumes, containers, nodeSelector, dl)
 
 	var one int32 = 1
 	return &batchv1.Job{

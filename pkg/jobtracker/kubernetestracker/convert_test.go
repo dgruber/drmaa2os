@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/dgruber/drmaa2interface"
+	"time"
 )
 
 var _ = Describe("Convert", func() {
@@ -37,22 +38,6 @@ var _ = Describe("Convert", func() {
 			Ω(c0.WorkingDir).Should(Equal(jt.WorkingDirectory))
 		})
 
-		It("should error when the RemoteCommand is not set in the JobTemplate", func() {
-			jt.RemoteCommand = ""
-			c, err := newContainers(jt)
-			Ω(c).Should(BeNil())
-			Ω(err).ShouldNot(BeNil())
-			Ω(err.Error()).Should(Equal("RemoteCommand not set in JobTemplate"))
-		})
-
-		It("should error when the JobCategory is not set in the JobTemplate", func() {
-			jt.JobCategory = ""
-			c, err := newContainers(jt)
-			Ω(c).Should(BeNil())
-			Ω(err).ShouldNot(BeNil())
-			Ω(err.Error()).Should(Equal("JobCategory (image name) not set in JobTemplate"))
-		})
-
 		It("should convert the JobTemplate into a Job", func() {
 			job, err := convertJob("jobsession", jt)
 			Ω(err).Should(BeNil())
@@ -65,18 +50,50 @@ var _ = Describe("Convert", func() {
 			Ω(*job.Spec.Completions).Should(BeNumerically("==", 1))
 		})
 
-		It("should fail converting the JobTemplate when the JobCategory is missing", func() {
-			jt.JobCategory = ""
-			job, err := convertJob("", jt)
-			Ω(err).ShouldNot(BeNil())
-			Ω(job).Should(BeNil())
+		It("should convert the deadline from time to int", func() {
+			jt.DeadlineTime = time.Now().Add(time.Second * 10)
+			deadline, err := deadlineTime(jt)
+			Ω(err).Should(BeNil())
+			Ω(*deadline).Should(BeNumerically("<=", 10))
 		})
 
-		It("should fail converting the JobTemplate when the RemoteCommand is missing", func() {
-			jt.RemoteCommand = ""
-			job, err := convertJob("", jt)
-			Ω(err).ShouldNot(BeNil())
-			Ω(job).Should(BeNil())
+		Context("error cases", func() {
+			It("should error when the RemoteCommand is not set in the JobTemplate", func() {
+				jt.RemoteCommand = ""
+				c, err := newContainers(jt)
+				Ω(c).Should(BeNil())
+				Ω(err).ShouldNot(BeNil())
+				Ω(err.Error()).Should(Equal("RemoteCommand not set in JobTemplate"))
+			})
+
+			It("should error when the JobCategory is not set in the JobTemplate", func() {
+				jt.JobCategory = ""
+				c, err := newContainers(jt)
+				Ω(c).Should(BeNil())
+				Ω(err).ShouldNot(BeNil())
+				Ω(err.Error()).Should(Equal("JobCategory (image name) not set in JobTemplate"))
+			})
+
+			It("should fail converting the JobTemplate when the JobCategory is missing", func() {
+				jt.JobCategory = ""
+				job, err := convertJob("", jt)
+				Ω(err).ShouldNot(BeNil())
+				Ω(job).Should(BeNil())
+			})
+
+			It("should fail converting the JobTemplate when the RemoteCommand is missing", func() {
+				jt.RemoteCommand = ""
+				job, err := convertJob("", jt)
+				Ω(err).ShouldNot(BeNil())
+				Ω(job).Should(BeNil())
+			})
+
+			It("should fail converting the JobTemplate when DeadlineTime is in the past", func() {
+				jt.DeadlineTime = time.Now().Add(time.Second * -1)
+				job, err := convertJob("", jt)
+				Ω(err).ShouldNot(BeNil())
+				Ω(job).Should(BeNil())
+			})
 		})
 
 	})
