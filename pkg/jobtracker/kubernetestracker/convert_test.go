@@ -57,6 +57,31 @@ var _ = Describe("Convert", func() {
 			Ω(*deadline).Should(BeNumerically("<=", 10))
 		})
 
+		It("should add a namespace to the job object when requested as extension", func() {
+			job, err := convertJob("jobsession", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+			jt.ExtensionList = map[string]string{"namespace": "ns"}
+			job = addExtensions(job, jt)
+			Ω(job.Namespace).Should(Equal("ns"))
+			job, err = convertJob("jobsession", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.Namespace).Should(Equal("ns"))
+		})
+
+		It("should add a label to the job object when requested as extension", func() {
+			job, err := convertJob("jobsession", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+			jt.ExtensionList = map[string]string{"labels": "label1=foo,label2=bar,drmaa2jobsession=UI"}
+			job = addExtensions(job, jt)
+			Ω(job.Labels["label1"]).Should(Equal("foo"))
+			Ω(job.Labels["label2"]).Should(Equal("bar"))
+			// not allowed to override job session
+			Ω(job.Labels["drmaa2jobsession"]).Should(Equal("jobsession"))
+		})
+
 		Context("error cases", func() {
 			It("should error when the RemoteCommand is not set in the JobTemplate", func() {
 				jt.RemoteCommand = ""

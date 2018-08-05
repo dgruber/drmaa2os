@@ -7,6 +7,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 	"time"
 )
 
@@ -82,6 +83,29 @@ func newPodSpec(v []k8sv1.Volume, c []k8sv1.Container, ns map[string]string, act
 	return spec
 }
 
+func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Job {
+	if jt.ExtensionList == nil {
+		return job
+	}
+	if jt.ExtensionList["namespace"] != "" {
+		//Namespace: v1.NamespaceDefault
+		job.Namespace = jt.ExtensionList["namespace"]
+	}
+	if jt.ExtensionList["labels"] != "" {
+		// "key=value,key=value,..."
+		for _, labels := range strings.Split(jt.ExtensionList["labels"], ",") {
+			l := strings.Split(labels, "=")
+			if len(l) == 2 {
+				if l[0] == "drmaa2jobsession" {
+					continue // don't allow to override job session
+				}
+				job.Labels[l[0]] = l[1]
+			}
+		}
+	}
+	return job
+}
+
 func convertJob(jobsession string, jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 	volumes, err := newVolumes(jt)
 	if err != nil {
@@ -104,7 +128,7 @@ func convertJob(jobsession string, jt drmaa2interface.JobTemplate) (*batchv1.Job
 	podSpec := newPodSpec(volumes, containers, nodeSelector, dl)
 
 	var one int32 = 1
-	return &batchv1.Job{
+	job := batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Job",
 			APIVersion: "v1",
@@ -113,8 +137,7 @@ func convertJob(jobsession string, jt drmaa2interface.JobTemplate) (*batchv1.Job
 		// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
 		// +optional
 		ObjectMeta: metav1.ObjectMeta{
-			Name: jt.JobName,
-			//Namespace: v1.NamespaceDefault,
+			Name:         jt.JobName,
 			Labels:       map[string]string{"drmaa2jobsession": jobsession},
 			GenerateName: "drmaa2os",
 		},
@@ -141,5 +164,6 @@ func convertJob(jobsession string, jt drmaa2interface.JobTemplate) (*batchv1.Job
 				Spec: podSpec,
 			},
 		},
-	}, nil
+	}
+	return addExtensions(&job, jt), nil
 }

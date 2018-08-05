@@ -46,23 +46,22 @@ func exitStatusFromJobState(status drmaa2interface.JobState) int {
 }
 
 func JobToJobInfo(jc batchv1.JobInterface, jobid string) (drmaa2interface.JobInfo, error) {
+	ji := drmaa2interface.JobInfo{}
 	job, err := getJobByID(jc, jobid)
 	if err != nil {
-		return drmaa2interface.JobInfo{}, err
+		return ji, err
 	}
-
-	ji := drmaa2interface.JobInfo{}
-
+	ji.Slots = 1
 	ji.SubmissionTime = job.CreationTimestamp.Time
 	if job.Status.StartTime != nil {
 		ji.DispatchTime = job.Status.StartTime.Time
 	}
 	if job.Status.CompletionTime != nil {
 		ji.FinishTime = job.Status.CompletionTime.Time
+		ji.WallclockTime = ji.FinishTime.Sub(ji.DispatchTime)
 	}
 	ji.State = convertJobStatus2JobState(&job.Status)
 	ji.ID = jobid
 	ji.ExitStatus = exitStatusFromJobState(ji.State)
-
 	return ji, nil
 }

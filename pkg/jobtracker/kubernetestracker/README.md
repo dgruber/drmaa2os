@@ -1,8 +1,13 @@
 # Kubernetes Tracker
 
-Implements the tracker interface for kubernetes.
+Implements the JobTracker interface for kubernetes batch jobs.
 
 ## Introduction
+
+The kubernetes tracker provides methods for managing sets of 
+grouped batch jobs (JobSessions). JobSessions are implemented
+by using labels attached to batch job objects ("drmaa2jobsession")
+refering to the JobSession name.
 
 ## Functionality
 
@@ -46,17 +51,33 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 | JobCategory          | v1.Container.Image              |
 | WorkingDir           | v1.Container.WorkingDir         |
 | JobName              | Note: If set and a job with the same name exists in history submission will fail. metadata: Name |
+| DeadlineTime         | AbsoluteTime converted to relative time (v1.Container.ActiveDeadlineSeconds) |
+
+Job Template extensions:
+
+|Extension key  |Extension value                    |
+|:--------------|----------------------------------:|
+| namespace     | v1.Namespace                      |
+| labels        | "key=value,key2=value2" v1.Labels |
+ 
 
 Required:
 * RemoteCommand
 * JobCategory as it specifies the image
 
-Other settings:
-* parallelism: 1
-* completions: 1
+Other implicit settings:
+* Parallelism: 1
+* Completions: 1
+* BackoffLimit: 1
 
 ### Job Info Mapping
 
 | DRMAA2 JobInfo.      | Kubernetes                           |
 | :-------------------:|:------------------------------------:|
 | ExitStatus           |  0 or 1 (1 if between 1 and 255 / not supported in Status)  |
+| SubmissionTime       | job.CreationTimestamp.Time           |
+| DispatchTime         | job.Status.StartTime.Time            |
+| FinishTime           | job.Status.CompletionTime.Time       |
+| State                | see above                            |
+| JobID                | v1.Job.UID |
+

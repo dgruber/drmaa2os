@@ -51,3 +51,16 @@ func deleteJob(jc clientBatchv1.JobInterface, job *batchv1.Job) error {
 	policy := k8sapi.DeletePropagationBackground
 	return jc.Delete(job.GetName(), &k8sapi.DeleteOptions{PropagationPolicy: &policy})
 }
+
+func getJobByID(jc clientBatchv1.JobInterface, jobid string) (*batchv1.Job, error) {
+	jobs, err := jc.List(k8sapi.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for _, job := range jobs.Items {
+		if jobid == string(job.GetUID()) {
+			return &job, nil
+		}
+	}
+	return nil, fmt.Errorf("job with jobid %s not found", jobid)
+}

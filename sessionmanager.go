@@ -86,7 +86,6 @@ func NewKubernetesSessionManager(dbpath string) (*SessionManager, error) {
 }
 
 func (sm *SessionManager) logErr(message string) error {
-	//sm.log.Error(message)
 	return errors.New(message)
 }
 

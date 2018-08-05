@@ -3,8 +3,6 @@ package kubernetestracker
 import (
 	"errors"
 	"fmt"
-	"k8s.io/api/batch/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	"k8s.io/client-go/tools/clientcmd"
@@ -40,19 +38,6 @@ func kubeConfigFile() (string, error) {
 		return "", errors.New("home does not contain .kube config file")
 	}
 	return kubeconfig, nil
-}
-
-func getJobByID(jc batchv1.JobInterface, jobid string) (*v1.Job, error) {
-	jobs, err := jc.List(meta_v1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	for _, job := range jobs.Items {
-		if jobid == string(job.GetUID()) {
-			return &job, nil
-		}
-	}
-	return nil, fmt.Errorf("job with jobid %s not found", jobid)
 }
 
 func homeDir() string {

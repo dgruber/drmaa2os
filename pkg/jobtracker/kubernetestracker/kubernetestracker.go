@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+const K8S_JT_EXTENSION_NAMESPACE = "namespace"
+const K8S_JT_EXTENSION_LABELS = "labels"
+
 type KubernetesTracker struct {
 	clientSet  *kubernetes.Clientset
 	jobsession string
@@ -51,6 +54,8 @@ func (kt *KubernetesTracker) ListJobs() ([]string, error) {
 	return ids, nil
 }
 
+// AddJob converts the given DRMAA2 job template into a batchv1.Job and creates
+// the job within Kubernetes.
 func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) {
 	job, err := convertJob(kt.jobsession, jt)
 	if err != nil {

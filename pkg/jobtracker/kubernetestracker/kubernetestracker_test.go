@@ -143,11 +143,11 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(jobid).ShouldNot(Equal(""))
 
 			go func() {
-				<-time.Tick(time.Millisecond * 100)
+				<-time.Tick(time.Millisecond * 333)
 				kt.JobControl(jobid, "terminate")
 			}()
 
-			err = kt.Wait(jobid, time.Second, drmaa2interface.Failed, drmaa2interface.Undetermined)
+			err = kt.Wait(jobid, time.Second*5, drmaa2interface.Failed, drmaa2interface.Undetermined)
 			Ω(err).Should(BeNil())
 			// TODO(DG) terminate should lead to failed state not undetermined
 		})
