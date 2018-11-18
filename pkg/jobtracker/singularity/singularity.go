@@ -41,7 +41,6 @@ func (dt *Tracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) {
 		return "", fmt.Errorf("Singularity container image not specified")
 	}
 	jt.RemoteCommand, jt.Args = createCommandAndArgs(jt)
-	fmt.Printf("Executing: %s %s", jt.RemoteCommand, jt.Args)
 	return dt.processTracker.AddJob(jt)
 }
 

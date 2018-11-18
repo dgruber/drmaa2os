@@ -1,14 +1,15 @@
-# drmaa2os - A Go API for OS Processes, Docker Containers, Cloud Foundry Tasks, Kubernetes Jobs, Grid Engine and more...
+# drmaa2os - A Go API for OS Processes, Docker Containers, Cloud Foundry Tasks, Kubernetes Jobs, Grid Engine Jobs and more...
 
 _drmaa2 for OS processes and meanwhile more_
 
 [![CircleCI](https://circleci.com/gh/dgruber/drmaa2os.svg?style=svg)](https://circleci.com/gh/dgruber/drmaa2os)
 
-This is a Go API based on an open standard (Open Grid Forum DRMAA2) in order to submit and
-supervise workloads like OS processes, containers, PODs, tasks from a common interface.
+This is a Go API based on an open standard (Open Grid Forum DRMAA2) for submitting and
+supervising workloads which can be operating system processes, containers, PODs, tasks,
+or batch jobs.
 
-It allows to develop and run job workflows in OS processes, and later easily switch to 
-containers running as Cloud Foundry tasks, Docker containers, Grid Engine jobs, etc...
+The API allows to develop and run job workflows in OS processes, and switch later to 
+containers running in Kubernetes, as Cloud Foundry tasks, or pure Docker containers.
 
 Its main pupose is supporting application developers with an abstraction layer on top of 
 platforms, workload managers, and cluster schedulers, so that they don't require to deal
