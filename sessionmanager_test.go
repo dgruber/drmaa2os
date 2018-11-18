@@ -114,25 +114,25 @@ var _ = Describe("Sessionmanager", func() {
 	})
 
 	Describe("Open Monitoring Session", func() {
+		/*
+			var (
+				sm drmaa2interface.SessionManager
+			)
 
-		var (
-			sm drmaa2interface.SessionManager
-		)
-
-		BeforeEach(func() {
-			sm = createSessionManager()
-		})
-
-		Context("when the Monitoring Session does not exist", func() {
-			It("should not error", func() {
-				/*ms, err := sm.OpenMonitoringSession("")
-				Ω(err).Should(BeNil())
-				Ω(ms).ShouldNot(BeNil())
-				err = ms.CloseMonitoringSession()
-				Ω(err).Should(BeNil())*/
+			BeforeEach(func() {
+				sm = createSessionManager()
 			})
-		})
 
+			Context("when the Monitoring Session does not exist", func() {
+				It("should not error", func() {
+				ms, err := sm.OpenMonitoringSession("")
+					Ω(err).Should(BeNil())
+					Ω(ms).ShouldNot(BeNil())
+					err = ms.CloseMonitoringSession()
+					Ω(err).Should(BeNil())
+				})
+			})
+		*/
 	})
 
 	Describe("Simple global functions", func() {

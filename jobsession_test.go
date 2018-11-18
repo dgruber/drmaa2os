@@ -95,16 +95,6 @@ var _ = Describe("Jobsession", func() {
 	})
 
 	Describe("waitAny with fakes", func() {
-		var (
-			jt drmaa2interface.JobTemplate
-		)
-
-		BeforeEach(func() {
-			jt = drmaa2interface.JobTemplate{
-				RemoteCommand: "/bin/sleep",
-				Args:          []string{"0.1"},
-			}
-		})
 
 		It("should return when one job is running", func() {
 			job1 := simpletrackerfakes.NewFakeJob(drmaa2interface.Running, "", time.Millisecond*100)

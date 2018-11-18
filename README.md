@@ -1,5 +1,7 @@
 # drmaa2os - A Go API for OS Processes, Docker Containers, Cloud Foundry Tasks, Kubernetes Jobs, Grid Engine and more...
 
+_drmaa2 for OS processes and meanwhile more_
+
 [![CircleCI](https://circleci.com/gh/dgruber/drmaa2os.svg?style=svg)](https://circleci.com/gh/dgruber/drmaa2os)
 
 This is a Go API based on an open standard (Open Grid Forum DRMAA2) in order to submit and
@@ -24,6 +26,7 @@ For details about the mapping of job operations please consult the platform spec
   * [Cloud Foundry](pkg/jobtracker/cftracker/README.md)
   * [Docker / Moby](pkg/jobtracker/dockertracker/README.md)
   * [Kubernetes](pkg/jobtracker/kubernetestracker/README.md)
+  * [Singularity](pkg/jobtracker/singularity/README.md)
 
 [Feedback](mailto:info@gridengine.eu) welcome!
 
