@@ -135,6 +135,7 @@ var _ = Describe("Simpletracker", func() {
 		})
 
 		It("must be possible to start, suspend, resume, and kill a job", func() {
+			t.Args = []string{"1234"}
 			jobid, err := tracker.AddJob(t)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
@@ -155,10 +156,6 @@ var _ = Describe("Simpletracker", func() {
 			Ω(err).Should(BeNil())
 
 			Eventually(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Failed))
-
-			// TODO must be done after a second
-			// Eventually(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Running))
-
 		})
 
 	})

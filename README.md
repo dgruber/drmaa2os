@@ -8,8 +8,9 @@ This is a Go API based on an open standard (Open Grid Forum DRMAA2) for submitti
 supervising workloads which can be operating system processes, containers, PODs, tasks,
 or batch jobs.
 
-The API allows to develop and run job workflows in OS processes, and switch later to 
-containers running in Kubernetes, as Cloud Foundry tasks, or pure Docker containers.
+The API allows to develop and run job workflows in OS processes and switch later to 
+containers running in Kubernetes, as Cloud Foundry tasks, or pure Docker or
+Singularity containers.
 
 Its main pupose is supporting application developers with an abstraction layer on top of 
 platforms, workload managers, and cluster schedulers, so that they don't require to deal
@@ -68,6 +69,16 @@ Following example demonstrates how a job running as OS process can be executed. 
 	js.Close()
 	sm.DestroyJobSession("jobsession")
 ```
+
+## Using other Backends
+
+### Docker
+
+### Kubernetes
+
+### Cloud Foundry
+
+### Singularity
 
 
 
