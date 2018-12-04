@@ -1,9 +1,6 @@
 # Tracker for Singularity Containers
 
-This is work in progress...ideas welcome.
-
-Known issues:
-- Container termination does not work correctly.
+This is work in progress...ideas welcome!
 
 ## Introduction
 
@@ -26,3 +23,8 @@ If you want to see any output it makes sense to set OutputPath and ErrorPath to 
 in the _JobTemplate_.
 
 _JobTemplate_ extensions can be used to inject Singularity exec arguments like "--pid" (see _command.go_).
+
+# Examples
+
+For an example please check out [singularity.go](../../examples/singularity/singularity.go)
+in the _examples_ directory.

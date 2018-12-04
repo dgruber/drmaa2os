@@ -31,13 +31,16 @@ func setExtension(options []string, extensions map[string]string, name string) [
 
 func createCommandAndArgs(jt drmaa2interface.JobTemplate) (string, []string) {
 	options := make([]string, 0, 4)
+	globalOptions := make([]string, 0, 4)
+
 	if jt.ExtensionList != nil {
-		/* TODO add global options
-		options = setBooleanExtension(options, jt.ExtensionList, "debug")
-		options = setBooleanExtension(options, jt.ExtensionList, "silent")
-		options = setBooleanExtension(options, jt.ExtensionList, "quite")
-		options = setBooleanExtension(options, jt.ExtensionList, "verbose")
-		*/
+		/* global options */
+		globalOptions = setBooleanExtension(globalOptions, jt.ExtensionList, "debug")
+		globalOptions = setBooleanExtension(globalOptions, jt.ExtensionList, "silent")
+		globalOptions = setBooleanExtension(globalOptions, jt.ExtensionList, "quite")
+		globalOptions = setBooleanExtension(globalOptions, jt.ExtensionList, "verbose")
+
+		/* exec options */
 		options = setBooleanExtension(options, jt.ExtensionList, "writable")
 		options = setBooleanExtension(options, jt.ExtensionList, "keep-privs")
 		options = setBooleanExtension(options, jt.ExtensionList, "net")
@@ -62,9 +65,14 @@ func createCommandAndArgs(jt drmaa2interface.JobTemplate) (string, []string) {
 		options = setExtension(options, jt.ExtensionList, "scratch")
 		options = setExtension(options, jt.ExtensionList, "home")
 	}
-	if len(options) > 0 {
-		args := append([]string{"exec"}, options...)
-		return "singularity", append(append(args, jt.JobCategory, jt.RemoteCommand), jt.Args...)
+	args := []string{}
+	if len(globalOptions) > 0 {
+		args = append(args, globalOptions...)
 	}
-	return "singularity", append([]string{"exec", jt.JobCategory, jt.RemoteCommand}, jt.Args...)
+	args = append(args, "exec")
+	if len(options) > 0 {
+		args = append(args, options...)
+	}
+	args = append(args, jt.JobCategory, jt.RemoteCommand)
+	return "singularity", append(args, jt.Args...)
 }

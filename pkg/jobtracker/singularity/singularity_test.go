@@ -6,20 +6,22 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"fmt"
-
 	"github.com/dgruber/drmaa2interface"
 )
 
 var _ = Describe("Singularity", func() {
 
-	template := drmaa2interface.JobTemplate{
-		RemoteCommand: "/bin/sleep",
-		Args:          []string{"1"},
-		JobCategory:   "vsoch-hello-world-master.simg",
-		OutputPath:    "/dev/stdout",
-		ErrorPath:     "/dev/stderr",
-	}
+	var template drmaa2interface.JobTemplate
+
+	BeforeEach(func() {
+		template = drmaa2interface.JobTemplate{
+			RemoteCommand: "/bin/sleep",
+			Args:          []string{"1"},
+			JobCategory:   "vsoch-hello-world-master.simg",
+			OutputPath:    "/dev/stdout",
+			ErrorPath:     "/dev/stderr",
+		}
+	})
 
 	Context("Happy Path", func() {
 
@@ -94,7 +96,7 @@ var _ = Describe("Singularity", func() {
 			st, err := New("singularity_test_session")
 			Ω(err).Should(BeNil())
 			template.RemoteCommand = "/bin/sleep"
-			template.Args = []string{"1"}
+			template.Args = []string{"1000"}
 			template.ExtensionList = map[string]string{
 				"pid": "",
 			}
@@ -112,13 +114,9 @@ var _ = Describe("Singularity", func() {
 			Ω(err).Should(BeNil())
 			Ω(st.JobState(job)).Should(BeNumerically("==", drmaa2interface.Running))
 
-			/* TODO terminating does not kill the processes in singularity container
-			fmt.Printf("terminating")
 			err = st.JobControl(job, "terminate")
 			Ω(err).Should(BeNil())
-			*/
 
-			fmt.Printf("waiting")
 			err = st.Wait(job, drmaa2interface.InfiniteTime, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 		})

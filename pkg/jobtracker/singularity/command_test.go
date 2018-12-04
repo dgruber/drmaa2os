@@ -30,11 +30,22 @@ var _ = g.Describe("Command", func() {
 			Ω(cmd).Should(Equal("singularity"))
 			Ω(args).Should(ContainElement("--pid"))
 			Ω(args).ShouldNot(ContainElement(""))
+			Ω(args).Should(BeEquivalentTo([]string{"exec", "--pid", "image", "run", "arg1", "arg2"}))
 
 			cmd, args = extension("hostname", "alleswurst")
 			Ω(cmd).Should(Equal("singularity"))
 			Ω(args).Should(ContainElement("--hostname"))
 			Ω(args).Should(ContainElement("alleswurst"))
 		})
+		g.It("should insert global arguments from the extensions", func() {
+			jt.ExtensionList = map[string]string{
+				"pid":   "",
+				"debug": "true",
+			}
+			cmd, args := createCommandAndArgs(jt)
+			Ω(cmd).Should(Equal("singularity"))
+			Ω(args).Should(BeEquivalentTo([]string{"--debug", "exec", "--pid", "image", "run", "arg1", "arg2"}))
+		})
+
 	})
 })
