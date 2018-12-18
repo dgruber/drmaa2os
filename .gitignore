@@ -18,8 +18,13 @@ params.yml
 /docker
 /many
 /simple
+singularity
 
 coverage.out
+
+# images
+GodloveD-lolcow-master.simg
+
 
 set_env.sh
 

@@ -17,7 +17,7 @@ var _ = Describe("Singularity", func() {
 		template = drmaa2interface.JobTemplate{
 			RemoteCommand: "/bin/sleep",
 			Args:          []string{"1"},
-			JobCategory:   "vsoch-hello-world-master.simg",
+			JobCategory:   "test.simg",
 			OutputPath:    "/dev/stdout",
 			ErrorPath:     "/dev/stderr",
 		}
