@@ -26,5 +26,5 @@ _JobTemplate_ extensions can be used to inject Singularity exec arguments like "
 
 # Examples
 
-For an example please check out [singularity.go](../../examples/singularity/singularity.go)
+For an example please check out [singularity.go](https://github.com/dgruber/drmaa2os/blob/master/examples/singularity/singularity.go)
 in the _examples_ directory.
