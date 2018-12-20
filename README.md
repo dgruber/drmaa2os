@@ -3,6 +3,7 @@
 _drmaa2 for OS processes and meanwhile more_
 
 [![CircleCI](https://circleci.com/gh/dgruber/drmaa2os.svg?style=svg)](https://circleci.com/gh/dgruber/drmaa2os)
+[![codecov](https://codecov.io/gh/dgruber/drmaa2os/branch/master/graph/badge.svg)](https://codecov.io/gh/dgruber/drmaa2os)
 
 This is a Go API based on an open standard (Open Grid Forum DRMAA2) for submitting and
 supervising workloads which can be operating system processes, containers, PODs, tasks,
