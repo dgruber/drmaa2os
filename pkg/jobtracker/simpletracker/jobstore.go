@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+// JobStore is an internal storage for jobs and job templates
+// processed by the job tracker. Jobs are stored until Reap().
 type JobStore struct {
 	// jobids contains all known jobs in the system until they are reaped (Reap())
 	// these are jobs, not array jobs and can be in format "1.1" or "1"
@@ -32,7 +34,7 @@ func (js *JobStore) SaveJob(jobid string, t drmaa2interface.JobTemplate, pid int
 	js.templates[jobid] = t
 	js.jobids = append(js.jobids, jobid)
 	js.jobs[jobid] = []InternalJob{
-		InternalJob{State: drmaa2interface.Running, PID: pid},
+		{State: drmaa2interface.Running, PID: pid},
 	}
 }
 
@@ -69,7 +71,7 @@ func (js *JobStore) GetPID(jobid string) (int, error) {
 		if taskid == 0 || taskid == 1 {
 			return job[0].PID, nil
 		}
-		for task, _ := range job {
+		for task := range job {
 			if job[task].TaskID == taskid {
 				return job[task].PID, nil
 			}

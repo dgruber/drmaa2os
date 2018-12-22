@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dgruber/drmaa2interface"
+	"sync"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type JobTracker struct {
 	state      map[string]drmaa2interface.JobState
 	info       map[string]drmaa2interface.JobInfo
 	lastjobid  int
+	sync.Mutex
 }
 
 func New(sessionname string) *JobTracker {
@@ -26,8 +28,10 @@ func New(sessionname string) *JobTracker {
 }
 
 func (jt *JobTracker) ListJobs() ([]string, error) {
+	jt.Lock()
+	defer jt.Unlock()
 	var jobs []string
-	for id, _ := range jt.jobs {
+	for id := range jt.jobs {
 		jobs = append(jobs, id)
 	}
 	return jobs, nil
@@ -38,6 +42,8 @@ func (jt *JobTracker) ListJobCategories() ([]string, error) {
 }
 
 func (jt *JobTracker) AddJob(t drmaa2interface.JobTemplate) (string, error) {
+	jt.Lock()
+	defer jt.Unlock()
 	jt.lastjobid++
 	jobid := fmt.Sprintf("%d", jt.lastjobid)
 
@@ -66,6 +72,8 @@ func (jt *JobTracker) AddJob(t drmaa2interface.JobTemplate) (string, error) {
 }
 
 func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin int, end int, step int, maxParallel int) (string, error) {
+	jt.Lock()
+	defer jt.Unlock()
 	jt.lastjobid++
 	jobid := fmt.Sprintf("%d", jt.lastjobid)
 
@@ -86,14 +94,20 @@ func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin int, end 
 }
 
 func (jt *JobTracker) ListArrayJobs(string) ([]string, error) {
+	jt.Lock()
+	defer jt.Unlock()
 	return nil, nil
 }
 
 func (jt *JobTracker) JobState(jobid string) drmaa2interface.JobState {
+	jt.Lock()
+	defer jt.Unlock()
 	return jt.state[jobid]
 }
 
 func (jt *JobTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
+	jt.Lock()
+	defer jt.Unlock()
 	jinfo, exists := jt.info[jobid]
 	if exists == false {
 		return drmaa2interface.CreateJobInfo(), errors.New("job does not exist")
@@ -102,6 +116,8 @@ func (jt *JobTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
 }
 
 func (jt *JobTracker) JobControl(jobid, state string) error {
+	jt.Lock()
+	defer jt.Unlock()
 	switch state {
 	case "suspend":
 		jt.state[jobid] = drmaa2interface.Suspended
@@ -118,11 +134,15 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 }
 
 func (jt *JobTracker) Wait(jobid string, d time.Duration, states ...drmaa2interface.JobState) error {
+	jt.Lock()
+	defer jt.Unlock()
 	jt.state[jobid] = states[0]
 	return nil
 }
 
 func (jt *JobTracker) DeleteJob(jobid string) error {
+	jt.Lock()
+	defer jt.Unlock()
 	delete(jt.jobs, jobid)
 	delete(jt.state, jobid)
 	delete(jt.info, jobid)

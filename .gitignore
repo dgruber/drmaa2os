@@ -21,6 +21,7 @@ params.yml
 singularity
 
 coverage.out
+coverage.txt
 
 # images
 GodloveD-lolcow-master.simg

@@ -29,7 +29,7 @@ jobs:
       - run: go test -v ./pkg/jobtracker/simpletracker/...
       - run:
           name: Code coverage file
-          command: go test -race -coverprofile=coverage.txt -covermode=atomic
+          command: go test ./ ./pkg/helper ./pkg/d2hlp ./pkg/storage ./pkg/jobtracker/simpletracker -race -coverprofile=coverage.txt -covermode=atomic
       - run:
           name: Code coverage
           command: bash <(curl -s https://codecov.io/bash)
