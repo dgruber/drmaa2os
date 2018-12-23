@@ -9,13 +9,14 @@ import (
 	"time"
 )
 
+// TrackProcess supervises a running process and sends a notification when
+// the process is finished.
 func TrackProcess(cmd *exec.Cmd, jobid string, finishedJobChannel chan JobEvent, waitForFiles int, waitCh chan bool) {
-	// supervise process
-
 	dispatchTime := time.Now()
-
 	state, err := cmd.Process.Wait()
 
+	// wait until all filedescriptors (stdout, stderr) of the
+	// process are closed
 	for waitForFiles > 0 {
 		<-waitCh
 		waitForFiles--
@@ -34,7 +35,6 @@ func TrackProcess(cmd *exec.Cmd, jobid string, finishedJobChannel chan JobEvent,
 
 func makeLocalJobInfo() drmaa2interface.JobInfo {
 	host, _ := os.Hostname()
-
 	return drmaa2interface.JobInfo{
 		AllocatedMachines: []string{host},
 		FinishTime:        time.Now(),

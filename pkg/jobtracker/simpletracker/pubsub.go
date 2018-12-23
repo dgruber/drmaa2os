@@ -12,6 +12,8 @@ type JobEvent struct {
 	JobInfo  drmaa2interface.JobInfo
 }
 
+// PubSub distributes job status change events to clients which
+// Register() at PubSub.
 type PubSub struct {
 	sync.Mutex
 
@@ -26,6 +28,9 @@ type PubSub struct {
 	jobInfoFinished map[string]drmaa2interface.JobInfo
 }
 
+// NewPubSub returns an initialized PubSub structure and
+// the JobEvent channel which is used by the caller to publish
+// job events (i.e. job state transitions).
 func NewPubSub() (*PubSub, chan JobEvent) {
 	jeCh := make(chan JobEvent, 1)
 	return &PubSub{
@@ -36,6 +41,8 @@ func NewPubSub() (*PubSub, chan JobEvent) {
 	}, jeCh
 }
 
+// Register returns a channel which emits a job state once the given
+// job transitions in one of the given states.
 func (ps *PubSub) Register(jobid string, states ...drmaa2interface.JobState) (chan drmaa2interface.JobState, error) {
 	ps.Lock()
 	defer ps.Unlock()
@@ -48,12 +55,20 @@ func (ps *PubSub) Register(jobid string, states ...drmaa2interface.JobState) (ch
 	}
 
 	waitChannel := make(chan drmaa2interface.JobState, 1)
-	ps.waitFunctions[jobid] = append(ps.waitFunctions[jobid], waitRequest{ExpectedState: states, WaitChannel: waitChannel})
+	ps.waitFunctions[jobid] = append(ps.waitFunctions[jobid],
+		waitRequest{ExpectedState: states, WaitChannel: waitChannel})
 	return waitChannel, nil
 }
 
-func (ps *PubSub) Unregister(id string) {
-	// TODO
+// Unregister removes all functions waiting for a specific job and
+// all occurences of the job itself.
+func (ps *PubSub) Unregister(jobid string) {
+	ps.Lock()
+	defer ps.Unlock()
+
+	delete(ps.waitFunctions, jobid)
+	delete(ps.jobState, jobid)
+	delete(ps.jobInfoFinished, jobid)
 }
 
 // waitRequest defines when to notify (ExpectedState) and where to notify (WaitChann)
@@ -62,18 +77,18 @@ type waitRequest struct {
 	WaitChannel   chan drmaa2interface.JobState
 }
 
-// BookKeeper processes all job state changes from the process trackers
-// and notifies registered wait functions
+// StartBookKeeper processes all job state changes from the process trackers
+// and notifies registered wait functions.
 func (ps *PubSub) StartBookKeeper() {
 	go func() {
 		for event := range ps.jobch {
 			ps.Lock()
 			// inform registered functions
 			for _, waiter := range ps.waitFunctions[event.JobID] {
+				// inform when expected state is reached
 				for i := range waiter.ExpectedState {
 					if event.JobState == waiter.ExpectedState[i] {
 						waiter.WaitChannel <- event.JobState
-						continue
 					}
 				}
 			}

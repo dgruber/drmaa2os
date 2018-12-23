@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"fmt"
+	"time"
 )
 
 var _ = Describe("Simpletracker", func() {
@@ -104,14 +105,54 @@ var _ = Describe("Simpletracker", func() {
 
 			err = tracker.Destroy()
 			Ω(err).To(BeNil())
+		})
 
+		It("should be possible to list all job categories", func() {
+			tracker := New("testsession")
+			list, err := tracker.ListJobCategories()
+			Ω(list).ShouldNot(BeNil())
+			Ω(err).Should(BeNil())
+		})
+
+		Context("JobControl error cases", func() {
+			var tracker *JobTracker
+			var t drmaa2interface.JobTemplate
+
+			BeforeEach(func() {
+				tracker = New("testsession")
+				Ω(tracker).NotTo(BeNil())
+				t = drmaa2interface.JobTemplate{
+					RemoteCommand: "/bin/sleep",
+					Args:          []string{"0"},
+				}
+			})
+
+			It("should error with wrong job id", func() {
+				err := tracker.JobControl("123454321", "hold")
+				Ω(err).ShouldNot(BeNil())
+			})
+
+			It("hold and release are not supported", func() {
+				jobid, err := tracker.AddJob(t)
+				Ω(err).Should(BeNil())
+				err = tracker.JobControl(jobid, "hold")
+				Ω(err).ShouldNot(BeNil())
+				err = tracker.JobControl(jobid, "release")
+				Ω(err).ShouldNot(BeNil())
+			})
+
+			It("should error with an undefined state", func() {
+				jobid, err := tracker.AddJob(t)
+				Ω(err).Should(BeNil())
+				err = tracker.JobControl(jobid, "wrong")
+				Ω(err).ShouldNot(BeNil())
+			})
 		})
 
 	})
 
 	Context("Basic tracker job info and modification operations", func() {
 		var tracker *JobTracker
-
 		var t drmaa2interface.JobTemplate
 
 		BeforeEach(func() {
@@ -158,6 +199,149 @@ var _ = Describe("Simpletracker", func() {
 			Eventually(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Failed))
 		})
 
+		It("must be possible to AddJob() and DeleteJob()", func() {
+			t.Args = []string{"1234"}
+			jobid, err := tracker.AddJob(t)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			_, err = tracker.JobInfo(jobid)
+			Ω(err).Should(BeNil())
+
+			err = tracker.DeleteJob(jobid)
+			Ω(err).ShouldNot(BeNil())
+
+			err = tracker.JobControl(jobid, "terminate")
+			Ω(err).Should(BeNil())
+
+			err = tracker.DeleteJob(jobid)
+			Ω(err).Should(BeNil())
+
+			err = tracker.DeleteJob(jobid)
+			Ω(err).ShouldNot(BeNil())
+
+			_, err = tracker.JobInfo(jobid)
+			Ω(err).ShouldNot(BeNil())
+		})
+
+		It("must return an undetermined state for a non-existing job", func() {
+			t.Args = []string{"0"}
+			jobid, err := tracker.AddJob(t)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			err = tracker.Wait(jobid, time.Second*10, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+
+			err = tracker.DeleteJob(jobid)
+			Ω(err).Should(BeNil())
+
+			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Undetermined))
+			Ω(tracker.JobState("1231231201")).Should(Equal(drmaa2interface.Undetermined))
+		})
+
+	})
+
+	Context("Wait() operations", func() {
+		var tracker *JobTracker
+		var t drmaa2interface.JobTemplate
+
+		BeforeEach(func() {
+			tracker = New("testsession")
+			Ω(tracker).NotTo(BeNil())
+			t = drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sleep",
+				Args:          []string{"1"},
+			}
+		})
+
+		It("must be possible to wait for a job end state", func() {
+			t.Args = []string{"0"}
+			jobid, err := tracker.AddJob(t)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			err = tracker.Wait(jobid, time.Second*10, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+		})
+
+		It("must error when job is not found", func() {
+			err := tracker.Wait("12344321", time.Second*1, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(err).ShouldNot(BeNil())
+		})
+
+		It("must be possible to wait for a job end state infinitely", func() {
+			t.Args = []string{"0"}
+			jobid, err := tracker.AddJob(t)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+		})
+
+		It("must be possible to wait for a job when it is finished already", func() {
+			t.Args = []string{"0"}
+			jobid, err := tracker.AddJob(t)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+
+			// wait for end state when end state is already reached
+			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+
+			// wait for an non end state
+			err = tracker.Wait(jobid, 0.0, drmaa2interface.Running, drmaa2interface.Suspended)
+			Ω(err).ShouldNot(BeNil())
+
+			// no state given
+			err = tracker.Wait(jobid, 0.0)
+			Ω(err).ShouldNot(BeNil())
+		})
+
+		It("must error when state is not reachable", func() {
+			// wait for end state when end state is already reached
+			t.Args = []string{"5"}
+			jobid, err := tracker.AddJob(t)
+			err = tracker.Wait(jobid, time.Millisecond*400, drmaa2interface.Suspended)
+			Ω(err).ShouldNot(BeNil())
+			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Running))
+		})
+	})
+
+	Context("JobInfo related", func() {
+		var tracker *JobTracker
+		var t drmaa2interface.JobTemplate
+
+		BeforeEach(func() {
+			tracker = New("testsession")
+			Ω(tracker).NotTo(BeNil())
+			t = drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sleep",
+				Args:          []string{"1"},
+			}
+		})
+
+		It("should return the JobInfo object for a finished job", func() {
+			t.Args = []string{"0"}
+			jobid, err := tracker.AddJob(t)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+
+			ji, err := tracker.JobInfo(jobid)
+			Ω(err).Should(BeNil())
+			Ω(ji.ID).Should(Equal(jobid))
+		})
 	})
 
 })

@@ -5,9 +5,24 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/dgruber/drmaa2interface"
+	"time"
 )
 
 var _ = Describe("Pubsub", func() {
+
+	Context("Basic operations", func() {
+
+		It("should be possible to register and unregister", func() {
+			ps, jeCh := NewPubSub()
+			ps.StartBookKeeper()
+			waitCh, err := ps.Register("13", drmaa2interface.Running)
+			Ω(err).Should(BeNil())
+			ps.Unregister("13")
+			jeCh <- JobEvent{JobState: drmaa2interface.Running, JobID: "13"}
+			Consistently(waitCh, time.Second, time.Millisecond*10).ShouldNot(Receive())
+		})
+
+	})
 
 	Context("Single producer and single consumer", func() {
 

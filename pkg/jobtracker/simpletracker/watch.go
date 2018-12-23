@@ -16,7 +16,6 @@ func watch(tracker *JobTracker) {
 		if tracker.shutdown == true {
 			return
 		}
-		// update job state???
 		tracker.Unlock()
 	}
 }

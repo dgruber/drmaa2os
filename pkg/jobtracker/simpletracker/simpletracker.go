@@ -10,19 +10,20 @@ import (
 	"time"
 )
 
+// JobTracker implements the JobTracker interface and treats
+// jobs as OS processes.
 type JobTracker struct {
 	sync.Mutex
 	jobsession string
-
-	// Destroy the tracker
-	shutdown bool
+	shutdown   bool // signal to destroy the tracker
 	// communication between process trackers and registered functions for those events
 	// ps stores information about state and job info of jobs
 	ps *PubSub
-
+	// stores jobs and resource usage
 	js *JobStore
 }
 
+// New creates and initializes a JobTracker.
 func New(jobsession string) *JobTracker {
 	ps, _ := NewPubSub()
 	tracker := JobTracker{
@@ -35,6 +36,7 @@ func New(jobsession string) *JobTracker {
 	return &tracker
 }
 
+// Destroy signals the JobTracker to shutdown.
 func (jt *JobTracker) Destroy() error {
 	jt.Lock()
 	defer jt.Unlock()
@@ -44,6 +46,7 @@ func (jt *JobTracker) Destroy() error {
 
 // Tracker keeps track of all jobs and updates job objects in case of changes
 
+// ListJobs returns a list of all job IDs stored in the job store.
 func (jt *JobTracker) ListJobs() ([]string, error) {
 	jt.Lock()
 	defer jt.Unlock()
@@ -61,28 +64,37 @@ func (jt *JobTracker) AddJob(t drmaa2interface.JobTemplate) (string, error) {
 	defer jt.ps.Unlock()
 	jobid := GetNextJobID()
 
-	if pid, err := StartProcess(jobid, t, jt.ps.jobch); err != nil {
+	pid, err := StartProcess(jobid, t, jt.ps.jobch)
+	if err != nil {
 		jt.ps.jobState[jobid] = drmaa2interface.Failed
 		return "", err
-	} else {
-		jt.ps.jobState[jobid] = drmaa2interface.Running
-		jt.js.SaveJob(jobid, t, pid)
 	}
+	jt.ps.jobState[jobid] = drmaa2interface.Running
+	jt.js.SaveJob(jobid, t, pid)
+
 	return jobid, nil
 }
 
-// TODO TEST IMPLEMENTATION
+// DeleteJob removes a job from the internal job storage but only
+// when the job is in any finished state.
 func (jt *JobTracker) DeleteJob(jobid string) error {
 	jt.Lock()
 	defer jt.Unlock()
-	if state, exists := jt.ps.jobState[jobid]; exists != true {
-		return errors.New("Job does not exist")
-	} else {
-		if state != drmaa2interface.Done && state != drmaa2interface.Failed {
-			return errors.New("Job is not in an end state (done/failed)")
-		}
-		// TODO delete entry
+
+	if !jt.js.HasJob(jobid) {
+		return errors.New("Job does not exist in job store")
 	}
+	jt.ps.Lock()
+	state, exists := jt.ps.jobState[jobid]
+	jt.ps.Unlock()
+	if exists && (state != drmaa2interface.Done && state != drmaa2interface.Failed) {
+		return errors.New("Job is not in an end state (done/failed)")
+	}
+	if !exists {
+		return errors.New("Job does not exist")
+	}
+	jt.js.RemoveJob(jobid)
+	jt.ps.Unregister(jobid)
 	return nil
 }
 
@@ -92,6 +104,8 @@ func cleanup(pids []int) {
 	}
 }
 
+// AddArrayJob starts end-begin/step processes based on the given JobTemplate.
+// Note that maxParallel is not yet implemented.
 func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin int, end int, step int, maxParallel int) (string, error) {
 	arrayjobid := GetNextJobID()
 
@@ -99,12 +113,12 @@ func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin int, end 
 	var pids []int
 	for i := begin; i <= end; i += step {
 		jobid := fmt.Sprintf("%s.%d", arrayjobid, i)
-		if pid, err := StartProcess(jobid, t, jt.ps.jobch); err != nil {
+		pid, err := StartProcess(jobid, t, jt.ps.jobch)
+		if err != nil {
 			cleanup(pids)
 			return "", err
-		} else {
-			pids = append(pids, pid)
 		}
+		pids = append(pids, pid)
 	}
 
 	jt.Lock()
@@ -115,6 +129,7 @@ func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin int, end 
 	return arrayjobid, nil
 }
 
+// ListArrayJobs returns all job IDs the job array ID is associated with.
 func (jt *JobTracker) ListArrayJobs(id string) ([]string, error) {
 	if isArray, exists := jt.js.isArrayJob[id]; !exists {
 		return nil, errors.New("Array job not found")
@@ -130,6 +145,7 @@ func (jt *JobTracker) ListArrayJobs(id string) ([]string, error) {
 	return jobids, nil
 }
 
+// JobState returns the current state of the job (running, suspended, done, failed).
 func (jt *JobTracker) JobState(jobid string) drmaa2interface.JobState {
 	jt.Lock()
 	defer jt.Unlock()
@@ -149,7 +165,11 @@ func (jt *JobTracker) JobState(jobid string) drmaa2interface.JobState {
 	//
 	// watch() --> (pubsub) StartBookKeeper() -> StartProcess() --> Done / Failed // ==> in PubSub
 
-	return jt.ps.jobState[jobid]
+	state, exists := jt.ps.jobState[jobid]
+	if !exists {
+		state = drmaa2interface.Undetermined
+	}
+	return state
 }
 
 func (jt *JobTracker) ProcessToJobInfo(jobid string, pid int) (drmaa2interface.JobInfo, error) {
@@ -166,11 +186,11 @@ func (jt *JobTracker) ProcessToJobInfo(jobid string, pid int) (drmaa2interface.J
 	}, nil
 }
 
+// JobInfo returns more detailed information about a job.
 func (jt *JobTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
 	jt.Lock()
 	defer jt.Unlock()
 
-	// check finished jobs
 	jt.ps.Lock()
 	ji, exists := jt.ps.jobInfoFinished[jobid]
 	jt.ps.Unlock()
@@ -178,17 +198,19 @@ func (jt *JobTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
 		return ji, nil
 	}
 
-	if pid, err := jt.js.GetPID(jobid); err != nil {
+	pid, err := jt.js.GetPID(jobid)
+	if err != nil {
 		return drmaa2interface.JobInfo{
 			Slots: 1,
 			ID:    jobid,
 			State: drmaa2interface.Undetermined,
 		}, err
-	} else {
-		return jt.ProcessToJobInfo(jobid, pid)
 	}
+	return jt.ProcessToJobInfo(jobid, pid)
+
 }
 
+// JobControl suspends, resumes, or terminates a job.
 func (jt *JobTracker) JobControl(jobid, state string) error {
 	jt.Lock()
 	defer jt.Unlock()
@@ -232,6 +254,9 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 	return errors.New("undefined state")
 }
 
+// Wait blocks until the job with the given job id is in on of the given states.
+// If the job is after the given duration is still not in any of the states the
+// method returns an error. If the duration is 0 then it waits infitely.
 func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interface.JobState) error {
 	var timeoutCh <-chan time.Time
 	if d.Seconds() == 0.0 {
@@ -244,28 +269,26 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 
 	// jobid can be a job or array job task
 	jobparts := strings.Split(jobid, ".")
-	jobidOrArrayJobId := jobparts[0]
-
 	// check if job exists and if it is in an end state already which does not change
 	jt.Lock()
-	if _, exists := jt.js.jobs[jobidOrArrayJobId]; exists == false {
+	_, exists := jt.js.jobs[jobparts[0]]
+	if exists == false {
 		jt.Unlock()
 		return errors.New("job does not exist")
-	} else {
-		jt.ps.Lock()
-		// works with jobid???
-		if js, jsexists := jt.ps.jobState[jobid]; jsexists {
-			if js == drmaa2interface.Failed || js == drmaa2interface.Done {
-				jt.ps.Unlock()
-				jt.Unlock()
-				for i := range state {
-					if state[i] == js {
-						return nil
-					}
+	}
+	jt.ps.Lock()
+	// works with jobid???
+	if js, jsexists := jt.ps.jobState[jobid]; jsexists {
+		if js == drmaa2interface.Failed || js == drmaa2interface.Done {
+			jt.ps.Unlock()
+			jt.Unlock()
+			for i := range state {
+				if state[i] == js {
+					return nil
 				}
-				// TODO drmaa2 error?
-				return errors.New("Invalid state")
 			}
+			// TODO drmaa2 error?
+			return errors.New("Invalid state")
 		}
 		jt.ps.Unlock()
 	}
@@ -279,6 +302,7 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 
 	select {
 	case newState := <-waitChannel:
+		// end states are reported as well
 		for i := range state {
 			if newState == state[i] {
 				return nil
@@ -290,6 +314,8 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 	}
 }
 
+// ListJobCategories returns an empty list as JobCategories are
+// currently not defined for OS processes.
 func (jt *JobTracker) ListJobCategories() ([]string, error) {
 	return []string{}, nil
 }
