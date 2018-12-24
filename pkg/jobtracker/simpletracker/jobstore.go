@@ -83,7 +83,12 @@ func (js *JobStore) SaveArrayJob(arrayjobid string, pids []int, t drmaa2interfac
 	for i := begin; i <= end; i += step {
 		jobid := fmt.Sprintf("%s.%d", arrayjobid, i)
 		js.jobids = append(js.jobids, jobid)
-		js.jobs[arrayjobid] = append(js.jobs[arrayjobid], InternalJob{TaskID: i, State: drmaa2interface.Running, PID: pids[pid]})
+		js.jobs[arrayjobid] = append(js.jobs[arrayjobid],
+			InternalJob{
+				TaskID: i,
+				State:  drmaa2interface.Running,
+				PID:    pids[pid],
+			})
 		pid++
 	}
 }

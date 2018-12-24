@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"errors"
-	_ "fmt"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
@@ -164,7 +163,7 @@ var _ = Describe("Jobsession", func() {
 			jobs := arrayjob.GetJobs()
 			Ω(len(jobs)).Should(Equal(10))
 
-			j, err := js.WaitAnyTerminated(jobs, time.Second*2)
+			j, err := js.WaitAnyTerminated(jobs, time.Second*20)
 			Ω(err).Should(BeNil())
 			Ω(j.GetID()).Should(ContainSubstring(jobid))
 			Ω(j.GetState()).Should(Equal(drmaa2interface.Done))

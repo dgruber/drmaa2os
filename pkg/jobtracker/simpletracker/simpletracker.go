@@ -131,12 +131,12 @@ func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin int, end 
 
 // ListArrayJobs returns all job IDs the job array ID is associated with.
 func (jt *JobTracker) ListArrayJobs(id string) ([]string, error) {
-	if isArray, exists := jt.js.isArrayJob[id]; !exists {
+	isArray, exists := jt.js.isArrayJob[id]
+	if !exists {
 		return nil, errors.New("Array job not found")
-	} else {
-		if isArray == false {
-			return nil, errors.New("Job is not an array job")
-		}
+	}
+	if isArray == false {
+		return nil, errors.New("Job is not an array job")
 	}
 	jobids := make([]string, 0, len(jt.js.jobs[id]))
 	for _, job := range jt.js.jobs[id] {
@@ -269,6 +269,7 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 
 	// jobid can be a job or array job task
 	jobparts := strings.Split(jobid, ".")
+
 	// check if job exists and if it is in an end state already which does not change
 	jt.Lock()
 	_, exists := jt.js.jobs[jobparts[0]]
@@ -276,8 +277,8 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 		jt.Unlock()
 		return errors.New("job does not exist")
 	}
+
 	jt.ps.Lock()
-	// works with jobid???
 	if js, jsexists := jt.ps.jobState[jobid]; jsexists {
 		if js == drmaa2interface.Failed || js == drmaa2interface.Done {
 			jt.ps.Unlock()
@@ -287,11 +288,10 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 					return nil
 				}
 			}
-			// TODO drmaa2 error?
 			return errors.New("Invalid state")
 		}
-		jt.ps.Unlock()
 	}
+	jt.ps.Unlock()
 
 	// register channel to get informed when job finished or reached the state
 	waitChannel, err := jt.ps.Register(jobid, state...)
