@@ -34,6 +34,7 @@ func NewJobStore() *JobStore {
 // SaveJob stores a job, the job submission template, and the process PID of
 // the job in an internal job store.
 func (js *JobStore) SaveJob(jobid string, t drmaa2interface.JobTemplate, pid int) {
+	js.isArrayJob[jobid] = false
 	js.templates[jobid] = t
 	js.jobids = append(js.jobids, jobid)
 	js.jobs[jobid] = []InternalJob{
@@ -44,14 +45,22 @@ func (js *JobStore) SaveJob(jobid string, t drmaa2interface.JobTemplate, pid int
 // HasJob returns true if the job is saved in the job store.
 func (js *JobStore) HasJob(jobid string) bool {
 	_, exists := js.templates[jobid]
+	if !exists {
+		for i := range js.jobids {
+			if js.jobids[i] == jobid {
+				return true
+			}
+		}
+	}
 	return exists
 }
 
-// RemoveJob deletes all occurances of a job within the job storage.
-// The jobid can be the identifier of a job or an job array.
+// RemoveJob deletes all occurrences of a job within the job storage.
+// The jobid can be the identifier of a job or a job array. In case
+// of a job array it removes all tasks which belong to the array job.
 func (js *JobStore) RemoveJob(jobid string) {
 	isAJ, exits := js.isArrayJob[jobid]
-	if exits && isAJ {
+	if isAJ && exits {
 		jobids := make([]string, 0, len(js.jobids))
 		for i := range js.jobids {
 			if !strings.HasPrefix(js.jobids[i], jobid+".") {
@@ -74,6 +83,7 @@ func (js *JobStore) RemoveJob(jobid string) {
 	delete(js.isArrayJob, jobid)
 }
 
+// SaveArrayJob stores all process IDs of the tasks of an array job.
 func (js *JobStore) SaveArrayJob(arrayjobid string, pids []int, t drmaa2interface.JobTemplate, begin int, end int, step int) {
 	pid := 0
 	js.templates[arrayjobid] = t
@@ -93,6 +103,8 @@ func (js *JobStore) SaveArrayJob(arrayjobid string, pids []int, t drmaa2interfac
 	}
 }
 
+// GetPID returns the PID of a job or an array job task.
+// It returns -1 and an error if the job is not known.
 func (js *JobStore) GetPID(jobid string) (int, error) {
 	jobelements := strings.Split(jobid, ".")
 	job, exists := js.jobs[jobelements[0]]
@@ -118,6 +130,5 @@ func (js *JobStore) GetPID(jobid string) (int, error) {
 			return job[task].PID, nil
 		}
 	}
-
 	return -1, errors.New("TaskID not found in job array")
 }

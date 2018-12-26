@@ -100,6 +100,24 @@ var _ = Describe("Jobstore", func() {
 			Ω(err).ShouldNot(BeNil())
 			Ω(pid).Should(BeNumerically("==", -1))
 		})
+
+		It("should save and delete a job array", func() {
+			store := NewJobStore()
+			Ω(store).ShouldNot(BeNil())
+			store.SaveJob("77.2", drmaa2interface.JobTemplate{RemoteCommand: "rc"}, 77)
+			store.SaveArrayJob("13",
+				[]int{77, 78, 79},
+				drmaa2interface.JobTemplate{RemoteCommand: "rc"},
+				1, 3, 1)
+			Ω(store.HasJob("13.1")).Should(BeTrue())
+			Ω(store.HasJob("13.2")).Should(BeTrue())
+			Ω(store.HasJob("13.3")).Should(BeTrue())
+			store.RemoveJob("13.2")
+			Ω(store.HasJob("13.2")).Should(BeFalse())
+			store.RemoveJob("13")
+			Ω(store.HasJob("13.1")).Should(BeFalse())
+			Ω(store.HasJob("13.3")).Should(BeFalse())
+		})
 	})
 
 })

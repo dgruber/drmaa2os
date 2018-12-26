@@ -344,4 +344,64 @@ var _ = Describe("Simpletracker", func() {
 		})
 	})
 
+	Context("Basic error cases", func() {
+		It("must fail to add a job when JobTemplate is not correct", func() {
+			tracker := New("testsession")
+			Ω(tracker).NotTo(BeNil())
+			jobid, err := tracker.AddJob(drmaa2interface.JobTemplate{})
+			Ω(err).ShouldNot(BeNil())
+			Ω(jobid).Should(Equal(""))
+		})
+
+		It("must fail to add an array job when JobTemplate is not correct", func() {
+			tracker := New("testsession")
+			Ω(tracker).NotTo(BeNil())
+			jobid, err := tracker.AddArrayJob(drmaa2interface.JobTemplate{}, 1, 9, 2, 0)
+			Ω(err).ShouldNot(BeNil())
+			Ω(jobid).Should(Equal(""))
+		})
+
+		It("must fail to list jobs of a job array when job ID is wrong", func() {
+			tracker := New("testsession")
+			Ω(tracker).NotTo(BeNil())
+			jobids, err := tracker.ListArrayJobs("77")
+			Ω(err).ShouldNot(BeNil())
+			Ω(jobids).Should(BeNil())
+		})
+
+		It("must fail to list jobs of a job array when job ID is not a job array", func() {
+			tracker := New("testsession")
+			Ω(tracker).NotTo(BeNil())
+			jobid, err := tracker.AddJob(drmaa2interface.JobTemplate{RemoteCommand: "/bin/sleep"})
+			Ω(err).Should(BeNil())
+			jobids, err := tracker.ListArrayJobs(jobid)
+			Ω(err).ShouldNot(BeNil())
+			Ω(jobids).Should(BeNil())
+		})
+
+		It("must fail to list jobs of a job array when job ID is wrong", func() {
+			tracker := New("testsession")
+			Ω(tracker).NotTo(BeNil())
+			jobids, err := tracker.ListArrayJobs("77")
+			Ω(err).ShouldNot(BeNil())
+			Ω(jobids).Should(BeNil())
+		})
+
+		It("should fail to wait for a finished job when it is in a different end state", func() {
+			tracker := New("testsession")
+			Ω(tracker).NotTo(BeNil())
+			jobid, err := tracker.AddJob(drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sleep",
+				Args:          []string{"0"}})
+			Ω(err).Should(BeNil())
+			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+			state := tracker.JobState(jobid)
+			Ω(state).Should(Equal(drmaa2interface.Done))
+			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed)
+			Ω(err).ShouldNot(BeNil())
+		})
+
+	})
+
 })

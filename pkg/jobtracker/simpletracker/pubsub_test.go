@@ -45,21 +45,17 @@ var _ = Describe("Pubsub", func() {
 
 			Ω(evt).To(Equal(drmaa2interface.Running))
 		})
-
 	})
 
 	Context("Multiple producer and single consumer", func() {
 
 		It("should detect all running states from the jobs", func() {
-
 			// producer
 			ps, jeCh := NewPubSub()
-
 			ps.StartBookKeeper()
 
 			// consumer
 			waitCh, err := ps.Register("13", drmaa2interface.Running)
-
 			Ω(err).To(BeNil())
 
 			// produce
@@ -69,18 +65,13 @@ var _ = Describe("Pubsub", func() {
 			jeCh <- JobEvent{JobState: drmaa2interface.QueuedHeld, JobID: "14"}
 
 			// consume
-			//evt := <-waitCh
-
-			//Ω(evt).To(Equal(drmaa2interface.Running))
 			Eventually(waitCh).Should(Receive(Equal(drmaa2interface.Running)))
-
 		})
 	})
 
 	Context("Single producer and multiple consumer", func() {
 
 		It("should send to all consumers the running state of the job", func() {
-
 			// producer
 			ps, jeCh := NewPubSub()
 
@@ -112,14 +103,12 @@ var _ = Describe("Pubsub", func() {
 
 			// this channel should time out
 			Consistently(waitCh4).ShouldNot(Receive())
-
 		})
 	})
 
 	Context("Multiple producer and multiple consumer", func() {
 
 		It("should send to all consumers the running state of the job", func() {
-
 			// producer
 			ps, jeCh := NewPubSub()
 
@@ -162,8 +151,20 @@ var _ = Describe("Pubsub", func() {
 
 			// this channel should time out
 			Consistently(waitCh5).ShouldNot(Receive())
-
 		})
 	})
 
+	Context("Error cases", func() {
+
+		It("should return an error if a job is already in an end state when registering", func() {
+			ps, jeCh := NewPubSub()
+			ps.StartBookKeeper()
+			jeCh <- JobEvent{JobState: drmaa2interface.Failed, JobID: "13"}
+			// async
+			<-time.After(time.Millisecond * 100)
+			_, err := ps.Register("13", drmaa2interface.Running)
+			Ω(err).ShouldNot(BeNil())
+		})
+
+	})
 })

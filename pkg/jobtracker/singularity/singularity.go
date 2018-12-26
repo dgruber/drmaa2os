@@ -76,8 +76,8 @@ func (dt *Tracker) ListJobCategories() ([]string, error) {
 	return []string{}, nil
 }
 
-// DeleteJob TODO as it is a TODO in simpletracker. Removes the job from the internal
-// DB when it is finsihed.
+// DeleteJob removes the job from the internal storage. It errors
+// when the job is not yet in any end state.
 func (dt *Tracker) DeleteJob(jobid string) error {
 	return dt.processTracker.DeleteJob(jobid)
 }

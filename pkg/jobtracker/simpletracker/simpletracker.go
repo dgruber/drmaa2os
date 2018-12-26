@@ -32,7 +32,7 @@ func New(jobsession string) *JobTracker {
 		shutdown:   false,
 		ps:         ps,
 	}
-	go watch(&tracker)
+	tracker.ps.StartBookKeeper()
 	return &tracker
 }
 

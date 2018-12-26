@@ -143,7 +143,7 @@ var _ = Describe("Singularity", func() {
 			Ω(len(jcats)).Should(BeNumerically("==", 0))
 		})
 
-		It("should delete the job (TODO implementation of reaping in simpletracker missing)", func() {
+		It("should delete the job when the job is an end state", func() {
 			st, err := New("singularity_test_session")
 			Ω(err).Should(BeNil())
 			job, err := st.AddJob(template)
@@ -168,9 +168,9 @@ var _ = Describe("Singularity", func() {
 			Ω(err).Should(BeNil())
 			t2 := template
 			t2.JobCategory = ""
-			job, err := st.AddJob(t2)
+			jobid, err := st.AddJob(t2)
 			Ω(err).ShouldNot(BeNil())
-			Ω(job).Should(Equal(""))
+			Ω(jobid).Should(Equal(""))
 		})
 
 	})
