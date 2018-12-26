@@ -68,7 +68,7 @@ func (dt *Tracker) JobControl(jobid, state string) error {
 
 // Wait blocks until either one of the given states is reached or when the timeout occurs.
 func (dt *Tracker) Wait(jobid string, timeout time.Duration, state ...drmaa2interface.JobState) error {
-	return helper.WaitForState(dt.processTracker, jobid, timeout, state...)
+	return dt.processTracker.Wait(jobid, timeout, state...)
 }
 
 // ListJobCategories returns nothing.

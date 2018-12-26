@@ -9,7 +9,6 @@ import (
 	"syscall"
 
 	"github.com/dgruber/drmaa2interface"
-	"github.com/scalingdata/gosigar"
 )
 
 func currentEnv() map[string]string {
@@ -29,6 +28,10 @@ func restoreEnv(env map[string]string) {
 	}
 }
 
+// StartProcess creates a new process based on the JobTemplate.
+// It returns the PID or 0 and an error if the process could be
+// created. The given channel is used for communicating back
+// when the job state changed.
 func StartProcess(jobid string, t drmaa2interface.JobTemplate, finishedJobChannel chan JobEvent) (int, error) {
 	cmd := exec.Command(t.RemoteCommand, t.Args...)
 
@@ -76,6 +79,8 @@ func StartProcess(jobid string, t drmaa2interface.JobTemplate, finishedJobChanne
 		return 0, err
 	}
 
+	finishedJobChannel <- JobEvent{JobState: drmaa2interface.Running, JobID: jobid}
+
 	// supervise process
 	go TrackProcess(cmd, jobid, finishedJobChannel, waitForFiles, waitCh)
 
@@ -109,28 +114,6 @@ func redirectIn(out io.WriteCloser, infilename string, waitCh chan bool) {
 		file.Close()
 		waitCh <- true
 	}()
-}
-
-// DO NOT USE!
-func stateByPid(pid int) (drmaa2interface.JobState, error) {
-	state := sigar.ProcState{}
-	err := state.Get(pid)
-	if err != nil {
-		if err == sigar.ErrNotImplemented {
-			// our implementation for macOS
-			return drmaa2interface.Undetermined, err
-		} else {
-			// OS not supported: sigar.ErrNotImplemented
-			return drmaa2interface.Undetermined, err
-		}
-	}
-	switch state.State {
-	case sigar.RunStateRun:
-		return drmaa2interface.Running, nil
-	case sigar.RunStateStop:
-		return drmaa2interface.Suspended, nil // T state
-	}
-	return drmaa2interface.Undetermined, nil
 }
 
 func KillPid(pid int) error {

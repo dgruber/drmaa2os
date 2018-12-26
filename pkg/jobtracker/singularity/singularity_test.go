@@ -104,7 +104,8 @@ var _ = Describe("Singularity", func() {
 			Ω(err).Should(BeNil())
 			Ω(job).ShouldNot(Equal(""))
 
-			st.Wait(job, drmaa2interface.InfiniteTime, drmaa2interface.Running)
+			err = st.Wait(job, drmaa2interface.InfiniteTime, drmaa2interface.Running)
+			Ω(err).Should(BeNil())
 
 			err = st.JobControl(job, "suspend")
 			Ω(err).Should(BeNil())

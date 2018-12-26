@@ -20,7 +20,8 @@ type PubSub struct {
 	// go routines write into that channel when process has finished
 	jobch chan JobEvent
 
-	// maps a jobid to functions registered for waiting for a specific state of that job
+	// maps a jobid to functions registered for waiting for a specific
+	// state of that job
 	waitFunctions map[string][]waitRequest
 
 	// feed by bookKeeper: current state

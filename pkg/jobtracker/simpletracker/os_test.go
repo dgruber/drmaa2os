@@ -89,6 +89,7 @@ var _ = Describe("OS specific functionality", func() {
 			Ω(err).Should(BeNil())
 
 			<-outCh
+			<-outCh
 
 			out, err := ioutil.ReadFile(file.Name())
 			Ω(err).Should(BeNil())
@@ -115,6 +116,7 @@ var _ = Describe("OS specific functionality", func() {
 			Ω(err).Should(BeNil())
 
 			<-outCh
+			<-outCh
 
 			out, err := ioutil.ReadFile(fileOut.Name())
 			Ω(err).Should(BeNil())
@@ -134,6 +136,7 @@ var _ = Describe("OS specific functionality", func() {
 			_, err = StartProcess("1", jt, outCh)
 			Ω(err).Should(BeNil())
 
+			<-outCh
 			<-outCh
 
 			out, err := ioutil.ReadFile(file.Name())
