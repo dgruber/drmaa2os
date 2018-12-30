@@ -72,7 +72,7 @@ func (jt *JobTracker) AddJob(t drmaa2interface.JobTemplate) (string, error) {
 		}})
 
 	// here also an event
-	pid, err := StartProcess(jobid, t, jt.ps.jobch)
+	pid, err := StartProcess(jobid, 0, t, jt.ps.jobch)
 	if err != nil {
 		jt.ps.NotifyAndWait(JobEvent{
 			JobState: drmaa2interface.Failed,

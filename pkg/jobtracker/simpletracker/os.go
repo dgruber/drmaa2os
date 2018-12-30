@@ -2,6 +2,7 @@ package simpletracker
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -33,7 +34,7 @@ func restoreEnv(env map[string]string) {
 // It returns the PID or 0 and an error if the process could be
 // created. The given channel is used for communicating back
 // when the job state changed.
-func StartProcess(jobid string, t drmaa2interface.JobTemplate, finishedJobChannel chan JobEvent) (int, error) {
+func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishedJobChannel chan JobEvent) (int, error) {
 	cmd := exec.Command(t.RemoteCommand, t.Args...)
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -73,6 +74,10 @@ func StartProcess(jobid string, t drmaa2interface.JobTemplate, finishedJobChanne
 
 	for key, value := range t.JobEnvironment {
 		os.Setenv(key, value)
+	}
+	os.Setenv("JOB_ID", jobid)
+	if task != 0 {
+		os.Setenv("TASK_ID", fmt.Sprintf("%d", task))
 	}
 
 	if err := cmd.Start(); err != nil {

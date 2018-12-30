@@ -22,12 +22,12 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 			jt.ps.Lock()
 			// check if job was cancelled while waiting
 			if jt.ps.jobState[jobid] == drmaa2interface.Failed {
-				<-waitCh
 				jt.ps.Unlock()
+				<-waitCh
 				continue
 			}
 			jt.ps.Unlock()
-			pid, err := StartProcess(jobid, t, jt.ps.jobch)
+			pid, err := StartProcess(jobid, i, t, jt.ps.jobch)
 			if err != nil {
 				// job failed
 				jt.ps.Lock()

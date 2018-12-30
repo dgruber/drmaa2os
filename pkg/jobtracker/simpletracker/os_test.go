@@ -39,7 +39,7 @@ var _ = Describe("OS specific functionality", func() {
 	Context("Process state change when the process is in the expected state", func() {
 
 		It("should be able to create a process", func() {
-			pid, err := StartProcess("1", jt, outCh)
+			pid, err := StartProcess("1", 0, jt, outCh)
 			Ω(err).Should(BeNil())
 			Ω(pid).ShouldNot(BeNumerically("<=", 1))
 
@@ -49,7 +49,7 @@ var _ = Describe("OS specific functionality", func() {
 		})
 
 		It("should be able to terminate a process", func() {
-			pid, err := StartProcess("1", jt, outCh)
+			pid, err := StartProcess("1", 0, jt, outCh)
 			Ω(err).Should(BeNil())
 			Ω(pid).ShouldNot(BeNumerically("<=", 1))
 
@@ -62,7 +62,7 @@ var _ = Describe("OS specific functionality", func() {
 		})
 
 		It("should be possible to suspend and resume a process", func() {
-			pid, err := StartProcess("1", jt, outCh)
+			pid, err := StartProcess("1", 0, jt, outCh)
 			Ω(err).Should(BeNil())
 
 			err = SuspendPid(pid)
@@ -82,7 +82,7 @@ var _ = Describe("OS specific functionality", func() {
 			jt.RemoteCommand = "/bin/echo"
 			jt.Args = []string{"output"}
 			jt.OutputPath = file.Name()
-			_, err = StartProcess("1", jt, outCh)
+			_, err = StartProcess("1", 0, jt, outCh)
 			Ω(err).Should(BeNil())
 
 			<-outCh
@@ -109,7 +109,7 @@ var _ = Describe("OS specific functionality", func() {
 			jt.InputPath = fileIn.Name()
 			jt.OutputPath = fileOut.Name()
 
-			_, err = StartProcess("1", jt, outCh)
+			_, err = StartProcess("1", 0, jt, outCh)
 			Ω(err).Should(BeNil())
 
 			<-outCh
@@ -129,7 +129,7 @@ var _ = Describe("OS specific functionality", func() {
 
 			jt.RemoteCommand = "./stderr.sh"
 			jt.ErrorPath = file.Name()
-			_, err = StartProcess("1", jt, outCh)
+			_, err = StartProcess("1", 0, jt, outCh)
 			Ω(err).Should(BeNil())
 
 			<-outCh
@@ -155,13 +155,13 @@ var _ = Describe("OS specific functionality", func() {
 
 			jt.InputPath = file.Name()
 			jt.OutputPath = file.Name()
-			_, err = StartProcess("1", jt, outCh)
+			_, err = StartProcess("1", 0, jt, outCh)
 
 			Ω(err).ShouldNot(BeNil())
 
 			jt.OutputPath = ""
 			jt.ErrorPath = file.Name()
-			_, err = StartProcess("1", jt, outCh)
+			_, err = StartProcess("1", 0, jt, outCh)
 
 			Ω(err).ShouldNot(BeNil())
 		})

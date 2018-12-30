@@ -19,6 +19,7 @@ params.yml
 /many
 /simple
 singularity
+multilarity
 
 coverage.out
 coverage.txt
