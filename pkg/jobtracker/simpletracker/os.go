@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/dgruber/drmaa2interface"
 )
@@ -79,7 +80,17 @@ func StartProcess(jobid string, t drmaa2interface.JobTemplate, finishedJobChanne
 		return 0, err
 	}
 
-	finishedJobChannel <- JobEvent{JobState: drmaa2interface.Running, JobID: jobid}
+	host, _ := os.Hostname()
+
+	finishedJobChannel <- JobEvent{
+		JobState: drmaa2interface.Running,
+		JobID:    jobid,
+		JobInfo: drmaa2interface.JobInfo{
+			State:             drmaa2interface.Running,
+			DispatchTime:      time.Now(),
+			AllocatedMachines: []string{host},
+		},
+	}
 
 	// supervise process
 	go TrackProcess(cmd, jobid, finishedJobChannel, waitForFiles, waitCh)

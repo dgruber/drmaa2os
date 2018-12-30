@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dgruber/drmaa2interface"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -60,18 +59,27 @@ func (jt *JobTracker) ListJobs() ([]string, error) {
 func (jt *JobTracker) AddJob(t drmaa2interface.JobTemplate) (string, error) {
 	jt.Lock()
 	defer jt.Unlock()
-	jt.ps.Lock()
-	defer jt.ps.Unlock()
-	jobid := GetNextJobID()
 
+	jobid := GetNextJobID()
+	jt.ps.NotifyAndWait(JobEvent{
+		JobState: drmaa2interface.Queued,
+		JobID:    jobid,
+		JobInfo: drmaa2interface.JobInfo{
+			State:          drmaa2interface.Queued,
+			Slots:          1,
+			SubmissionTime: time.Now(),
+			ID:             jobid,
+		}})
+
+	// here also an event
 	pid, err := StartProcess(jobid, t, jt.ps.jobch)
 	if err != nil {
-		jt.ps.jobState[jobid] = drmaa2interface.Failed
+		jt.ps.NotifyAndWait(JobEvent{
+			JobState: drmaa2interface.Failed,
+			JobID:    jobid})
 		return "", err
 	}
-	jt.ps.jobState[jobid] = drmaa2interface.Running
 	jt.js.SaveJob(jobid, t, pid)
-
 	return jobid, nil
 }
 
@@ -106,42 +114,53 @@ func cleanup(pids []int) {
 
 // AddArrayJob starts end-begin/step processes based on the given JobTemplate.
 // Note that maxParallel is not yet implemented.
-func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin int, end int, step int, maxParallel int) (string, error) {
-	arrayjobid := GetNextJobID()
-
-	// maxParallel has no meaning yet - start all processes
+func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin, end, step, maxParallel int) (string, error) {
+	jt.Lock()
 	var pids []int
+	arrayjobid := GetNextJobID()
+	if step <= 0 {
+		step = 1
+	}
+	// put all jobs in queued state
 	for i := begin; i <= end; i += step {
 		jobid := fmt.Sprintf("%s.%d", arrayjobid, i)
-		pid, err := StartProcess(jobid, t, jt.ps.jobch)
-		if err != nil {
-			cleanup(pids)
-			return "", err
-		}
-		pids = append(pids, pid)
+		jt.ps.NotifyAndWait(JobEvent{
+			JobState: drmaa2interface.Queued,
+			JobID:    jobid,
+			JobInfo: drmaa2interface.JobInfo{
+				State:          drmaa2interface.Queued,
+				Slots:          1,
+				SubmissionTime: time.Now(),
+				ID:             jobid,
+			}})
+		pids = append(pids, 0)
 	}
-
-	jt.Lock()
-	defer jt.Unlock()
-
 	jt.js.SaveArrayJob(arrayjobid, pids, t, begin, end, step)
-
+	jt.Unlock()
+	errCh := arrayJobSubmissionController(jt, arrayjobid, t, begin, end, step, maxParallel)
+	if err := <-errCh; err != nil {
+		return "", err
+	}
 	return arrayjobid, nil
 }
 
 // ListArrayJobs returns all job IDs the job array ID is associated with.
 func (jt *JobTracker) ListArrayJobs(id string) ([]string, error) {
+	jt.Lock()
 	isArray, exists := jt.js.isArrayJob[id]
+	jt.Unlock()
 	if !exists {
 		return nil, errors.New("Array job not found")
 	}
 	if isArray == false {
 		return nil, errors.New("Job is not an array job")
 	}
+	jt.Lock()
 	jobids := make([]string, 0, len(jt.js.jobs[id]))
 	for _, job := range jt.js.jobs[id] {
 		jobids = append(jobids, fmt.Sprintf("%s.%d", id, job.TaskID))
 	}
+	jt.Unlock()
 	return jobids, nil
 }
 
@@ -172,42 +191,17 @@ func (jt *JobTracker) JobState(jobid string) drmaa2interface.JobState {
 	return state
 }
 
-func (jt *JobTracker) ProcessToJobInfo(jobid string, pid int) (drmaa2interface.JobInfo, error) {
-	jt.ps.Lock()
-	state := jt.ps.jobState[jobid]
-	jt.ps.Unlock()
-	host, _ := os.Hostname()
-	return drmaa2interface.JobInfo{
-		Slots:             1,
-		ID:                jobid,
-		SubmissionMachine: host,
-		State:             state,
-		JobOwner:          fmt.Sprintf("%d", os.Getuid()),
-	}, nil
-}
-
 // JobInfo returns more detailed information about a job.
 func (jt *JobTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
 	jt.Lock()
 	defer jt.Unlock()
-
 	jt.ps.Lock()
-	ji, exists := jt.ps.jobInfoFinished[jobid]
+	ji, exists := jt.ps.jobInfo[jobid]
 	jt.ps.Unlock()
 	if exists == true {
 		return ji, nil
 	}
-
-	pid, err := jt.js.GetPID(jobid)
-	if err != nil {
-		return drmaa2interface.JobInfo{
-			Slots: 1,
-			ID:    jobid,
-			State: drmaa2interface.Undetermined,
-		}, err
-	}
-	return jt.ProcessToJobInfo(jobid, pid)
-
+	return ji, errors.New("job does not exist")
 }
 
 // JobControl suspends, resumes, or terminates a job.
@@ -222,6 +216,9 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 
 	switch state {
 	case "suspend":
+		if pid == 0 {
+			return errors.New("job is not running")
+		}
 		err := SuspendPid(pid)
 		if err == nil {
 			jt.ps.Lock()
@@ -230,6 +227,9 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 		}
 		return err
 	case "resume":
+		if pid == 0 {
+			return errors.New("job is not running")
+		}
 		err := ResumePid(pid)
 		if err == nil {
 			jt.ps.Lock()
@@ -242,6 +242,16 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 	case "release":
 		return errors.New("Unsupported Operation")
 	case "terminate":
+		// if job is queued - terminate it by setting it to
+		// failed state (see arrayJobSubmissionController())
+		jt.ps.Lock()
+		state := jt.ps.jobState[jobid]
+		if state == drmaa2interface.Queued {
+			jt.ps.jobState[jobid] = drmaa2interface.Failed
+			jt.ps.Unlock()
+			return nil
+		}
+		jt.ps.Unlock()
 		err := KillPid(pid)
 		if err == nil {
 			jt.ps.Lock()
@@ -298,6 +308,10 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 	jt.Unlock()
 	if err != nil {
 		return err
+	}
+	if waitChannel == nil {
+		// we are already in expected state
+		return nil
 	}
 
 	select {

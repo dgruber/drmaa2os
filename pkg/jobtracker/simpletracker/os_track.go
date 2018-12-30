@@ -24,8 +24,12 @@ func TrackProcess(cmd *exec.Cmd, jobid string, finishedJobChannel chan JobEvent,
 
 	if err != nil {
 		ji := makeLocalJobInfo()
-		ji.State = drmaa2interface.Undetermined
-		finishedJobChannel <- JobEvent{JobState: drmaa2interface.Failed, JobID: jobid, JobInfo: ji}
+		ji.State = drmaa2interface.Failed
+		finishedJobChannel <- JobEvent{
+			JobState: drmaa2interface.Failed,
+			JobID:    jobid,
+			JobInfo:  ji,
+		}
 		return
 	}
 

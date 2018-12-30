@@ -40,7 +40,6 @@ var _ = Describe("OS specific functionality", func() {
 
 		It("should be able to create a process", func() {
 			pid, err := StartProcess("1", jt, outCh)
-
 			Ω(err).Should(BeNil())
 			Ω(pid).ShouldNot(BeNumerically("<=", 1))
 
@@ -51,7 +50,6 @@ var _ = Describe("OS specific functionality", func() {
 
 		It("should be able to terminate a process", func() {
 			pid, err := StartProcess("1", jt, outCh)
-
 			Ω(err).Should(BeNil())
 			Ω(pid).ShouldNot(BeNumerically("<=", 1))
 
@@ -65,7 +63,6 @@ var _ = Describe("OS specific functionality", func() {
 
 		It("should be possible to suspend and resume a process", func() {
 			pid, err := StartProcess("1", jt, outCh)
-
 			Ω(err).Should(BeNil())
 
 			err = SuspendPid(pid)
@@ -131,8 +128,7 @@ var _ = Describe("OS specific functionality", func() {
 			Ω(err).Should(BeNil())
 
 			jt.RemoteCommand = "./stderr.sh"
-
-			jt.OutputPath = file.Name()
+			jt.ErrorPath = file.Name()
 			_, err = StartProcess("1", jt, outCh)
 			Ω(err).Should(BeNil())
 

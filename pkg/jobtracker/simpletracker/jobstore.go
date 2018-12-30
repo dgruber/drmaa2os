@@ -84,11 +84,12 @@ func (js *JobStore) RemoveJob(jobid string) {
 }
 
 // SaveArrayJob stores all process IDs of the tasks of an array job.
-func (js *JobStore) SaveArrayJob(arrayjobid string, pids []int, t drmaa2interface.JobTemplate, begin int, end int, step int) {
+func (js *JobStore) SaveArrayJob(arrayjobid string, pids []int,
+	t drmaa2interface.JobTemplate, begin, end, step int) {
 	pid := 0
 	js.templates[arrayjobid] = t
 	js.isArrayJob[arrayjobid] = true
-	js.jobs[arrayjobid] = make([]InternalJob, 0, (end-begin)/step)
+	js.jobs[arrayjobid] = make([]InternalJob, 0, len(pids))
 
 	for i := begin; i <= end; i += step {
 		jobid := fmt.Sprintf("%s.%d", arrayjobid, i)
@@ -96,11 +97,28 @@ func (js *JobStore) SaveArrayJob(arrayjobid string, pids []int, t drmaa2interfac
 		js.jobs[arrayjobid] = append(js.jobs[arrayjobid],
 			InternalJob{
 				TaskID: i,
-				State:  drmaa2interface.Running,
+				State:  drmaa2interface.Queued,
 				PID:    pids[pid],
 			})
 		pid++
 	}
+}
+
+// SaveArrayJobPID stores the current PID of main process of the
+// job array task.
+func (js *JobStore) SaveArrayJobPID(arrayjobid string, taskid, pid int) error {
+	job, exists := js.jobs[arrayjobid]
+	if !exists {
+		return errors.New("array job does not exist")
+	}
+	for task := range job {
+		if job[task].TaskID == taskid {
+			job[task].PID = pid
+			job[task].State = drmaa2interface.Running
+			return nil
+		}
+	}
+	return errors.New("task not found")
 }
 
 // GetPID returns the PID of a job or an array job task.

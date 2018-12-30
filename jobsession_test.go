@@ -154,7 +154,7 @@ var _ = Describe("Jobsession", func() {
 		})
 
 		It("should be possible to submit a job array (bulk job)", func() {
-			arrayjob, err := js.RunBulkJobs(jt, 1, 10, 1, 10)
+			arrayjob, err := js.RunBulkJobs(jt, 1, 10, 1, 2)
 			Ω(err).Should(BeNil())
 
 			jobid := arrayjob.GetID()
@@ -173,7 +173,7 @@ var _ = Describe("Jobsession", func() {
 		It("should be possible to terminate a job array (bulk job)", func() {
 			jt.Args = []string{"100"}
 
-			arrayjob, err := js.RunBulkJobs(jt, 1, 10, 1, 10)
+			arrayjob, err := js.RunBulkJobs(jt, 1, 10, 1, 5)
 			Ω(err).Should(BeNil())
 
 			jobid := arrayjob.GetID()
@@ -185,7 +185,6 @@ var _ = Describe("Jobsession", func() {
 			for _, j := range arrayjob.GetJobs() {
 				Ω(j.GetState()).Should(Equal(drmaa2interface.Failed))
 			}
-
 			Ω(js.Close()).Should(BeNil())
 		})
 

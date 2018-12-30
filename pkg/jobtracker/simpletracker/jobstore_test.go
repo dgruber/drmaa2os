@@ -118,6 +118,31 @@ var _ = Describe("Jobstore", func() {
 			Ω(store.HasJob("13.1")).Should(BeFalse())
 			Ω(store.HasJob("13.3")).Should(BeFalse())
 		})
+
+		It("should save and a job array and add the PID of a task afterwards", func() {
+			store := NewJobStore()
+			Ω(store).ShouldNot(BeNil())
+			store.SaveArrayJob("13",
+				[]int{0, 0, 0},
+				drmaa2interface.JobTemplate{RemoteCommand: "rc"},
+				1, 3, 1)
+			pid, err := store.GetPID("13.2")
+			Ω(err).Should(BeNil())
+			Ω(pid).Should(BeNumerically("==", 0))
+
+			err = store.SaveArrayJobPID("13", 2, 77)
+			Ω(err).Should(BeNil())
+			pid, err = store.GetPID("13.2")
+			Ω(err).Should(BeNil())
+			Ω(pid).Should(BeNumerically("==", 77))
+
+			err = store.SaveArrayJobPID("13", 50, 77)
+			Ω(err).ShouldNot(BeNil())
+
+			err = store.SaveArrayJobPID("50", 50, 77)
+			Ω(err).ShouldNot(BeNil())
+		})
+
 	})
 
 })

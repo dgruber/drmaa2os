@@ -2,7 +2,6 @@ package drmaa2os
 
 import (
 	"errors"
-	"fmt"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/d2hlp"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
@@ -123,7 +122,6 @@ func waitAny(waitForStartedState bool, jobs []drmaa2interface.Job, timeout time.
 		go func() {
 			select {
 			case <-abort:
-				fmt.Println("abort")
 				return
 			default:
 				var errWait error
