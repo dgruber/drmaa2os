@@ -6,11 +6,11 @@ _DRMAA2 for OS processes and more_
 [![codecov](https://codecov.io/gh/dgruber/drmaa2os/branch/master/graph/badge.svg)](https://codecov.io/gh/dgruber/drmaa2os)
 
 This is a Go API based on an open standard ([Open Grid Forum DRMAA2](https://www.ogf.org/documents/GFD.231.pdf)) for submitting and
-supervising workloads running in operating system processes, containers, PODs, tasks, or batch jobs.
+supervising workloads running in operating system processes, containers, PODs, tasks, or HPC batch jobs.
 
 The API allows you to develop and run job workflows in OS processes and switch later to 
-containers running in Kubernetes, as Cloud Foundry tasks, or pure Docker or
-Singularity without changing the application logic.
+containers running in Kubernetes, as Cloud Foundry tasks, pure Docker, or Singularity
+without changing the application logic.
 
 Its main pupose is supporting you with an abstraction layer on top of platforms, workload managers, 
 and HPC cluster schedulers, so that you don't need to deal with the underlaying details and differences.
