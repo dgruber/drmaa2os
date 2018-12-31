@@ -165,6 +165,7 @@ var _ = Describe("Simpletracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
 
+			tracker.Wait(jobid, 0.0, drmaa2interface.Running)
 			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Running))
 			tracker.Wait(jobid, 0.0, drmaa2interface.Done)
 			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
@@ -176,6 +177,7 @@ var _ = Describe("Simpletracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
 
+			tracker.Wait(jobid, 0.0, drmaa2interface.Running)
 			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Running))
 
 			err = tracker.JobControl(jobid, "suspend")
@@ -205,6 +207,7 @@ var _ = Describe("Simpletracker", func() {
 			_, err = tracker.JobInfo(jobid)
 			Ω(err).Should(BeNil())
 
+			tracker.Wait(jobid, 0.0, drmaa2interface.Running)
 			err = tracker.DeleteJob(jobid)
 			Ω(err).ShouldNot(BeNil())
 
@@ -499,7 +502,8 @@ var _ = Describe("Simpletracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(len(jobids)).Should(BeNumerically("==", 9))
 			tracker.Wait(jobids[8], 0.0, drmaa2interface.Done)
-			Ω(maxParallel(jobids)).Should(BeNumerically("==", 9))
+			// due to length of the jobs they might not overlap perfectly
+			Ω(maxParallel(jobids)).Should(BeNumerically(">=", 7))
 
 			jobid, err = tracker.AddArrayJob(t, 1, 9, 1, 9)
 			Ω(err).Should(BeNil())
@@ -507,7 +511,7 @@ var _ = Describe("Simpletracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(len(jobids)).Should(BeNumerically("==", 9))
 			tracker.Wait(jobids[8], 0.0, drmaa2interface.Done)
-			Ω(maxParallel(jobids)).Should(BeNumerically("==", 9))
+			Ω(maxParallel(jobids)).Should(BeNumerically(">=", 7))
 
 			jobid, err = tracker.AddArrayJob(t, 1, 9, 0, 9)
 			Ω(err).Should(BeNil())
@@ -515,7 +519,7 @@ var _ = Describe("Simpletracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(len(jobids)).Should(BeNumerically("==", 9))
 			tracker.Wait(jobids[8], 0.0, drmaa2interface.Done)
-			Ω(maxParallel(jobids)).Should(BeNumerically("==", 9))
+			Ω(maxParallel(jobids)).Should(BeNumerically(">=", 7))
 		})
 
 		It("should should terminate job array tasks which are queued (blocked by maxParallel)", func() {
