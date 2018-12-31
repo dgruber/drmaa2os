@@ -34,7 +34,7 @@ func main() {
 		"pid": "true",
 	}
 
-	// mass submit of 1000 singularity containers echo running with
+	// mass submit of 100 singularity containers echo running with
 	// a different TASK_ID environment variable - throttling to have
 	// max. 10 containers running at the same point in time
 	jobarray, err := js.RunBulkJobs(jt, 1, 100, 1, 10)

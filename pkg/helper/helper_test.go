@@ -87,7 +87,7 @@ var _ = Describe("Helper", func() {
 			return WaitForState(tracker, jobid, time.Second*1, expectedStates...)
 		}
 
-		It("", func() {
+		It("should block until state is reached or error", func() {
 			tracker := simpletrackerfakes.New("testsession")
 			jobid, err := tracker.AddJob(drmaa2interface.JobTemplate{
 				JobName: "testjob",
@@ -101,7 +101,17 @@ var _ = Describe("Helper", func() {
 			// timeout
 			Ω(WaitFor(tracker, jobid, "terminate", drmaa2interface.Suspended)).ShouldNot(BeNil())
 			Ω(WaitFor(tracker, jobid, "terminate", drmaa2interface.Done, drmaa2interface.Suspended, drmaa2interface.Running)).ShouldNot(BeNil())
+		})
 
+		It("should return immediately when job is already in state or no timeout is given", func() {
+			tracker := simpletrackerfakes.New("testsession")
+			jobid, err := tracker.AddJob(drmaa2interface.JobTemplate{
+				JobName: "testjob",
+			})
+			Ω(err).Should(BeNil())
+			tracker.JobControl(jobid, "suspend")
+			Ω(WaitForState(tracker, jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Suspended)).Should(BeNil())
+			Ω(WaitForState(tracker, jobid, 0.0, drmaa2interface.Done, drmaa2interface.Failed)).ShouldNot(BeNil())
 		})
 
 	})

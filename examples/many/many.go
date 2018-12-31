@@ -71,4 +71,27 @@ func main() {
 
 	fmt.Printf("It took: %s\n", time.Since(start).String())
 
+	fmt.Println("Start running 1000 sleeper jobs sequentially as job array")
+	start = time.Now()
+	ajid, err := js.RunBulkJobs(jt, 1, 1000, 1, 1)
+	if err != nil {
+		panic(err)
+	}
+	jobs = ajid.GetJobs()
+	for i := 0; i < 1000; i++ {
+		jobs[i].WaitTerminated(drmaa2interface.InfiniteTime)
+	}
+	fmt.Printf("It took: %s\n", time.Since(start).String())
+
+	fmt.Println("Start running 1000 sleeper jobs in parallel as job array")
+	start = time.Now()
+	ajid, err = js.RunBulkJobs(jt, 1, 1000, 1, 0)
+	if err != nil {
+		panic(err)
+	}
+	jobs = ajid.GetJobs()
+	for i := 0; i < 1000; i++ {
+		jobs[i].WaitTerminated(drmaa2interface.InfiniteTime)
+	}
+	fmt.Printf("It took: %s\n", time.Since(start).String())
 }
