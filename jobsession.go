@@ -29,14 +29,23 @@ func (js *JobSession) Close() error {
 	return nil
 }
 
+// GetContact method reports the contact value that was used in the
+// SessionManager::createJobSession call for this instance. If no
+// value was originally provided, the default contact string from the
+// implementation MUST be returned.
 func (js *JobSession) GetContact() (string, error) {
 	return "", nil
 }
 
+// GetSessionName reports the session name, a value that resulted from the
+// SessionManager::createJobSession or SessionManager::openJobSession
+// call for this instance.
 func (js *JobSession) GetSessionName() (string, error) {
 	return js.name, nil
 }
 
+// GetJobCategories provides the list of valid job category names which
+// can be used for the jobCategory attribute in a JobTemplate instance.
 func (js *JobSession) GetJobCategories() ([]string, error) {
 	var lastError error
 	jobCategories := make([]string, 0, 16)
@@ -51,10 +60,17 @@ func (js *JobSession) GetJobCategories() ([]string, error) {
 	return jobCategories, lastError
 }
 
-func createJobFromInfo(ji drmaa2interface.JobInfo) Job {
-	return Job{}
-}
-
+// GetJobs returns the set of jobs that belong to the job session. The
+// filter parameter allows to choose a subset of the session jobs as
+// return value. If no job matches or the session has no jobs attached,
+// the method MUST return an empty set. If filter is UNSET, all session
+// jobs MUST be returned.
+// Time-dependent effects of this method, such as jobs no longer matching
+// to filter criteria on evaluation time, are implementation-specific.
+// The purpose of the filter parameter is to keep scalability with a
+// large number of jobs per session. Applications therefore must consider
+// the possibly changed state of jobs during their evaluation of the method
+// result.
 func (js *JobSession) GetJobs(filter drmaa2interface.JobInfo) ([]drmaa2interface.Job, error) {
 	var joblist []drmaa2interface.Job
 
@@ -81,6 +97,9 @@ func (js *JobSession) GetJobs(filter drmaa2interface.JobInfo) ([]drmaa2interface
 	return joblist, nil
 }
 
+// GetJobArray method returns the JobArray instance with the given ID.
+// If the session does not / no longer contain the according job array,
+// InvalidArgumentException SHALL be thrown.
 func (js *JobSession) GetJobArray(id string) (drmaa2interface.ArrayJob, error) {
 	jobids, err := js.tracker[0].ListArrayJobs(id)
 	if err != nil {
@@ -178,10 +197,30 @@ func waitAny(waitForStartedState bool, jobs []drmaa2interface.Job, timeout time.
 	}
 }
 
+// WaitAnyStarted method blocks until any of the jobs referenced in the jobs
+// parameter entered one of the "Started" states.
+//
+// The timeout argument specifies the desired waiting time for the state change.
+// The constant value drmaa2interface.InfiniteTime MUST be supported to get an
+// indefinite waiting time. The constant value drmaa2interface.ZeroTime MUST be
+// supported to express that the method call SHALL return immediately.
+// A time.Duration can be specified to indicate the maximum waiting time.
+// If the method call returns because of timeout, an TimeoutException SHALL be
+// raised.
 func (js *JobSession) WaitAnyStarted(jobs []drmaa2interface.Job, timeout time.Duration) (drmaa2interface.Job, error) {
 	return waitAny(true, jobs, timeout)
 }
 
+// WaitAnyTerminated method blocks until any of the jobs referenced in the
+// jobs parameter entered one of the "Terminated" states.
+//
+// The timeout argument specifies the desired waiting time for the state change.
+// The constant value drmaa2interface.InfiniteTime MUST be supported to get an
+// indefinite waiting time. The constant value drmaa2interface.ZeroTime MUST be
+// supported to express that the method call SHALL return immediately.
+// A time.Duration can be specified to indicate the maximum waiting time.
+// If the method call returns because of timeout, an TimeoutException SHALL be
+// raised.
 func (js *JobSession) WaitAnyTerminated(jobs []drmaa2interface.Job, timeout time.Duration) (drmaa2interface.Job, error) {
 	return waitAny(false, jobs, timeout)
 }
