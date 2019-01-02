@@ -8,6 +8,7 @@ import (
 
 	"github.com/dgruber/drmaa2interface"
 	"os/exec"
+	"time"
 )
 
 var _ = Describe("OsProcessSupervisor", func() {
@@ -18,7 +19,7 @@ var _ = Describe("OsProcessSupervisor", func() {
 		cmd := exec.Command("true")
 		err := cmd.Start()
 		Ω(err).Should(BeNil())
-		TrackProcess(cmd, jobid, ch, 0, nil)
+		TrackProcess(cmd, jobid, time.Now(), ch, 0, nil)
 
 		var je JobEvent
 		Ω(ch).Should(Receive(&je))
@@ -37,7 +38,7 @@ var _ = Describe("OsProcessSupervisor", func() {
 		cmd := exec.Command("false")
 		err := cmd.Start()
 		Ω(err).Should(BeNil())
-		TrackProcess(cmd, jobid, ch, 0, nil)
+		TrackProcess(cmd, jobid, time.Now(), ch, 0, nil)
 
 		var je JobEvent
 		Ω(ch).Should(Receive(&je))
@@ -48,10 +49,6 @@ var _ = Describe("OsProcessSupervisor", func() {
 		// check job info
 		Ω(je.JobInfo.ID).Should(Equal("1"))
 		Ω(je.JobInfo.ExitStatus).Should(BeNumerically("==", 1))
-	})
-
-	It("should return a job info object", func() {
-
 	})
 
 })

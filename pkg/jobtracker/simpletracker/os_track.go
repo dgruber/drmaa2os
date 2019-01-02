@@ -11,8 +11,8 @@ import (
 
 // TrackProcess supervises a running process and sends a notification when
 // the process is finished.
-func TrackProcess(cmd *exec.Cmd, jobid string, finishedJobChannel chan JobEvent, waitForFiles int, waitCh chan bool) {
-	dispatchTime := time.Now()
+func TrackProcess(cmd *exec.Cmd, jobid string, startTime time.Time,
+	finishedJobChannel chan JobEvent, waitForFiles int, waitCh chan bool) {
 	state, err := cmd.Process.Wait()
 
 	// wait until all filedescriptors (stdout, stderr) of the
@@ -33,7 +33,7 @@ func TrackProcess(cmd *exec.Cmd, jobid string, finishedJobChannel chan JobEvent,
 		return
 	}
 
-	ji := collectUsage(state, jobid, dispatchTime)
+	ji := collectUsage(state, jobid, startTime)
 	finishedJobChannel <- JobEvent{JobState: ji.State, JobID: jobid, JobInfo: ji}
 }
 
@@ -47,7 +47,7 @@ func makeLocalJobInfo() drmaa2interface.JobInfo {
 	}
 }
 
-func collectUsage(state *os.ProcessState, jobid string, dispatchTime time.Time) drmaa2interface.JobInfo {
+func collectUsage(state *os.ProcessState, jobid string, startTime time.Time) drmaa2interface.JobInfo {
 	ji := makeLocalJobInfo()
 	ji.State = drmaa2interface.Undetermined
 
@@ -71,13 +71,10 @@ func collectUsage(state *os.ProcessState, jobid string, dispatchTime time.Time) 
 		ji.State = drmaa2interface.Failed
 	}
 
-	ji.WallclockTime = time.Since(dispatchTime)
+	ji.WallclockTime = time.Since(startTime)
 	ji.CPUTime = 0
-	ji.DispatchTime = dispatchTime
 	ji.ID = jobid
 	ji.QueueName = ""
-	ji.Slots = 1
-	ji.SubmissionTime = dispatchTime
 
 	return ji
 }

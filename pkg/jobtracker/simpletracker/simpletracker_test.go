@@ -430,6 +430,50 @@ var _ = Describe("Simpletracker", func() {
 
 	})
 
+	Context("JobInfo during job lifecycle", func() {
+		var tracker *JobTracker
+		var t drmaa2interface.JobTemplate
+
+		BeforeEach(func() {
+			tracker = New("testsession")
+			Ω(tracker).NotTo(BeNil())
+			t = drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sleep",
+				Args:          []string{"0.2"},
+			}
+		})
+
+		It("should return JobInfo always with same submission time", func() {
+			jobid, err := tracker.AddJob(t)
+			Ω(err).Should(BeNil())
+			info, err := tracker.JobInfo(jobid)
+			Ω(err).Should(BeNil())
+			Ω(info.SubmissionTime).ShouldNot(Equal(0.0))
+			tracker.Wait(jobid, time.Millisecond*500, drmaa2interface.Running)
+			infoRunning, err := tracker.JobInfo(jobid)
+			Ω(err).Should(BeNil())
+			Ω(infoRunning.SubmissionTime).Should(Equal(info.SubmissionTime))
+			tracker.Wait(jobid, time.Millisecond*500, drmaa2interface.Done)
+			infoDone, err := tracker.JobInfo(jobid)
+			Ω(err).Should(BeNil())
+			Ω(infoDone.SubmissionTime).Should(Equal(info.SubmissionTime))
+		})
+
+		It("should return JobInfo always with same dispatch time", func() {
+			jobid, err := tracker.AddJob(t)
+			Ω(err).Should(BeNil())
+			tracker.Wait(jobid, time.Millisecond*500, drmaa2interface.Running)
+			infoRunning, err := tracker.JobInfo(jobid)
+			Ω(err).Should(BeNil())
+			Ω(infoRunning.DispatchTime).ShouldNot(Equal(0.0))
+			tracker.Wait(jobid, time.Millisecond*500, drmaa2interface.Done)
+			infoDone, err := tracker.JobInfo(jobid)
+			Ω(err).Should(BeNil())
+			Ω(infoDone.DispatchTime).Should(Equal(infoRunning.DispatchTime))
+		})
+
+	})
+
 	Context("Job array concurrency", func() {
 		var tracker *JobTracker
 		var t drmaa2interface.JobTemplate

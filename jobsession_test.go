@@ -14,21 +14,22 @@ import (
 
 const tempdb string = "drmaa2ostest.db"
 
-var _ = Describe("Jobsession", func() {
+var _ = Describe("JobSession", func() {
+
+	var (
+		js drmaa2interface.JobSession
+		jt drmaa2interface.JobTemplate
+	)
+
+	BeforeEach(func() {
+		js = NewJobSession("testsession", []jobtracker.JobTracker{simpletracker.New("testsession")})
+		jt = drmaa2interface.JobTemplate{
+			RemoteCommand: "/bin/sleep",
+			Args:          []string{"0.1"},
+		}
+	})
 
 	Describe("standard operations", func() {
-		var (
-			js drmaa2interface.JobSession
-			jt drmaa2interface.JobTemplate
-		)
-
-		BeforeEach(func() {
-			js = NewJobSession("testsession", []jobtracker.JobTracker{simpletracker.New("testsession")})
-			jt = drmaa2interface.JobTemplate{
-				RemoteCommand: "/bin/sleep",
-				Args:          []string{"0.1"},
-			}
-		})
 
 		It("should return the job session name", func() {
 			name, err := js.GetSessionName()
@@ -93,6 +94,22 @@ var _ = Describe("Jobsession", func() {
 		})
 	})
 
+	Describe("Basic error cases", func() {
+
+		It("should fail to run a job with broken job template", func() {
+			job, err := js.RunJob(drmaa2interface.JobTemplate{})
+			Ω(err).ShouldNot(BeNil())
+			Ω(job).Should(BeNil())
+		})
+
+		It("should fail to create a job array with broken job template", func() {
+			ajob, err := js.RunBulkJobs(drmaa2interface.JobTemplate{}, 1, 10, 1, 1)
+			Ω(err).ShouldNot(BeNil())
+			Ω(ajob).Should(BeNil())
+		})
+
+	})
+
 	Describe("waitAny with fakes", func() {
 
 		It("should return when one job is running", func() {
@@ -140,18 +157,6 @@ var _ = Describe("Jobsession", func() {
 	})
 
 	Describe("basic job array functionality", func() {
-		var (
-			js drmaa2interface.JobSession
-			jt drmaa2interface.JobTemplate
-		)
-
-		BeforeEach(func() {
-			js = NewJobSession("testsession", []jobtracker.JobTracker{simpletracker.New("testsession")})
-			jt = drmaa2interface.JobTemplate{
-				RemoteCommand: "/bin/sleep",
-				Args:          []string{"0.1"},
-			}
-		})
 
 		It("should be possible to submit a job array (bulk job)", func() {
 			arrayjob, err := js.RunBulkJobs(jt, 1, 10, 1, 2)

@@ -6,6 +6,8 @@ import (
 	"sync"
 )
 
+// JobEvent is send whenever a job status change is happening
+// to inform all registered listeners.
 type JobEvent struct {
 	JobID    string
 	JobState drmaa2interface.JobState

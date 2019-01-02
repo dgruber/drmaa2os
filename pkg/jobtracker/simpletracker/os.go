@@ -86,27 +86,27 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 	}
 
 	host, _ := os.Hostname()
+	startTime := time.Now()
 
 	finishedJobChannel <- JobEvent{
 		JobState: drmaa2interface.Running,
 		JobID:    jobid,
 		JobInfo: drmaa2interface.JobInfo{
 			State:             drmaa2interface.Running,
-			DispatchTime:      time.Now(),
+			DispatchTime:      startTime,
 			AllocatedMachines: []string{host},
 		},
 	}
 
-	// supervise process
-	go TrackProcess(cmd, jobid, finishedJobChannel, waitForFiles, waitCh)
+	go TrackProcess(cmd, jobid, startTime, finishedJobChannel, waitForFiles, waitCh)
 
 	restoreEnv(env)
 	mtx.Unlock()
 
-	if cmd.Process != nil {
-		return cmd.Process.Pid, nil
+	if cmd.Process == nil {
+		return 0, errors.New("process is nil")
 	}
-	return 0, errors.New("process is nil")
+	return cmd.Process.Pid, nil
 }
 
 func redirectOut(src io.ReadCloser, outfilename string, waitCh chan bool) {
@@ -132,6 +132,8 @@ func redirectIn(out io.WriteCloser, infilename string, waitCh chan bool) {
 	}()
 }
 
+// KillPid terminates a process and all processes belonging
+// to the process group.
 func KillPid(pid int) error {
 	pgid, err := syscall.Getpgid(pid)
 	if err != nil {
@@ -140,10 +142,14 @@ func KillPid(pid int) error {
 	return syscall.Kill(-pgid, syscall.SIGKILL)
 }
 
+// SuspendPid stops a process group from its execution. Note
+// that it sends SIGTSTP which can be caught by the application
+// and hence could be ignored.
 func SuspendPid(pid int) error {
 	return syscall.Kill(-pid, syscall.SIGTSTP)
 }
 
+// ResumePid contiues to run a previously suspended process group.
 func ResumePid(pid int) error {
 	return syscall.Kill(-pid, syscall.SIGCONT)
 }

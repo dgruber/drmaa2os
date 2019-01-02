@@ -1,8 +1,6 @@
-package drmaa2os_test
+package drmaa2os
 
 import (
-	. "github.com/dgruber/drmaa2os"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -23,7 +21,7 @@ var _ = Describe("Job", func() {
 			template = drmaa2interface.JobTemplate{JobName: "jobname"}
 			tracker = simpletrackerfakes.New("jobsession")
 			tracker.AddJob(template)
-			job = NewJob("13", "jobsession", template, tracker)
+			job = newJob("13", "jobsession", template, tracker)
 		})
 
 		It("should return the job specific details", func() {
