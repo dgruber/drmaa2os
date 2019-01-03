@@ -16,15 +16,6 @@ type ArrayJob struct {
 	jobs        []drmaa2interface.Job
 }
 
-func NewArrayJob(id, jsessionname string, tmpl drmaa2interface.JobTemplate, jobs []drmaa2interface.Job) *ArrayJob {
-	return &ArrayJob{
-		id:          id,
-		sessionname: jsessionname,
-		template:    tmpl,
-		jobs:        jobs,
-	}
-}
-
 // GetID reports the job identifier assigned to the job array by the DRM
 // system in text form.
 func (aj *ArrayJob) GetID() string {

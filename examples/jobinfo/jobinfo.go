@@ -44,5 +44,5 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("%%v\n", jobinfo)
+	fmt.Printf("%v\n", jobinfo)
 }

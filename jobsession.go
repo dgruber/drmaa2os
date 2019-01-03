@@ -1,7 +1,6 @@
 package drmaa2os
 
 import (
-	"errors"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/d2hlp"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
@@ -16,14 +15,19 @@ type JobSession struct {
 	tracker []jobtracker.JobTracker
 }
 
-func NewJobSession(name string, tracker []jobtracker.JobTracker) *JobSession {
-	return &JobSession{
-		name:    name,
-		tracker: tracker,
-	}
-}
-
+// Close MUST perform the necessary action to disengage from the DRM system.
+// It SHOULD be callable only once, by only one of the application threads.
+// This SHOULD be ensured by the library implementation. Additional calls
+// beyond the first one SHOULD lead to a InvalidSessionException error
+// notification.
+// The corresponding state information MUST be saved to some stable storage
+// before the method returns. This method SHALL NOT affect any jobs or
+// reservations in the session (e.g., queued and running jobs remain queued
+// and running). (TODO)
 func (js *JobSession) Close() error {
+	if js.name == "" && js.tracker == nil {
+		return ErrorInvalidSession
+	}
 	js.name = ""
 	js.tracker = nil
 	return nil
@@ -48,7 +52,7 @@ func (js *JobSession) GetSessionName() (string, error) {
 // can be used for the jobCategory attribute in a JobTemplate instance.
 func (js *JobSession) GetJobCategories() ([]string, error) {
 	var lastError error
-	jobCategories := make([]string, 0, 16)
+	var jobCategories []string
 	for _, tracker := range js.tracker {
 		cat, err := tracker.ListJobCategories()
 		if err != nil {
@@ -101,19 +105,21 @@ func (js *JobSession) GetJobs(filter drmaa2interface.JobInfo) ([]drmaa2interface
 // If the session does not / no longer contain the according job array,
 // InvalidArgumentException SHALL be thrown.
 func (js *JobSession) GetJobArray(id string) (drmaa2interface.ArrayJob, error) {
-	jobids, err := js.tracker[0].ListArrayJobs(id)
-	if err != nil {
-		return nil, err
-	}
-	joblist := make([]drmaa2interface.Job, 0, len(jobids))
-	for _, id := range jobids {
-		// TODO get template from DB
-		jobtemplate := drmaa2interface.JobTemplate{}
+	var joblist []drmaa2interface.Job
+	for _, tracker := range js.tracker {
+		jobids, err := tracker.ListArrayJobs(id)
+		if err != nil {
+			return nil, err
+		}
+		for _, id := range jobids {
+			// TODO get template from DB
+			jobtemplate := drmaa2interface.JobTemplate{}
 
-		job := newJob(id, js.name, jobtemplate, js.tracker[0])
-		joblist = append(joblist, drmaa2interface.Job(job))
+			job := newJob(id, js.name, jobtemplate, tracker)
+			joblist = append(joblist, drmaa2interface.Job(job))
+		}
 	}
-	return NewArrayJob(id, js.name, drmaa2interface.JobTemplate{}, joblist), nil
+	return newArrayJob(id, js.name, drmaa2interface.JobTemplate{}, joblist), nil
 }
 
 // RunJob method submits a job with the attributes defined in the given job template
@@ -142,59 +148,6 @@ func (js *JobSession) RunBulkJobs(jt drmaa2interface.JobTemplate, begin, end, st
 		return nil, err
 	}
 	return js.GetJobArray(id)
-}
-
-func waitAny(waitForStartedState bool, jobs []drmaa2interface.Job, timeout time.Duration) (drmaa2interface.Job, error) {
-	started := make(chan int, len(jobs))
-	errored := make(chan int, len(jobs))
-	abort := make(chan bool, len(jobs))
-
-	for i := 0; i < len(jobs); i++ {
-		index := i // closure fun
-		job := jobs[i]
-		waitForStarted := waitForStartedState
-		go func() {
-			select {
-			case <-abort:
-				return
-			default:
-				var errWait error
-				if waitForStarted {
-					errWait = job.WaitStarted(timeout)
-				} else {
-					errWait = job.WaitTerminated(timeout)
-				}
-				if errWait == nil {
-					started <- index
-				} else {
-					errored <- index
-				}
-				return
-			}
-		}()
-	}
-
-	timeoutCh := time.Tick(timeout)
-	errorCnt := 0
-
-	for {
-		select {
-		case <-errored:
-			errorCnt++
-			if errorCnt >= len(jobs) {
-				return nil, errors.New("Error waiting for jobs")
-			}
-			continue
-		case jobindex := <-started:
-			// abort all waiting go routines
-			for i := 1; i <= len(jobs)-errorCnt; i++ {
-				abort <- true
-			}
-			return jobs[jobindex], nil
-		case <-timeoutCh:
-			return nil, ErrorInvalidState
-		}
-	}
 }
 
 // WaitAnyStarted method blocks until any of the jobs referenced in the jobs

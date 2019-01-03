@@ -1,8 +1,6 @@
-package drmaa2os_test
+package drmaa2os
 
 import (
-	. "github.com/dgruber/drmaa2os"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -22,7 +20,7 @@ var _ = Describe("Jobarray", func() {
 		}
 
 		It("should return all set content", func() {
-			aj := NewArrayJob(id, session, template, nil)
+			aj := newArrayJob(id, session, template, nil)
 			Ω(aj).ShouldNot(BeNil())
 			Ω(aj.GetID()).Should(Equal(id))
 			Ω(aj.GetSessionName()).Should(Equal(session))
@@ -41,7 +39,7 @@ var _ = Describe("Jobarray", func() {
 					Session: "session",
 				}}
 
-			aj := NewArrayJob(id, session, template, js)
+			aj := newArrayJob(id, session, template, js)
 			Ω(aj).ShouldNot(BeNil())
 
 			aj.Suspend()
