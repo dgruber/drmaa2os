@@ -22,7 +22,7 @@ var _ = Describe("JobSession", func() {
 	)
 
 	BeforeEach(func() {
-		js = NewJobSession("testsession", []jobtracker.JobTracker{simpletracker.New("testsession")})
+		js = newJobSession("testsession", []jobtracker.JobTracker{simpletracker.New("testsession")})
 		jt = drmaa2interface.JobTemplate{
 			RemoteCommand: "/bin/sleep",
 			Args:          []string{"0.1"},
@@ -44,7 +44,7 @@ var _ = Describe("JobSession", func() {
 		})
 
 		It("should be to get the job categories", func() {
-			js = NewJobSession("testsession", []jobtracker.JobTracker{simpletrackerfakes.New("testsession")})
+			js = newJobSession("testsession", []jobtracker.JobTracker{simpletrackerfakes.New("testsession")})
 			categories, err := js.GetJobCategories()
 			Ω(err).Should(BeNil())
 			Ω(categories).ShouldNot(BeNil())
@@ -106,6 +106,18 @@ var _ = Describe("JobSession", func() {
 			ajob, err := js.RunBulkJobs(drmaa2interface.JobTemplate{}, 1, 10, 1, 1)
 			Ω(err).ShouldNot(BeNil())
 			Ω(ajob).Should(BeNil())
+		})
+
+		It("should fail to close a job session two times", func() {
+			err := js.Close()
+			Ω(err).Should(BeNil())
+			err = js.Close()
+			Ω(err).Should(Equal(ErrorInvalidSession))
+		})
+
+		It("should return the error string", func() {
+			err := ErrorUnsupportedOperation
+			Ω(err.Error()).Should(Equal("This optional function is not suppported."))
 		})
 
 	})
@@ -191,6 +203,12 @@ var _ = Describe("JobSession", func() {
 				Ω(j.GetState()).Should(Equal(drmaa2interface.Failed))
 			}
 			Ω(js.Close()).Should(BeNil())
+		})
+
+		It("should error when job array is not found", func() {
+			aj, err := js.GetJobArray("doesNotExist")
+			Ω(err).ShouldNot(BeNil())
+			Ω(aj).Should(BeNil())
 		})
 
 	})

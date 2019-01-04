@@ -22,19 +22,18 @@ func createSessionManager() drmaa2interface.SessionManager {
 
 var _ = Describe("Sessionmanager", func() {
 
+	var (
+		sm drmaa2interface.SessionManager
+	)
+
+	BeforeEach(func() {
+		os.Remove("drmaa2ostest")
+		sm, _ = NewDefaultSessionManager("drmaa2ostest")
+	})
+
 	Describe("Create and Destroy Job Session", func() {
 
-		var (
-			sm drmaa2interface.SessionManager
-			//js drmaa2interface.JobSession
-		)
-
-		BeforeEach(func() {
-			os.Remove("drmaa2ostest")
-			sm, _ = NewDefaultSessionManager("drmaa2ostest")
-		})
-
-		Context("when the Job Session does not exist", func() {
+		Context("when the Job Session does not exists", func() {
 			It("should not error when creating or destroying", func() {
 				js, err := sm.CreateJobSession("testsession", "")
 				Ω(err).Should(BeNil())
@@ -58,7 +57,6 @@ var _ = Describe("Sessionmanager", func() {
 				Ω(js).ShouldNot(BeNil())
 				err = sm.DestroyJobSession("testsession")
 				Ω(err).Should(BeNil())
-
 			})
 		})
 
@@ -66,40 +64,50 @@ var _ = Describe("Sessionmanager", func() {
 
 	Describe("Open a Job Session", func() {
 
-		var (
-			sm drmaa2interface.SessionManager
-		)
+		var js drmaa2interface.JobSession
+		var err error
 
 		BeforeEach(func() {
-			sm = createSessionManager()
+			js, err := sm.CreateJobSession("testsession", "")
+			Ω(err).Should(BeNil())
+			Ω(js).ShouldNot(BeNil())
+		})
+
+		Context("Error cases", func() {
+			It("should error when the job session does not exist", func() {
+				js, err = sm.OpenJobSession("doesnotexist")
+				Ω(js).Should(BeNil())
+				Ω(err).ShouldNot(BeNil())
+			})
+
+			It("should error when destroying a non-existing job session", func() {
+				err := sm.DestroyJobSession("doesNotExist")
+				Ω(err).ShouldNot(BeNil())
+			})
 		})
 
 		Context("when the job session is closed", func() {
-			It("should not error", func() {
-				js, err := sm.CreateJobSession("testsession", "")
+			It("should not error opening it", func() {
+				js, err := sm.CreateJobSession("testsession2", "")
 				Ω(err).Should(BeNil())
 				Ω(js).ShouldNot(BeNil())
 
 				err = js.Close()
 				Ω(err).Should(BeNil())
 
-				js, err = sm.OpenJobSession("testsession")
+				js, err = sm.OpenJobSession("testsession2")
 				Ω(err).Should(BeNil())
 
 				js.Close()
 				Ω(err).Should(BeNil())
 
-				err = sm.DestroyJobSession("testsession")
+				err = sm.DestroyJobSession("testsession2")
 				Ω(err).Should(BeNil())
 			})
 		})
 
 		Context("when the job session is open", func() {
-			It("should not error", func() {
-				js, err := sm.CreateJobSession("testsession", "")
-				Ω(err).Should(BeNil())
-				Ω(js).ShouldNot(BeNil())
-
+			It("should not error open it again (before closing)", func() {
 				js, err = sm.OpenJobSession("testsession")
 				Ω(err).Should(BeNil())
 
@@ -114,36 +122,18 @@ var _ = Describe("Sessionmanager", func() {
 	})
 
 	Describe("Open Monitoring Session", func() {
-		/*
-			var (
-				sm drmaa2interface.SessionManager
-			)
 
-			BeforeEach(func() {
-				sm = createSessionManager()
-			})
-
-			Context("when the Monitoring Session does not exist", func() {
-				It("should not error", func() {
+		Context("Monitoring Session is currently not implemented", func() {
+			It("should not error", func() {
 				ms, err := sm.OpenMonitoringSession("")
-					Ω(err).Should(BeNil())
-					Ω(ms).ShouldNot(BeNil())
-					err = ms.CloseMonitoringSession()
-					Ω(err).Should(BeNil())
-				})
+				Ω(err).ShouldNot(BeNil())
+				Ω(ms).Should(BeNil())
 			})
-		*/
+		})
+
 	})
 
-	Describe("Simple global functions", func() {
-
-		var (
-			sm drmaa2interface.SessionManager
-		)
-
-		BeforeEach(func() {
-			sm = createSessionManager()
-		})
+	Describe("Global functions", func() {
 
 		Describe("DRMS Name", func() {
 			It("should be not an error", func() {
@@ -190,13 +180,6 @@ var _ = Describe("Sessionmanager", func() {
 	})
 
 	Describe("List sessions functionality", func() {
-		var (
-			sm drmaa2interface.SessionManager
-		)
-
-		BeforeEach(func() {
-			sm = createSessionManager()
-		})
 
 		Context("when they are empty", func() {
 			It("should list no job and reservation sessions", func() {
@@ -228,6 +211,31 @@ var _ = Describe("Sessionmanager", func() {
 				Ω(names[1]).Should(Or(Equal("session1"), Equal("session2")))
 
 			})
+		})
+
+	})
+
+	Context("ReservationSession is currently not supported", func() {
+
+		It("should return an unsupported operation error when using a reservation session", func() {
+			rs, err := sm.CreateReservationSession("reservationSession", "")
+			Ω(rs).Should(BeNil())
+			Ω(err).ShouldNot(BeNil())
+			Ω(err).Should(Equal(ErrorUnsupportedOperation))
+
+			rs, err = sm.OpenReservationSession("reservationSession")
+			Ω(rs).Should(BeNil())
+			Ω(err).ShouldNot(BeNil())
+			Ω(err).Should(Equal(ErrorUnsupportedOperation))
+
+			err = sm.DestroyReservationSession("reservationSession")
+			Ω(err).ShouldNot(BeNil())
+			Ω(err).Should(Equal(ErrorUnsupportedOperation))
+
+			names, err := sm.GetReservationSessionNames()
+			Ω(names).Should(BeNil())
+			Ω(err).ShouldNot(BeNil())
+			Ω(err).Should(Equal(ErrorUnsupportedOperation))
 		})
 
 	})

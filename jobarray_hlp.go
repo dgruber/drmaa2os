@@ -41,3 +41,12 @@ func jobAction(a action, jobs []drmaa2interface.Job) error {
 	}
 	return errors.New(globalError)
 }
+
+func newArrayJob(id, jsessionname string, tmpl drmaa2interface.JobTemplate, jobs []drmaa2interface.Job) *ArrayJob {
+	return &ArrayJob{
+		id:          id,
+		sessionname: jsessionname,
+		template:    tmpl,
+		jobs:        jobs,
+	}
+}

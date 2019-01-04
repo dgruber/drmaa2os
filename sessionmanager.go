@@ -79,7 +79,7 @@ func (sm *SessionManager) CreateJobSession(name, contact string) (drmaa2interfac
 	if err != nil {
 		return nil, err
 	}
-	js := NewJobSession(name, []jobtracker.JobTracker{jt})
+	js := newJobSession(name, []jobtracker.JobTracker{jt})
 	return js, nil
 }
 
@@ -96,8 +96,8 @@ func (sm *SessionManager) OpenMonitoringSession(sessionName string) (drmaa2inter
 // OpenJobSession creates a new session for managing jobs. The semantic of a job session
 // and the job session name depends on the resource manager.
 func (sm *SessionManager) OpenJobSession(name string) (drmaa2interface.JobSession, error) {
-	if err := sm.open(storage.JobSessionType, name); err != nil {
-		return nil, err
+	if exists := sm.store.Exists(storage.JobSessionType, name); !exists {
+		return nil, errors.New("JobSession does not exist")
 	}
 	jt, err := sm.newJobTracker(name)
 	if err != nil {

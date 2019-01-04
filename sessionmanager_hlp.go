@@ -69,10 +69,3 @@ func (sm *SessionManager) delete(t storage.KeyType, name string) error {
 	}
 	return nil
 }
-
-func (sm *SessionManager) open(t storage.KeyType, name string) error {
-	if exists := sm.store.Exists(t, name); !exists {
-		return errors.New("Session does not exist")
-	}
-	return nil
-}
