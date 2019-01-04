@@ -547,7 +547,7 @@ var _ = Describe("Simpletracker", func() {
 			Ω(len(jobids)).Should(BeNumerically("==", 9))
 			tracker.Wait(jobids[8], 0.0, drmaa2interface.Done)
 			// due to length of the jobs they might not overlap perfectly
-			Ω(maxParallel(jobids)).Should(BeNumerically(">=", 7))
+			Ω(maxParallel(jobids)).Should(BeNumerically(">=", 5))
 
 			jobid, err = tracker.AddArrayJob(t, 1, 9, 1, 9)
 			Ω(err).Should(BeNil())
@@ -555,7 +555,7 @@ var _ = Describe("Simpletracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(len(jobids)).Should(BeNumerically("==", 9))
 			tracker.Wait(jobids[8], 0.0, drmaa2interface.Done)
-			Ω(maxParallel(jobids)).Should(BeNumerically(">=", 7))
+			Ω(maxParallel(jobids)).Should(BeNumerically(">=", 5))
 
 			jobid, err = tracker.AddArrayJob(t, 1, 9, 0, 9)
 			Ω(err).Should(BeNil())
@@ -563,7 +563,7 @@ var _ = Describe("Simpletracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(len(jobids)).Should(BeNumerically("==", 9))
 			tracker.Wait(jobids[8], 0.0, drmaa2interface.Done)
-			Ω(maxParallel(jobids)).Should(BeNumerically(">=", 7))
+			Ω(maxParallel(jobids)).Should(BeNumerically(">=", 5))
 		})
 
 		It("should should terminate job array tasks which are queued (blocked by maxParallel)", func() {
