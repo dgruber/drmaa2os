@@ -20,7 +20,7 @@ jobs:
       - checkout
       - run: go get github.com/dgruber/drmaa2interface
       - run: go build -a -x
-      - run: go build ./examples/...
+      - run: go build -x ./examples/...
       - run: go test -v 
       - run: go test -v ./pkg/d2hlp
       - run: go test -v ./pkg/helper
