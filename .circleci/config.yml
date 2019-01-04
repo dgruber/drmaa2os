@@ -8,7 +8,7 @@ jobs:
       # specify the version
       - image: circleci/golang:latest
      
-     # 4GB let compiling fail from time to time
+     # 4GB let compiling fail from time to time / trying with -p 1
      # resource_class: large 
 
     #### TEMPLATE_NOTE: go expects specific checkout path representing url
@@ -19,8 +19,8 @@ jobs:
     steps:
       - checkout
       - run: go get github.com/dgruber/drmaa2interface
-      - run: go build -a -x
-      - run: go build -x ./examples/...
+      - run: go build -v -p 1
+      - run: go build -v -p 1 ./examples/...
       - run: go test -v 
       - run: go test -v ./pkg/d2hlp
       - run: go test -v ./pkg/helper
