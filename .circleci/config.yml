@@ -7,11 +7,9 @@ jobs:
     docker:
       # specify the version
       - image: circleci/golang:latest
-      
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
+     
+     # 4GB let compiling fail from time to time
+     # resource_class: large 
 
     #### TEMPLATE_NOTE: go expects specific checkout path representing url
     #### expecting it in the form of
@@ -21,7 +19,8 @@ jobs:
     steps:
       - checkout
       - run: go get github.com/dgruber/drmaa2interface
-      - run: go build -a ./...
+      - run: go build -a -x
+      - run: go build ./examples/...
       - run: go test -v 
       - run: go test -v ./pkg/d2hlp
       - run: go test -v ./pkg/helper
