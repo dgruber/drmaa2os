@@ -155,16 +155,35 @@ var _ = Describe("Pubsub", func() {
 	})
 
 	Context("Error cases", func() {
+		var ps *PubSub
+		var jeCh chan JobEvent
+
+		BeforeEach(func() {
+			ps, jeCh = NewPubSub()
+			ps.StartBookKeeper()
+		})
 
 		It("should return an error if a job is already in an end state when registering", func() {
-			ps, jeCh := NewPubSub()
-			ps.StartBookKeeper()
 			jeCh <- JobEvent{JobState: drmaa2interface.Failed, JobID: "13"}
-			// async
 			<-time.After(time.Millisecond * 100)
 			_, err := ps.Register("13", drmaa2interface.Running)
 			Ω(err).ShouldNot(BeNil())
 		})
 
+		It("should return nil if a job is already in end state when registering and waiting for same state", func() {
+			jeCh <- JobEvent{JobState: drmaa2interface.Failed, JobID: "13"}
+			<-time.After(time.Millisecond * 100)
+			ch, err := ps.Register("13", drmaa2interface.Failed)
+			Ω(err).Should(BeNil())
+			Ω(ch).Should(BeNil())
+		})
+
+		It("should return err if a job is already in end state when registering and waiting for a different end-state", func() {
+			jeCh <- JobEvent{JobState: drmaa2interface.Failed, JobID: "13"}
+			<-time.After(time.Millisecond * 100)
+			ch, err := ps.Register("13", drmaa2interface.Done)
+			Ω(err).ShouldNot(BeNil())
+			Ω(ch).Should(BeNil())
+		})
 	})
 })

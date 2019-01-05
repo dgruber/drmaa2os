@@ -32,7 +32,7 @@ func main() {
 	}
 	job.WaitTerminated(drmaa2interface.InfiniteTime)
 
-	for i := 2; i < 100; i++ {
+	for i := 2; i < 1000; i++ {
 		if i%2 == 0 {
 			jt.InputPath = "out.txt"
 			jt.OutputPath = "in.txt"
