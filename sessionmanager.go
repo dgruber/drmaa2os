@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/slurmcli"
 	"github.com/dgruber/drmaa2os/pkg/storage"
 )
 
@@ -12,11 +13,18 @@ import (
 type SessionType int
 
 const (
-	DefaultSession      SessionType = iota // processes
-	DockerSession                          // containers
-	CloudFoundrySession                    // application tasks
-	KubernetesSession                      // pods
-	SingularitySession                     // Singularity containers
+	// DefaultSession handles jobs as processes
+	DefaultSession SessionType = iota
+	// DockerSession manages Docker containers
+	DockerSession
+	// CloudFoundrySession manages Cloud Foundry application tasks
+	CloudFoundrySession
+	// KubernetesSession creates Kubernetes jobs
+	KubernetesSession
+	// SingularitySession manages Singularity containers
+	SingularitySession
+	// SlurmSession manages slurm jobs
+	SlurmSession
 )
 
 // SessionManager allows to create, list, and destroy job, reserveration,
@@ -27,6 +35,7 @@ type SessionManager struct {
 	log         lager.Logger
 	sessionType SessionType
 	cf          cfContact
+	slurm       *slurmcli.Slurm
 }
 
 // NewDefaultSessionManager creates a SessionManager which starts jobs
@@ -68,6 +77,12 @@ func NewCloudFoundrySessionManager(addr, username, password, dbpath string) (*Se
 // Kubernetes tasks as execution backend for jobs.
 func NewKubernetesSessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, KubernetesSession)
+}
+
+// NewSlurmSessionManager creates a new session manager which wraps the
+// slurm command line for managing jobs.
+func NewSlurmSessionManager(dbpath string) (*SessionManager, error) {
+	return makeSessionManager(dbpath, SlurmSession)
 }
 
 // CreateJobSession creates a new JobSession for managing jobs.
