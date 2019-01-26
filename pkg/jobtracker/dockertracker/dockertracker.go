@@ -41,7 +41,8 @@ func (dt *DockerTracker) ListJobs() ([]string, error) {
 	if err := dt.check(); err != nil {
 		return nil, err
 	}
-	f := filters.NewArgs(filters.Arg("label", "drmaa2_jobsession="+dt.jobsession))
+	f := filters.NewArgs()
+	f.Add("label", "drmaa2_jobsession="+dt.jobsession)
 	containers, err := dt.cli.ContainerList(context.Background(), types.ContainerListOptions{Filters: f, All: true})
 	if err != nil {
 		return nil, err

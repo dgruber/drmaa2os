@@ -1,4 +1,4 @@
-package container
+package container // import "github.com/docker/docker/api/types/container"
 
 import (
 	"strings"
@@ -329,6 +329,7 @@ type Resources struct {
 	DeviceCgroupRules    []string        // List of rule to be added to the device cgroup
 	DiskQuota            int64           // Disk limit (in bytes)
 	KernelMemory         int64           // Kernel memory limit (in bytes)
+	KernelMemoryTCP      int64           // Hard limit for kernel TCP buffer memory (in bytes)
 	MemoryReservation    int64           // Memory soft limit (in bytes)
 	MemorySwap           int64           // Total memory usage (memory + swap); set `-1` to enable unlimited swap
 	MemorySwappiness     *int64          // Tuning container memory swappiness behaviour
@@ -400,6 +401,12 @@ type HostConfig struct {
 
 	// Mounts specs used by the container
 	Mounts []mount.Mount `json:",omitempty"`
+
+	// MaskedPaths is the list of paths to be masked inside the container (this overrides the default set of paths)
+	MaskedPaths []string
+
+	// ReadonlyPaths is the list of paths to be set as read-only inside the container (this overrides the default set of paths)
+	ReadonlyPaths []string
 
 	// Run a custom init inside the container, if null, use the daemon's configured settings
 	Init *bool `json:",omitempty"`
