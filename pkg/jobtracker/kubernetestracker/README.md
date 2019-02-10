@@ -54,6 +54,7 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 | WorkingDir           | v1.Container.WorkingDir         |
 | JobName              | Note: If set and a job with the same name exists in history submission will fail. metadata: Name |
 | DeadlineTime         | AbsoluteTime converted to relative time (v1.Container.ActiveDeadlineSeconds) |
+| JobEnvironment       | v1.EnvVar                       |
 
 Job Template extensions:
 
