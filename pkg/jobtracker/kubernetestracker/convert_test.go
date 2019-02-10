@@ -21,6 +21,10 @@ var _ = Describe("Convert", func() {
 				Args:             []string{"arg1", "arg2"},
 				JobCategory:      "category",
 				WorkingDirectory: "/workingdirectory",
+				JobEnvironment: map[string]string{
+					"ENV1": "CONTENT1",
+					"ENV2": "CONTENT2",
+				},
 			}
 		})
 
@@ -36,6 +40,11 @@ var _ = Describe("Convert", func() {
 			Ω(c0.Command[0]).Should(Equal(jt.RemoteCommand))
 			Ω(c0.Args).Should(BeEquivalentTo(jt.Args))
 			Ω(c0.WorkingDir).Should(Equal(jt.WorkingDirectory))
+			Ω(len(c0.Env)).Should(BeNumerically("==", 2))
+			Ω(c0.Env[0].Name).Should(Equal("ENV1"))
+			Ω(c0.Env[1].Name).Should(Equal("ENV2"))
+			Ω(c0.Env[0].Value).Should(Equal("CONTENT1"))
+			Ω(c0.Env[1].Value).Should(Equal("CONTENT2"))
 		})
 
 		It("should convert the JobTemplate into a Job", func() {

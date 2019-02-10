@@ -33,7 +33,7 @@ type Error struct {
 	ID ErrorID
 }
 
-// Error implements the Errorer interface.
+// Error implements the Error interface.
 func (ce Error) Error() string {
 	return ce.Message
 }

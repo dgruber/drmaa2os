@@ -3,12 +3,13 @@ package kubernetestracker
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
-	"time"
 )
 
 func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
@@ -29,6 +30,10 @@ func newContainers(jt drmaa2interface.JobTemplate) ([]k8sv1.Container, error) {
 		Command:    []string{jt.RemoteCommand},
 		Args:       jt.Args,
 		WorkingDir: jt.WorkingDirectory,
+	}
+
+	for name, value := range jt.JobEnvironment {
+		c.Env = append(c.Env, k8sv1.EnvVar{Name: name, Value: value})
 	}
 
 	// spec.template.spec.containers[0].name: Required value"
@@ -75,7 +80,7 @@ func newPodSpec(v []k8sv1.Volume, c []k8sv1.Container, ns map[string]string, act
 		Volumes:       v,
 		Containers:    c,
 		NodeSelector:  ns,
-		RestartPolicy: "Never",
+		RestartPolicy: k8sv1.RestartPolicyNever,
 	}
 	if *activeDeadline > 0 {
 		spec.ActiveDeadlineSeconds = activeDeadline

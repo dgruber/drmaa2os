@@ -23,7 +23,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jt = drmaa2interface.JobTemplate{
 				//JobName:       "name1",
 				RemoteCommand: "/bin/sh",
-				JobCategory:   "golang:latest",
+				JobCategory:   "busybox:latest",
 				Args:          []string{"-c", "sleep 0"},
 			}
 			var err error
@@ -88,6 +88,40 @@ var _ = Describe("KubernetesTracker", func() {
 
 	})
 
+	Context("JobSession related", func() {
+		var kt jobtracker.JobTracker
+		var jt drmaa2interface.JobTemplate
+
+		BeforeEach(func() {
+			jt = drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sh",
+				JobCategory:   "busybox:latest",
+			}
+			var err error
+			kt, err = New("jobsessionRelated", nil)
+			Ω(err).Should(BeNil())
+			// delete jobs from session if there are any remaining
+			jobs, err := kt.ListJobs()
+			Ω(err).Should(BeNil())
+			for _, name := range jobs {
+				Ω(kt.DeleteJob(name)).Should(BeNil())
+			}
+		})
+
+		WhenK8sIsAvailableIt("ListJobs() should find the submitted jobs", func() {
+			jt.Args = []string{"-c", "sleep 1"}
+			jobid, err := kt.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			jobs, err := kt.ListJobs()
+			Ω(err).Should(BeNil())
+			Ω(len(jobs)).Should(BeNumerically("==", 1))
+			Ω(kt.DeleteJob(jobs[0])).Should(BeNil())
+		})
+
+	})
+
 	Context("Basic Kubernetes Job Workflow", func() {
 		var kt jobtracker.JobTracker
 		var jt drmaa2interface.JobTemplate
@@ -96,7 +130,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jt = drmaa2interface.JobTemplate{
 				//JobName:       "workfloadtestjob",
 				RemoteCommand: "/bin/sh",
-				JobCategory:   "golang:latest",
+				JobCategory:   "busybox:latest",
 			}
 			var err error
 			kt, err = New("jobsession", nil)
@@ -104,7 +138,7 @@ var _ = Describe("KubernetesTracker", func() {
 		})
 
 		WhenK8sIsAvailableIt("should be possible to track the states of a job life-cycle", func() {
-			jt.Args = []string{"-c", "sleep 2"}
+			jt.Args = []string{"-c", "sleep 1"}
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
@@ -115,7 +149,7 @@ var _ = Describe("KubernetesTracker", func() {
 
 			Eventually(func() drmaa2interface.JobState {
 				return kt.JobState(jobid)
-			}, time.Second*30, time.Millisecond*50).Should(Equal(drmaa2interface.Done))
+			}, time.Second*30, time.Millisecond*250).Should(Equal(drmaa2interface.Done))
 		})
 
 		WhenK8sIsAvailableIt("should be possible to terminate a job", func() {
@@ -223,7 +257,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jt = drmaa2interface.JobTemplate{
 				//JobName:       "workfloadtestjob",
 				RemoteCommand: "/bin/sh",
-				JobCategory:   "golang:latest",
+				JobCategory:   "busybox:latest",
 			}
 			var err error
 			kt, err = New("jobsession", nil)

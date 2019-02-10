@@ -1,13 +1,15 @@
 # Kubernetes Tracker
 
 Implements the JobTracker interface for kubernetes batch jobs.
+It is a building block for implementing the DRMAA2 interface
+for kubernetes.
 
 ## Introduction
 
 The kubernetes tracker provides methods for managing sets of 
-grouped batch jobs (JobSessions). JobSessions are implemented
-by using labels attached to batch job objects ("drmaa2jobsession")
-refering to the JobSession name.
+grouped batch jobs (withing _JobSessions_). _JobSessions_ are
+implemented by using labels attached to batch job objects 
+("drmaa2jobsession") refering to the _JobSession_ name.
 
 ## Functionality
 

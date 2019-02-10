@@ -8,60 +8,38 @@ package uaa
 import (
 	"fmt"
 	"runtime"
-	"time"
 
 	"code.cloudfoundry.org/cli/api/uaa/internal"
-	"github.com/tedsuo/rata"
 )
-
-//go:generate counterfeiter . AuthenticationStore
-
-// AuthenticationStore represents the storage the UAA client
-type AuthenticationStore interface {
-	UAAOAuthClient() string
-	UAAOAuthClientSecret() string
-
-	AccessToken() string
-	RefreshToken() string
-	SetAccessToken(token string)
-	SetRefreshToken(token string)
-}
 
 // Client is the UAA client
 type Client struct {
-	URL       string
-	store     AuthenticationStore
-	userAgent string
+	Info
 
-	router     *rata.RequestGenerator
+	config Config
+
 	connection Connection
-}
-
-// Config allows the Client to be configured
-type Config struct {
-	AppName           string
-	AppVersion        string
-	DialTimeout       time.Duration
-	SkipSSLValidation bool
-	Store             AuthenticationStore
-	URL               string
+	router     *internal.Router
+	userAgent  string
 }
 
 // NewClient returns a new UAA Client with the provided configuration
 func NewClient(config Config) *Client {
 	userAgent := fmt.Sprintf("%s/%s (%s; %s %s)",
-		config.AppName,
-		config.AppVersion,
+		config.BinaryName(),
+		config.BinaryVersion(),
 		runtime.Version(),
 		runtime.GOARCH,
 		runtime.GOOS,
 	)
-	return &Client{
-		URL:       config.URL,
-		store:     config.Store,
-		userAgent: userAgent,
 
-		router:     rata.NewRequestGenerator(config.URL, internal.Routes),
-		connection: NewConnection(config.SkipSSLValidation, config.DialTimeout),
+	client := Client{
+		config: config,
+
+		connection: NewConnection(config.SkipSSLValidation(), config.UAADisableKeepAlives(), config.DialTimeout()),
+		userAgent:  userAgent,
 	}
+	client.WrapConnection(NewErrorWrapper())
+
+	return &client
 }
