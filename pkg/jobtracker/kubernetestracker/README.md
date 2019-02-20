@@ -62,6 +62,7 @@ Job Template extensions:
 |:--------------|----------------------------------:|
 | namespace     | v1.Namespace                      |
 | labels        | "key=value,key2=value2" v1.Labels |
+| scheduler     | poseidon, kube-batch or any other k8s scheduler |
  
 
 Required:
