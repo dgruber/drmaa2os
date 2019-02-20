@@ -38,7 +38,7 @@ func newContainers(jt drmaa2interface.JobTemplate) ([]k8sv1.Container, error) {
 
 	// spec.template.spec.containers[0].name: Required value"
 	if jt.JobName == "" {
-		c.Name = "drmaa2osstandardcontainer"
+		c.Name = "drmaa2os"
 	}
 
 	// if len(jt.CandidateMachines) == 1 {
@@ -92,14 +92,14 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 	if jt.ExtensionList == nil {
 		return job
 	}
-	if jt.ExtensionList["namespace"] != "" {
+	if namespace, set := jt.ExtensionList["namespace"]; set && namespace != "" {
 		//Namespace: v1.NamespaceDefault
-		job.Namespace = jt.ExtensionList["namespace"]
+		job.Namespace = namespace
 	}
-	if jt.ExtensionList["labels"] != "" {
+	if labels, set := jt.ExtensionList["labels"]; set && labels != "" {
 		// "key=value,key=value,..."
-		for _, labels := range strings.Split(jt.ExtensionList["labels"], ",") {
-			l := strings.Split(labels, "=")
+		for _, label := range strings.Split(labels, ",") {
+			l := strings.Split(label, "=")
 			if len(l) == 2 {
 				if l[0] == "drmaa2jobsession" {
 					continue // don't allow to override job session
@@ -108,6 +108,10 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 			}
 		}
 	}
+	if scheduler, set := jt.ExtensionList["scheduler"]; set && scheduler != "" {
+		job.Spec.Template.Spec.SchedulerName = scheduler
+	}
+
 	return job
 }
 

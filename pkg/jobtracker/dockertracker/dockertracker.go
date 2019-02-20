@@ -153,7 +153,7 @@ func (dt *DockerTracker) DeleteJob(jobid string) error {
 	)
 }
 
-// ListJobCategories lists all containers available to run commands on.
+// ListJobCategories lists all container images available to run commands on.
 func (dt *DockerTracker) ListJobCategories() ([]string, error) {
 	if err := dt.check(); err != nil {
 		return nil, err

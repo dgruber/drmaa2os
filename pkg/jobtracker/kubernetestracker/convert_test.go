@@ -91,6 +91,15 @@ var _ = Describe("Convert", func() {
 			Ω(job.Labels["drmaa2jobsession"]).Should(Equal("jobsession"))
 		})
 
+		It("should select a scheduler when requested as extension", func() {
+			job, err := convertJob("jobsession", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+			jt.ExtensionList = map[string]string{"scheduler": "poseidon"}
+			job = addExtensions(job, jt)
+			Ω(job.Spec.Template.Spec.SchedulerName).Should(Equal("poseidon"))
+		})
+
 		Context("error cases", func() {
 			It("should error when the RemoteCommand is not set in the JobTemplate", func() {
 				jt.RemoteCommand = ""
