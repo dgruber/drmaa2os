@@ -7,6 +7,10 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/dgruber/drmaa2interface"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"time"
 )
 
 var _ = Describe("Singularity", func() {
@@ -17,7 +21,7 @@ var _ = Describe("Singularity", func() {
 		template = drmaa2interface.JobTemplate{
 			RemoteCommand: "/bin/sleep",
 			Args:          []string{"1"},
-			JobCategory:   "test.simg",
+			JobCategory:   "shub://GodloveD/busybox:latest",
 			OutputPath:    "/dev/stdout",
 			ErrorPath:     "/dev/stderr",
 		}
@@ -36,7 +40,7 @@ var _ = Describe("Singularity", func() {
 			job, err := st.AddJob(template)
 			Ω(err).Should(BeNil())
 			Ω(job).ShouldNot(Equal(""))
-			err = st.Wait(job, drmaa2interface.InfiniteTime, drmaa2interface.Done)
+			err = st.Wait(job, time.Second*30, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 		})
 
@@ -44,7 +48,7 @@ var _ = Describe("Singularity", func() {
 			st, err := New("singularity_test_session")
 			Ω(err).Should(BeNil())
 			template.ExtensionList = map[string]string{
-				"pid": "",
+				"home": "/tmp",
 			}
 			job, err := st.AddJob(template)
 			Ω(err).Should(BeNil())
@@ -130,6 +134,7 @@ var _ = Describe("Singularity", func() {
 			Ω(job).ShouldNot(Equal(""))
 
 			err = st.Wait(job, drmaa2interface.InfiniteTime, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
 			jobInfo, err := st.JobInfo(job)
 			Ω(err).Should(BeNil())
 			Ω(jobInfo.ID).Should(Equal(job))
@@ -172,6 +177,37 @@ var _ = Describe("Singularity", func() {
 			jobid, err := st.AddJob(t2)
 			Ω(err).ShouldNot(BeNil())
 			Ω(jobid).Should(Equal(""))
+		})
+
+	})
+
+	Context("Singularity path", func() {
+		originalPath := os.Getenv("PATH")
+
+		AfterEach(func() {
+			os.Setenv("PATH", originalPath)
+		})
+
+		createTmpPath := func() string {
+			dir, _ := ioutil.TempDir(os.TempDir(), "singtst")
+			singularity := filepath.Join(dir, "singularity")
+			_, err := os.OpenFile(singularity, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0700)
+			Ω(err).Should(BeNil())
+			return dir
+		}
+
+		It("should find the singularity binary in the PATH", func() {
+			os.Setenv("PATH", createTmpPath())
+			s, err := New("testsession")
+			Ω(err).Should(BeNil())
+			Ω(s).ShouldNot(BeNil())
+		})
+
+		It("should error when singularity binary is not in the PATH", func() {
+			os.Setenv("PATH", os.TempDir())
+			s, err := New("testsession")
+			Ω(err).ShouldNot(BeNil())
+			Ω(s).Should(BeNil())
 		})
 
 	})
