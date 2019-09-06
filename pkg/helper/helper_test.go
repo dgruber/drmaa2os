@@ -114,6 +114,26 @@ var _ = Describe("Helper", func() {
 			Ω(WaitForState(tracker, jobid, 0.0, drmaa2interface.Done, drmaa2interface.Failed)).ShouldNot(BeNil())
 		})
 
+		It("should check for the job state in the given interval", func() {
+			tracker := simpletrackerfakes.New("testsession")
+			jobid, err := tracker.AddJob(drmaa2interface.JobTemplate{
+				JobName: "testjob",
+			})
+			Ω(err).Should(BeNil())
+
+			StateAfter(tracker, jobid, time.Millisecond*20, "suspend")
+			start := time.Now()
+			// check every millisecond for state (instead of 100 ms)
+			err = WaitForStateWithInterval(tracker, time.Millisecond*1, jobid, time.Millisecond*300, drmaa2interface.Suspended)
+			duration := time.Now().Sub(start)
+			// can be replaced with library with go 1.13
+			milliseconds := int64(duration) / 1e6
+			Ω(err).Should(BeNil())
+			// duration of the blocking call should be slightly above
+			// the 20 milliseconds when we change the job state
+			Ω(milliseconds).Should(BeNumerically("<=", 30))
+		})
+
 	})
 
 })
