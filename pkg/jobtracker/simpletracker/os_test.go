@@ -123,6 +123,40 @@ var _ = Describe("OS specific functionality", func() {
 			os.Remove(fileOut.Name())
 		})
 
+		It("should be possible to redirect stdin from file (2)", func() {
+			fileOut, err := ioutil.TempFile("", "d2ostest")
+			Ω(err).Should(BeNil())
+			fileOutName := fileOut.Name()
+			fileOut.Close()
+
+			fileIn, err := ioutil.TempFile("", "d2ostest")
+			Ω(err).Should(BeNil())
+			_, err = fileIn.WriteString("inout\n")
+			Ω(err).Should(BeNil())
+			fileInName := fileIn.Name()
+			fileIn.Close()
+
+			// sort expects that input is closed
+			jt.RemoteCommand = "/bin/cat"
+			jt.Args = nil
+
+			jt.InputPath = fileInName
+			jt.OutputPath = fileOutName
+
+			_, err = StartProcess("1", 0, jt, outCh)
+			Ω(err).Should(BeNil())
+
+			<-outCh
+			<-outCh
+
+			out, err := ioutil.ReadFile(fileOutName)
+			Ω(err).Should(BeNil())
+			Ω(strings.TrimSpace(string(out))).Should(Equal("inout"))
+
+			os.Remove(fileInName)
+			os.Remove(fileOutName)
+		})
+
 		It("should be possible to redirect stderr to file", func() {
 			file, err := ioutil.TempFile(os.TempDir(), "d2ostest")
 			Ω(err).Should(BeNil())
@@ -144,7 +178,7 @@ var _ = Describe("OS specific functionality", func() {
 
 	})
 
-	Context("Redirection of file descriptors sad path", func() {
+	Context("Redirection of file descriptors errors", func() {
 
 		It("should not be possible to point stdin and stdout / stderr to same file", func() {
 			file, err := ioutil.TempFile(os.TempDir(), "d2ostest")

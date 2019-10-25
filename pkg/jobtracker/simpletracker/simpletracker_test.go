@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"fmt"
+	"io/ioutil"
 	"time"
 )
 
@@ -368,6 +369,45 @@ var _ = Describe("Simpletracker", func() {
 			Ω(info.ID).Should(Equal(id))
 			tracker.Wait(id, 0.0, drmaa2interface.Done)
 		})
+	})
+
+	Context("Job input and output redirection", func() {
+		var tracker *JobTracker
+		var t drmaa2interface.JobTemplate
+
+		BeforeEach(func() {
+			tracker = New("testsession")
+			Ω(tracker).NotTo(BeNil())
+			t = drmaa2interface.JobTemplate{
+				RemoteCommand: "cat",
+				Args:          []string{"/etc/services"},
+			}
+		})
+
+		It("should be possible to create a pipe", func() {
+			fileOut, err := ioutil.TempFile("", "pipetest")
+			Ω(err).Should(BeNil())
+			fileOutName := fileOut.Name()
+			fileOut.Close()
+
+			fileOut2, err := ioutil.TempFile("", "pipetest")
+			Ω(err).Should(BeNil())
+			fileOutName2 := fileOut2.Name()
+			fileOut2.Close()
+
+			t.OutputPath = fileOutName
+			jobid, err := tracker.AddJob(t)
+			Ω(err).Should(BeNil())
+
+			t.InputPath = fileOutName
+			t.OutputPath = fileOutName2
+			jobid2, err := tracker.AddJob(t)
+			Ω(err).Should(BeNil())
+
+			tracker.Wait(jobid2, 0.0, drmaa2interface.Done)
+			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+		})
+
 	})
 
 	Context("Basic error cases", func() {

@@ -128,6 +128,8 @@ func redirectIn(out io.WriteCloser, infilename string, waitCh chan bool) {
 		}
 		io.CopyBuffer(out, file, buf)
 		file.Close()
+		// need to close stdin otherwise cmd might wait infinitely
+		out.Close()
 		waitCh <- true
 	}()
 }
