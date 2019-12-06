@@ -53,8 +53,8 @@ func (t *Tracker) ListArrayJobs(arrayjobid string) ([]string, error) {
 }
 
 // JobState returns the state of the slum job.
-func (t *Tracker) JobState(jobid string) drmaa2interface.JobState {
-	return t.slurm.State(t.sessionName, jobid)
+func (t *Tracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
+	return t.slurm.State(t.sessionName, jobid), "", nil
 }
 
 // JobInfo returns detailed information about the job.

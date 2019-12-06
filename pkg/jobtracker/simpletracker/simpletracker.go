@@ -165,7 +165,7 @@ func (jt *JobTracker) ListArrayJobs(id string) ([]string, error) {
 }
 
 // JobState returns the current state of the job (running, suspended, done, failed).
-func (jt *JobTracker) JobState(jobid string) drmaa2interface.JobState {
+func (jt *JobTracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
 	jt.Lock()
 	defer jt.Unlock()
 	jt.ps.Lock()
@@ -188,7 +188,7 @@ func (jt *JobTracker) JobState(jobid string) drmaa2interface.JobState {
 	if !exists {
 		state = drmaa2interface.Undetermined
 	}
-	return state
+	return state, "", nil
 }
 
 // JobInfo returns more detailed information about a job.

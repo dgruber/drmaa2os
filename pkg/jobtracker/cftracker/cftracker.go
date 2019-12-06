@@ -99,25 +99,25 @@ func (dt *cftracker) ListArrayJobs(ajid string) ([]string, error) {
 	return helper.ArrayJobID2GUIDs(ajid)
 }
 
-func (dt *cftracker) JobState(jobid string) drmaa2interface.JobState {
+func (dt *cftracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
 	task, err := dt.client.TaskByGuid(jobid)
 	if err != nil {
-		return drmaa2interface.Undetermined
+		return drmaa2interface.Undetermined, "", err
 	}
 	// State of the task. Possible states are PENDING, RUNNING, SUCCEEDED, CANCELING, and FAILED
 	switch task.State {
 	case "PENDING":
-		return drmaa2interface.Queued
+		return drmaa2interface.Queued, "", nil
 	case "RUNNING":
-		return drmaa2interface.Running
+		return drmaa2interface.Running, "", nil
 	case "CANCELING":
-		return drmaa2interface.Running
+		return drmaa2interface.Running, "", nil
 	case "SUCCEEDED":
-		return drmaa2interface.Done
+		return drmaa2interface.Done, "", nil
 	case "FAILED":
-		return drmaa2interface.Failed
+		return drmaa2interface.Failed, "", nil
 	}
-	return drmaa2interface.Undetermined
+	return drmaa2interface.Undetermined, "", nil
 }
 
 func (dt *cftracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {

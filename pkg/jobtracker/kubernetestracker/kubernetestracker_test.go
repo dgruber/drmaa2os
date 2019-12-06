@@ -144,11 +144,13 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(jobid).ShouldNot(Equal(""))
 
 			Eventually(func() drmaa2interface.JobState {
-				return kt.JobState(jobid)
+				state, _, _ := kt.JobState(jobid)
+				return state
 			}, time.Second*30, time.Millisecond*50).Should(Equal(drmaa2interface.Running))
 
 			Eventually(func() drmaa2interface.JobState {
-				return kt.JobState(jobid)
+				state, _, _ := kt.JobState(jobid)
+				return state
 			}, time.Second*30, time.Millisecond*250).Should(Equal(drmaa2interface.Done))
 		})
 
@@ -159,14 +161,16 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(jobid).ShouldNot(Equal(""))
 
 			Eventually(func() drmaa2interface.JobState {
-				return kt.JobState(jobid)
+				state, _, _ := kt.JobState(jobid)
+				return state
 			}, time.Second*60, time.Millisecond*20).Should(Equal(drmaa2interface.Running))
 
 			err = kt.JobControl(jobid, "terminate")
 			Ω(err).Should(BeNil())
 
 			Eventually(func() drmaa2interface.JobState {
-				return kt.JobState(jobid)
+				state, _, _ := kt.JobState(jobid)
+				return state
 			}, time.Second*60, time.Millisecond*10).Should(Equal(drmaa2interface.Undetermined))
 		})
 

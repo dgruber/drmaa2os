@@ -61,7 +61,11 @@ func IsInExpectedState(state drmaa2interface.JobState, states ...drmaa2interface
 // calls is given as parameter.
 func WaitForStateWithInterval(jt jobtracker.JobTracker, interval time.Duration, jobid string,
 	timeout time.Duration, states ...drmaa2interface.JobState) error {
-	if IsInExpectedState(jt.JobState(jobid), states...) {
+	state, _, err := jt.JobState(jobid)
+	if err != nil {
+		return err
+	}
+	if IsInExpectedState(state, states...) {
 		return nil
 	}
 	if timeout == 0 {
@@ -84,7 +88,8 @@ func WaitForStateWithInterval(jt jobtracker.JobTracker, interval time.Duration, 
 				hasStateCh <- false
 				return
 			case <-t.C:
-				if IsInExpectedState(jt.JobState(jobid), states...) {
+				waitState, _, _ := jt.JobState(jobid)
+				if IsInExpectedState(waitState, states...) {
 					hasStateCh <- true
 					return
 				}
