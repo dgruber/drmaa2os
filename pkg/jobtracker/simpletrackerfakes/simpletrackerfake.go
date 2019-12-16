@@ -99,10 +99,10 @@ func (jt *JobTracker) ListArrayJobs(string) ([]string, error) {
 	return nil, nil
 }
 
-func (jt *JobTracker) JobState(jobid string) drmaa2interface.JobState {
+func (jt *JobTracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
 	jt.Lock()
 	defer jt.Unlock()
-	return jt.state[jobid]
+	return jt.state[jobid], "", nil
 }
 
 func (jt *JobTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {

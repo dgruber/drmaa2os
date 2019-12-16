@@ -23,8 +23,8 @@ func (dt *ContainerDTracker) ListArrayJobs(string) ([]string, error) {
 	return nil, nil
 }
 
-func (dt *ContainerDTracker) JobState(jobid string) drmaa2interface.JobState {
-	return drmaa2interface.Undetermined
+func (dt *ContainerDTracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
+	return drmaa2interface.Undetermined, "", nil
 }
 
 func (dt *ContainerDTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {

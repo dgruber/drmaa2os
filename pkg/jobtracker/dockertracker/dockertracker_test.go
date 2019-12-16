@@ -70,7 +70,7 @@ var _ = Describe("Dockertracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(id).ShouldNot(Equal(""))
 
-			state := tracker.JobState(id)
+			state, _, _ := tracker.JobState(id)
 			Ω(err).Should(BeNil())
 			Ω(state).Should(Equal(drmaa2interface.Running))
 		})
@@ -165,14 +165,14 @@ var _ = Describe("Dockertracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(id).ShouldNot(Equal(""))
 
-			state := tracker.JobState(id)
+			state, _, _ := tracker.JobState(id)
 			Ω(err).Should(BeNil())
 			Ω(state).Should(Equal(drmaa2interface.Running))
 
 			err = tracker.Wait(id, drmaa2interface.InfiniteTime, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 
-			state = tracker.JobState(id)
+			state, _, _ = tracker.JobState(id)
 			Ω(err).Should(BeNil())
 			Ω(state).Should(Equal(drmaa2interface.Done))
 		})
@@ -182,21 +182,21 @@ var _ = Describe("Dockertracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(id).ShouldNot(Equal(""))
 
-			state := tracker.JobState(id)
+			state, _, _ := tracker.JobState(id)
 			Ω(err).Should(BeNil())
 			Ω(state).Should(Equal(drmaa2interface.Running))
 
 			err = tracker.JobControl(id, "terminate")
 			Ω(err).Should(BeNil())
 
-			state = tracker.JobState(id)
+			state, _, _ = tracker.JobState(id)
 			Ω(state).Should(Equal(drmaa2interface.Failed))
 
 			fmt.Println(id)
 			err = tracker.DeleteJob(id)
 			Ω(err).Should(BeNil())
 
-			state = tracker.JobState(id)
+			state, _, _ = tracker.JobState(id)
 			Ω(state).Should(Equal(drmaa2interface.Undetermined))
 		})
 

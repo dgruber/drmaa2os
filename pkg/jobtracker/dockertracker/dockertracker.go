@@ -68,18 +68,18 @@ func (dt *DockerTracker) ListArrayJobs(id string) ([]string, error) {
 	return helper.ArrayJobID2GUIDs(id)
 }
 
-func (dt *DockerTracker) JobState(jobid string) drmaa2interface.JobState {
+func (dt *DockerTracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
 	if err := dt.check(); err != nil {
-		return drmaa2interface.Undetermined
+		return drmaa2interface.Undetermined, "", nil
 	}
 	container, err := dt.cli.ContainerInspect(context.Background(), jobid)
 	if err != nil {
-		return drmaa2interface.Undetermined
+		return drmaa2interface.Undetermined, "", nil
 	}
 	if container.State == nil {
-		return drmaa2interface.Undetermined
+		return drmaa2interface.Undetermined, "", nil
 	}
-	return containerToDRMAA2State(container.State)
+	return containerToDRMAA2State(container.State), "", nil
 }
 
 func (dt *DockerTracker) JobInfo(jobid string) (ji drmaa2interface.JobInfo, err error) {
@@ -140,7 +140,8 @@ func (dt *DockerTracker) DeleteJob(jobid string) error {
 	if err := dt.check(); err != nil {
 		return err
 	}
-	if state := dt.JobState(jobid); state != drmaa2interface.Done && state != drmaa2interface.Failed {
+	state, _, _ := dt.JobState(jobid)
+	if state != drmaa2interface.Done && state != drmaa2interface.Failed {
 		return errors.New("job is not in an end-state")
 	}
 	return dt.cli.ContainerRemove(context.Background(),

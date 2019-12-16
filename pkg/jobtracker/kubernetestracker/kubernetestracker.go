@@ -82,12 +82,12 @@ func (kt *KubernetesTracker) ListArrayJobs(id string) ([]string, error) {
 	return helper.ArrayJobID2GUIDs(id)
 }
 
-func (kt *KubernetesTracker) JobState(jobid string) drmaa2interface.JobState {
+func (kt *KubernetesTracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
 	jc, err := getJobsClient(kt.clientSet)
 	if err != nil {
-		return drmaa2interface.Undetermined
+		return drmaa2interface.Undetermined, "", nil
 	}
-	return DRMAA2State(jc, jobid)
+	return DRMAA2State(jc, jobid), "", nil
 }
 
 func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {

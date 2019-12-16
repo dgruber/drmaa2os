@@ -167,9 +167,11 @@ var _ = Describe("Simpletracker", func() {
 			Ω(jobid).ShouldNot(Equal(""))
 
 			tracker.Wait(jobid, 0.0, drmaa2interface.Running)
-			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Running))
+			state, _, _ := tracker.JobState(jobid)
+			Ω(state).Should(Equal(drmaa2interface.Running))
 			tracker.Wait(jobid, 0.0, drmaa2interface.Done)
-			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+			state, _, _ = tracker.JobState(jobid)
+			Ω(state).Should(Equal(drmaa2interface.Done))
 		})
 
 		It("must be possible to start, suspend, resume, and kill a job", func() {
@@ -179,24 +181,28 @@ var _ = Describe("Simpletracker", func() {
 			Ω(jobid).ShouldNot(Equal(""))
 
 			tracker.Wait(jobid, 0.0, drmaa2interface.Running)
-			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Running))
+			state, _, _ := tracker.JobState(jobid)
+			Ω(state).Should(Equal(drmaa2interface.Running))
 
 			err = tracker.JobControl(jobid, "suspend")
 			Ω(err).Should(BeNil())
 
-			Eventually(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Suspended))
+			state, _, _ = tracker.JobState(jobid)
+			Eventually(state).Should(Equal(drmaa2interface.Suspended))
 
 			err = tracker.JobControl(jobid, "resume")
 			Ω(err).Should(BeNil())
 
-			Eventually(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Running))
+			state, _, _ = tracker.JobState(jobid)
+			Eventually(state).Should(Equal(drmaa2interface.Running))
 
 			err = tracker.JobControl(jobid, "terminate")
 			Ω(err).Should(BeNil())
 
 			tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
 
-			Eventually(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Failed))
+			state, _, _ = tracker.JobState(jobid)
+			Eventually(state).Should(Equal(drmaa2interface.Failed))
 		})
 
 		It("must be possible to AddJob() and DeleteJob()", func() {
@@ -239,8 +245,10 @@ var _ = Describe("Simpletracker", func() {
 			err = tracker.DeleteJob(jobid)
 			Ω(err).Should(BeNil())
 
-			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Undetermined))
-			Ω(tracker.JobState("1231231201")).Should(Equal(drmaa2interface.Undetermined))
+			state, _, _ := tracker.JobState(jobid)
+			Ω(state).Should(Equal(drmaa2interface.Undetermined))
+			state, _, _ = tracker.JobState("1231231201")
+			Ω(state).Should(Equal(drmaa2interface.Undetermined))
 		})
 
 	})
@@ -266,7 +274,8 @@ var _ = Describe("Simpletracker", func() {
 
 			err = tracker.Wait(jobid, time.Second*10, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
-			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+			state, _, _ := tracker.JobState(jobid)
+			Ω(state).Should(Equal(drmaa2interface.Done))
 		})
 
 		It("must error when job is not found", func() {
@@ -282,7 +291,8 @@ var _ = Describe("Simpletracker", func() {
 
 			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
-			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+			state, _, _ := tracker.JobState(jobid)
+			Ω(state).Should(Equal(drmaa2interface.Done))
 		})
 
 		It("must be possible to wait for a job when it is finished already", func() {
@@ -293,12 +303,15 @@ var _ = Describe("Simpletracker", func() {
 
 			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
-			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+			state, _, _ := tracker.JobState(jobid)
+
+			Ω(state).Should(Equal(drmaa2interface.Done))
 
 			// wait for end state when end state is already reached
 			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
-			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+			state, _, _ = tracker.JobState(jobid)
+			Ω(state).Should(Equal(drmaa2interface.Done))
 
 			// wait for an non end state
 			err = tracker.Wait(jobid, 0.0, drmaa2interface.Running, drmaa2interface.Suspended)
@@ -315,7 +328,8 @@ var _ = Describe("Simpletracker", func() {
 			jobid, err := tracker.AddJob(t)
 			err = tracker.Wait(jobid, time.Millisecond*400, drmaa2interface.Suspended)
 			Ω(err).ShouldNot(BeNil())
-			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Running))
+			state, _, _ := tracker.JobState(jobid)
+			Ω(state).Should(Equal(drmaa2interface.Running))
 		})
 
 		It("should be possible to wait for all job states", func() {
@@ -361,7 +375,8 @@ var _ = Describe("Simpletracker", func() {
 			t.Args = []string{"0.2"}
 			jobid, _ := tracker.AddArrayJob(t, 1, 5, 1, 1)
 			id := fmt.Sprintf("%s.5", jobid)
-			Ω(tracker.JobState(id)).Should(Equal(drmaa2interface.Queued))
+			state, _, _ := tracker.JobState(id)
+			Ω(state).Should(Equal(drmaa2interface.Queued))
 			info, err := tracker.JobInfo(id)
 			Ω(err).Should(BeNil())
 			Ω(info.State).Should(Equal(drmaa2interface.Queued))
@@ -405,7 +420,8 @@ var _ = Describe("Simpletracker", func() {
 			Ω(err).Should(BeNil())
 
 			tracker.Wait(jobid2, 0.0, drmaa2interface.Done)
-			Ω(tracker.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+			state, _, _ := tracker.JobState(jobid)
+			Ω(state).Should(Equal(drmaa2interface.Done))
 		})
 
 	})
@@ -462,7 +478,7 @@ var _ = Describe("Simpletracker", func() {
 			Ω(err).Should(BeNil())
 			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
-			state := tracker.JobState(jobid)
+			state, _, _ := tracker.JobState(jobid)
 			Ω(state).Should(Equal(drmaa2interface.Done))
 			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed)
 			Ω(err).ShouldNot(BeNil())

@@ -48,25 +48,25 @@ var _ = Describe("Cftracker", func() {
 		})
 
 		It("should show the job state", func() {
-			state := client.JobState("GUID")
+			state, _, _ := client.JobState("GUID")
 			Ω(state).Should(Equal(drmaa2interface.Failed))
 
-			state = client.JobState("PENDING")
+			state, _, _ = client.JobState("PENDING")
 			Ω(state).Should(Equal(drmaa2interface.Queued))
 
-			state = client.JobState("RUNNING")
+			state, _, _ = client.JobState("RUNNING")
 			Ω(state).Should(Equal(drmaa2interface.Running))
 
-			state = client.JobState("CANCELING")
+			state, _, _ = client.JobState("CANCELING")
 			Ω(state).Should(Equal(drmaa2interface.Running))
 
-			state = client.JobState("SUCCEEDED")
+			state, _, _ = client.JobState("SUCCEEDED")
 			Ω(state).Should(Equal(drmaa2interface.Done))
 
-			state = client.JobState("unknown")
+			state, _, _ = client.JobState("unknown")
 			Ω(state).Should(Equal(drmaa2interface.Undetermined))
 
-			state = client.JobState("error")
+			state, _, _ = client.JobState("error")
 			Ω(state).Should(Equal(drmaa2interface.Undetermined))
 
 		})

@@ -63,7 +63,8 @@ func (j *Job) GetJobInfo() (drmaa2interface.JobInfo, error) {
 // specific sub state (see Section 8.1). It is intended as a fast
 // alternative to the fetching of a complete JobInfo instance.
 func (j *Job) GetState() drmaa2interface.JobState {
-	return j.tracker.JobState(j.id)
+	state, _, _ := j.tracker.JobState(j.id)
+	return state
 }
 
 // Suspend triggers a job state transition from RUNNING to SUSPENDED state.
@@ -113,7 +114,7 @@ func (j *Job) WaitTerminated(timeout time.Duration) error {
 // This function MUST only work for jobs in "Terminated" states, so that
 // the job is promised to not change its status while being reaped.
 func (j *Job) Reap() error {
-	state := j.tracker.JobState(j.id)
+	state, _, _ := j.tracker.JobState(j.id)
 	if state != drmaa2interface.Done && state != drmaa2interface.Failed {
 		return ErrorInvalidState
 	}

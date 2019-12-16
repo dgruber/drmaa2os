@@ -51,7 +51,7 @@ func (dt *Tracker) ListArrayJobs(ID string) ([]string, error) {
 }
 
 // JobState returns the state of the Singularity container.
-func (dt *Tracker) JobState(jobid string) drmaa2interface.JobState {
+func (dt *Tracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
 	return dt.processTracker.JobState(jobid)
 }
 

@@ -39,7 +39,7 @@ _JobTemplate_ extensions can be used to inject Singularity exec arguments like "
  }
 ```
 
-In the ExtensionList following arguments are evaluated as global singularity options:
+In the _ExtensionList_ following arguments are evaluated as global singularity options:
   * debug
   * silent
   * quite
@@ -58,6 +58,21 @@ Boolean options are (which are injected after _singularity exec_):
   * containAll
   * userns
   * workdir
+  * pwd
+  * cleanenv
+  * disable-cache
+  * fakeroot
+  * no-home
+  * no-init
+  * no-nv
+  * no-privs
+  * nohttps
+  * nonet
+  * rocm
+  * writeable
+  * writable-tmpf
+  * vm
+  * vm-err
 
 Note that boolean options which are set to "false" or "FALSE" are not evaluated.
 
@@ -72,6 +87,14 @@ Options with values are:
   * apply-cgroups
   * scatch
   * home
+  * vm-cpu
+  * vm-ip
+  * vm-ram
+  * allow-setuid
+  * app
+  * drop-caps
+  * app
+  * pem-path
 
 If some are missing open an issue.
 
