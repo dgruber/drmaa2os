@@ -25,7 +25,7 @@ func main() {
 	jt := drmaa2interface.JobTemplate{
 		RemoteCommand: "/bin/sh",
 		Args:          []string{"-c", "sleep 1 && echo container task: $TASK_ID"},
-		JobCategory:   "shub://GodloveD/lolcow",
+		JobCategory:   "docker://ubuntu:18.04",
 		OutputPath:    "/dev/stdout",
 		ErrorPath:     "/dev/stderr",
 	}
