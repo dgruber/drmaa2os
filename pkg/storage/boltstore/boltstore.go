@@ -2,8 +2,8 @@ package boltstore
 
 import (
 	"errors"
-	"github.com/boltdb/bolt"
 	"github.com/dgruber/drmaa2os/pkg/storage"
+	bolt "go.etcd.io/bbolt"
 	"log"
 	"time"
 )
