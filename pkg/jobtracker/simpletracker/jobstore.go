@@ -10,6 +10,7 @@ import (
 
 // JobStore is an internal storage for jobs and job templates
 // processed by the job tracker. Jobs are stored until Reap().
+// Locking must be done externally.
 type JobStore struct {
 	// jobids contains all known jobs in the system until they are reaped (Reap())
 	// these are jobs, not array jobs and can be in format "1.1" or "1"
@@ -149,4 +150,20 @@ func (js *JobStore) GetPID(jobid string) (int, error) {
 		}
 	}
 	return -1, errors.New("TaskID not found in job array")
+}
+
+// GetJobIDs returns the IDs of all jobs.
+func (js *JobStore) GetJobIDs() []string {
+	tmp := make([]string, len(js.jobids), len(js.jobids))
+	copy(tmp, js.jobids)
+	return tmp
+}
+
+// GetArrayJobTaskIDs returns the IDs of all tasks of a job array.
+func (js *JobStore) GetArrayJobTaskIDs(arrayjobID string) []string {
+	jobids := make([]string, 0, len(js.jobs[arrayjobID]))
+	for _, job := range js.jobs[arrayjobID] {
+		jobids = append(jobids, fmt.Sprintf("%s.%d", arrayjobID, job.TaskID))
+	}
+	return jobids
 }

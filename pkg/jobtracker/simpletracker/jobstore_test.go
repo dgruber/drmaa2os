@@ -143,6 +143,34 @@ var _ = Describe("Jobstore", func() {
 			Ω(err).ShouldNot(BeNil())
 		})
 
+		It("should return the task IDs of an array job", func() {
+			store := NewJobStore()
+			Ω(store).ShouldNot(BeNil())
+			store.SaveArrayJob("112",
+				[]int{0, 0, 0}, // no pid
+				drmaa2interface.JobTemplate{RemoteCommand: "rc"},
+				1, 3, 1)
+			tasks := store.GetArrayJobTaskIDs("112")
+			Ω(len(tasks)).To(BeNumerically("==", 3))
+			Ω(tasks[0]).To(Equal("112.1"))
+			Ω(tasks[1]).To(Equal("112.2"))
+			Ω(tasks[2]).To(Equal("112.3"))
+		})
+
+		It("should return the task IDs of an array job as job IDs", func() {
+			store := NewJobStore()
+			Ω(store).ShouldNot(BeNil())
+			store.SaveArrayJob("112",
+				[]int{0, 0, 0}, // no pid
+				drmaa2interface.JobTemplate{RemoteCommand: "rc"},
+				1, 3, 1)
+			tasks := store.GetJobIDs()
+			Ω(len(tasks)).To(BeNumerically("==", 3))
+			Ω(tasks[0]).To(Equal("112.1"))
+			Ω(tasks[1]).To(Equal("112.2"))
+			Ω(tasks[2]).To(Equal("112.3"))
+		})
+
 	})
 
 })
