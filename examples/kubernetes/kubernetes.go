@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
-	"time"
+	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
 )
 
 func createJobSession(sm drmaa2interface.SessionManager) drmaa2interface.JobSession {
@@ -27,7 +29,7 @@ func print(ji drmaa2interface.JobInfo) {
 }
 
 func main() {
-	sm, err := drmaa2os.NewKubernetesSessionManager("testdb.db")
+	sm, err := drmaa2os.NewKubernetesSessionManager(nil, "testdb.db")
 	if err != nil {
 		panic(err)
 	}

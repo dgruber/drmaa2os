@@ -1,9 +1,19 @@
 package jobtracker
 
 import (
-	"github.com/dgruber/drmaa2interface"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
 )
+
+// Allocator contains all what is required to create a new JobTacker
+// instance. A JobTracker implementation needs to register the Allocator
+// implementation in its init method where it needs to call RegisterJobTracker()
+// of the drmaa2os SessionManager. The jobTrackerInitParams are an optional
+// way for parameterize the JobTracker creation method.
+type Allocator interface {
+	New(jobSessionName string, jobTrackerInitParams interface{}) (JobTracker, error)
+}
 
 type JobTracker interface {
 	ListJobs() ([]string, error)

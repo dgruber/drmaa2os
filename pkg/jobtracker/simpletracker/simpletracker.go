@@ -3,11 +3,30 @@ package simpletracker
 import (
 	"errors"
 	"fmt"
-	"github.com/dgruber/drmaa2interface"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 )
+
+// init registers the process tracker at the SessionManager
+func init() {
+	drmaa2os.RegisterJobTracker(drmaa2os.DefaultSession, NewAllocator())
+}
+
+type allocator struct{}
+
+func NewAllocator() *allocator {
+	return &allocator{}
+}
+
+// New is called by the SessionManager when a new JobSession is allocated.
+func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{}) (jobtracker.JobTracker, error) {
+	return New(jobSessionName), nil
+}
 
 // JobTracker implements the JobTracker interface and treats
 // jobs as OS processes.

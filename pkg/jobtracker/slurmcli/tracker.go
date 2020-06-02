@@ -5,9 +5,25 @@ import (
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os"
 	"github.com/dgruber/drmaa2os/pkg/helper"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 )
+
+// init registers the slurm tracker at the SessionManager
+func init() {
+	var a allocator
+	drmaa2os.RegisterJobTracker(drmaa2os.SlurmSession, &a)
+}
+
+type allocator struct{}
+
+// New is called by the SessionManager when a new JobSession is allocated.
+func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{}) (jobtracker.JobTracker, error) {
+	return New(jobSessionName, NewSlurm("sbatch",
+		"squeue", "scontrol", "scancel", "sacct", true))
+}
 
 // Tracker implements the JobTracker interface by calling
 // the slurm command line.
