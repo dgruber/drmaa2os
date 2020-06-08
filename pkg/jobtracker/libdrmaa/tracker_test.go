@@ -184,7 +184,7 @@ var _ = Describe("Tracker", func() {
 			err = d.JobControl(jobID, "terminate")
 			Expect(err).To(BeNil())
 
-			err = d.Wait(jobID, time.Second*30, drmaa2interface.Done, drmaa2interface.Failed)
+			err = d.Wait(jobID, time.Second*40, drmaa2interface.Done, drmaa2interface.Failed, drmaa2interface.Undetermined)
 			Expect(err).To(BeNil())
 
 			state, _, err = d.JobState(jobID)
@@ -202,10 +202,20 @@ var _ = Describe("Tracker", func() {
 		defer d.DestroySession()
 		Expect(d).NotTo(BeNil())
 
+		jobids := make([]string, 0, 16)
 		submissiontime := b.Time("submissiontime", func() {
-			d.AddJob(sleeperJob)
+			jobid, _ := d.AddJob(sleeperJob)
+			jobids = append(jobids, jobid)
 		})
+
 		Expect(submissiontime.Seconds()).To(BeNumerically("<", 0.050), "Submitting a job shouldn't take longer than 3 ms in avg.")
+
+		// clean up
+		for _, jobID := range jobids {
+			d.JobControl(jobID, "terminate")
+		}
+		<-time.Tick(time.Second * 5)
+
 	}, 20)
 
 })

@@ -8,6 +8,7 @@ import (
 
 	"github.com/dgruber/drmaa"
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os"
 	"github.com/dgruber/drmaa2os/pkg/helper"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
