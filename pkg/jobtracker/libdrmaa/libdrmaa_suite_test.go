@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCdrmaajobtracker(t *testing.T) {
+func TestLibdrmaa(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Cdrmaajobtracker Suite")
+	RunSpecs(t, "Libdrmaa Suite")
 }
