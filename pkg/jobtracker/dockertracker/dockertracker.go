@@ -2,16 +2,36 @@ package dockertracker
 
 import (
 	"errors"
+
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os"
 	"github.com/dgruber/drmaa2os/pkg/helper"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 
-	"golang.org/x/net/context"
 	"strings"
 	"time"
+
+	"golang.org/x/net/context"
 )
+
+// init registers the Docker tracker at the SessionManager
+func init() {
+	drmaa2os.RegisterJobTracker(drmaa2os.DockerSession, NewAllocator())
+}
+
+type allocator struct{}
+
+func NewAllocator() *allocator {
+	return &allocator{}
+}
+
+// New is called by the SessionManager when a new JobSession is allocated.
+func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{}) (jobtracker.JobTracker, error) {
+	return New(jobSessionName)
+}
 
 type DockerTracker struct {
 	jobsession string

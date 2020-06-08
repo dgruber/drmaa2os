@@ -6,8 +6,26 @@ import (
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 )
+
+// init registers the singularity tracker at the SessionManager
+func init() {
+	drmaa2os.RegisterJobTracker(drmaa2os.SingularitySession, NewAllocator())
+}
+
+func NewAllocator() *allocator {
+	return &allocator{}
+}
+
+type allocator struct{}
+
+// New is called by the SessionManager when a new JobSession is allocated.
+func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{}) (jobtracker.JobTracker, error) {
+	return New(jobSessionName)
+}
 
 // Tracker tracks singularity container.
 type Tracker struct {

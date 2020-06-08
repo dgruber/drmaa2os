@@ -1,12 +1,16 @@
 package kubernetestracker
 
 import (
+	"errors"
 	"fmt"
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os"
 	"github.com/dgruber/drmaa2os/pkg/helper"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	k8sapi "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"time"
 )
 
 const K8S_JT_EXTENSION_NAMESPACE = "namespace"
@@ -15,6 +19,26 @@ const K8S_JT_EXTENSION_LABELS = "labels"
 type KubernetesTracker struct {
 	clientSet  *kubernetes.Clientset
 	jobsession string
+}
+
+// init registers the Kubernetes job tracker at the SessionManager
+func init() {
+	drmaa2os.RegisterJobTracker(drmaa2os.KubernetesSession, NewAllocator())
+}
+
+type allocator struct{}
+
+func NewAllocator() *allocator {
+	return &allocator{}
+}
+
+// New is called by the SessionManager when a new JobSession is allocated.
+func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{}) (jobtracker.JobTracker, error) {
+	cs, ok := jobTrackerInitParams.(*kubernetes.Clientset)
+	if !ok {
+		return nil, errors.New("jobTrackerInitParams is not of type *kubernetes.Clientset")
+	}
+	return New(jobSessionName, cs)
 }
 
 // New creates a new KubernetesTracker either by using a given kubernetes Clientset

@@ -1,6 +1,6 @@
 module github.com/dgruber/drmaa2os
 
-go 1.13
+go 1.14
 
 replace (
 	k8s.io/api => k8s.io/api v0.0.0-20191016110408-35e52d86657a

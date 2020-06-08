@@ -1,10 +1,11 @@
 package drmaa2os
 
 import (
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/d2hlp"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
-	"time"
 )
 
 // JobSession instance acts as container for job instances controlled
@@ -52,7 +53,7 @@ func (js *JobSession) GetSessionName() (string, error) {
 // can be used for the jobCategory attribute in a JobTemplate instance.
 func (js *JobSession) GetJobCategories() ([]string, error) {
 	var lastError error
-	var jobCategories []string
+	jobCategories := make([]string, 0, 16)
 	for _, tracker := range js.tracker {
 		cat, err := tracker.ListJobCategories()
 		if err != nil {

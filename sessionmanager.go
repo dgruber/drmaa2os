@@ -4,9 +4,12 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/lager"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/slurmcli"
+
+	//	"github.com/dgruber/drmaa2os/pkg/jobtracker/slurmcli"
 	"github.com/dgruber/drmaa2os/pkg/storage"
 )
 
@@ -33,15 +36,43 @@ const (
 	ExternalSession
 )
 
+func init() {
+	// initialize job tracker registration map
+	atomicTrackers.Store(make(map[SessionType]jobtracker.Allocator))
+}
+
+// RegisterJobTracker registers a JobTracker implementation at session manager
+// so that it can be used. This is done in the init() method of the JobTracker
+// implementation. That means the application which wants to use a specific JobTracker
+// needs to import the JobTracker implementation package with _.
+//
+// Like when Docker needs to be used as job management backend:
+//
+// import _ "github.com/dgruber/drmaa2os/pkg/jobtracker/pkg/dockertracker"
+//
+// When multiple backends to be used, all of them needs to be imported so
+// that they are registered in the main application.
+func RegisterJobTracker(sessionType SessionType, tracker jobtracker.Allocator) {
+	trackerMutex.Lock()
+	jtMap := atomicTrackers.Load().(map[SessionType]jobtracker.Allocator)
+	if jtMap == nil {
+		jtMap = make(map[SessionType]jobtracker.Allocator)
+	}
+	jtMap[sessionType] = tracker
+	atomicTrackers.Store(jtMap)
+	trackerMutex.Unlock()
+}
+
 // SessionManager allows to create, list, and destroy job, reserveration,
 // and monitoring sessions. It also returns holds basic information about
 // the resource manager and its capabilities.
 type SessionManager struct {
-	store       storage.Storer
-	log         lager.Logger
-	sessionType SessionType
-	cf          cfContact
-	slurm       *slurmcli.Slurm
+	store                  storage.Storer
+	log                    lager.Logger
+	sessionType            SessionType
+	jobTrackerCreateParams interface{}
+	// cf          cfContact
+	//slurm       *slurmcli.Slurm
 }
 
 // NewDefaultSessionManager creates a SessionManager which starts jobs
@@ -71,18 +102,28 @@ func NewCloudFoundrySessionManager(addr, username, password, dbpath string) (*Se
 	if err != nil {
 		return sm, err
 	}
-	sm.cf = cfContact{
-		addr:     addr,
-		username: username,
-		password: password,
-	}
+	// specific parameters for Cloud Foundry
+	sm.jobTrackerCreateParams = []string{addr, username, password}
+	/*
+		sm.cf = cfContact{
+			addr:     addr,
+			username: username,
+			password: password,
+		}
+	*/
 	return sm, nil
 }
 
 // NewKubernetesSessionManager creates a new session manager which uses
 // Kubernetes tasks as execution backend for jobs.
-func NewKubernetesSessionManager(dbpath string) (*SessionManager, error) {
-	return makeSessionManager(dbpath, KubernetesSession)
+func NewKubernetesSessionManager(cs *kubernetes.Clientset, dbpath string) (*SessionManager, error) {
+	sm, err := makeSessionManager(dbpath, KubernetesSession)
+	if err != nil {
+		return sm, err
+	}
+	// when a job session is created is requires a kubernetes clientset
+	sm.jobTrackerCreateParams = cs
+	return sm, nil
 }
 
 // NewSlurmSessionManager creates a new session manager which wraps the
@@ -112,7 +153,16 @@ func (sm *SessionManager) CreateJobSession(name, contact string) (drmaa2interfac
 	if err := sm.create(storage.JobSessionType, name, contact); err != nil {
 		return nil, err
 	}
-	jt, err := sm.newJobTracker(name)
+	/*
+		jt, err := sm.newJobTracker(name)
+		if err != nil {
+			return nil, err
+		}
+	*/
+	// allocate a registered job tracker - registration happens
+	// when the package is imported in the init method of the
+	// JobTracker implementation package
+	jt, err := sm.newRegisteredJobTracker(name, sm.jobTrackerCreateParams)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +186,7 @@ func (sm *SessionManager) OpenJobSession(name string) (drmaa2interface.JobSessio
 	if exists := sm.store.Exists(storage.JobSessionType, name); !exists {
 		return nil, errors.New("JobSession does not exist")
 	}
-	jt, err := sm.newJobTracker(name)
+	jt, err := sm.newRegisteredJobTracker(name, sm.jobTrackerCreateParams)
 	if err != nil {
 		return nil, err
 	}

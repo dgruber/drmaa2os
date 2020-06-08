@@ -2,11 +2,14 @@ package cftracker
 
 import (
 	"errors"
+	"time"
+
 	"github.com/cloudfoundry-community/go-cfclient"
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os"
 	"github.com/dgruber/drmaa2os/pkg/helper"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/cftracker/fakes"
-	"time"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
+	fake "github.com/dgruber/drmaa2os/pkg/jobtracker/cftracker/fakes"
 )
 
 // clientwrapper interface declares methods of cfclient.Client which
@@ -38,6 +41,23 @@ func newFake(addr, username, password, jobsession string) *cftracker {
 		client: cf,
 	}
 	return &tracker
+}
+
+// init registers the Cloud Foundry tracker at the SessionManager
+func init() {
+	var a allocator
+	drmaa2os.RegisterJobTracker(drmaa2os.CloudFoundrySession, &a)
+}
+
+type allocator struct{}
+
+// New is called by the SessionManager when a new JobSession is allocated.
+func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{}) (jobtracker.JobTracker, error) {
+	cfParams, ok := jobTrackerInitParams.([]string)
+	if !ok {
+		return nil, errors.New("jobTrackerInitParams is not of type []string")
+	}
+	return New(cfParams[0], cfParams[1], cfParams[2], jobSessionName)
 }
 
 func New(addr, username, password, jobsession string) (*cftracker, error) {

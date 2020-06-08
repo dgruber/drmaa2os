@@ -5,6 +5,18 @@ _DRMAA2 for OS processes and more_
 [![CircleCI](https://circleci.com/gh/dgruber/drmaa2os.svg?style=svg)](https://circleci.com/gh/dgruber/drmaa2os)
 [![codecov](https://codecov.io/gh/dgruber/drmaa2os/branch/master/graph/badge.svg)](https://codecov.io/gh/dgruber/drmaa2os)
 
+> _Update_: The Go DRMAA2 interface and the implementation based on the JobTracker
+> interface are now decoupled. In order to use a specific backend, like Docker,
+> the package providing the JobTracker implementation needs to be imported so
+> that the init() method is called for registering at the DRMAA2 implementation.
+> 
+> Like when using the Docker backend:
+> 
+> ```
+> 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
+> ```
+
+
 This is a Go API based on an open standard ([Open Grid Forum DRMAA2](https://www.ogf.org/documents/GFD.231.pdf)) for submitting and
 supervising workloads running in operating system processes, containers, PODs, tasks, or HPC batch jobs.
 
@@ -38,6 +50,11 @@ Following example demonstrates how a job running as OS process can be executed. 
 Note that at this point in time only _JobSessions_ are implemented.
 
 ```go
+    import (
+        "github.com/dgruber/drmaa2os
+        _ "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
+    )
+
 	sm, err := drmaa2os.NewDefaultSessionManager("testdb.db")
 	if err != nil {
 		panic(err)
@@ -90,6 +107,12 @@ is created.
  Use DOCKER_TLS_VERIFY to enable or disable TLS verification, off by default."
 
 ```go
+
+    import (
+        "github.com/dgruber/drmaa2os
+        _ "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
+    )
+
 	sm, err := drmaa2os.NewDockerSessionManager("testdb.db")
 	if err != nil {
 		panic(err)
@@ -119,6 +142,12 @@ is created.
 ### Kubernetes
 
 ```go
+
+    import (
+        "github.com/dgruber/drmaa2os
+        _ "github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
+    )
+
 	sm, err := drmaa2os.NewKubernetesSessionManager("testdb.db")
 	if err != nil {
 		panic(err)
@@ -153,6 +182,12 @@ be set to the application GUID which is the source of the container image
 of the task.
 
 ```go
+
+    import (
+        "github.com/dgruber/drmaa2os
+        _ "github.com/dgruber/drmaa2os/pkg/jobtracker/cftracker"
+    )
+
 	sm, err := drmaa2os.NewCloudFoundrySessionManager("api.run.pivotal.io", "user", "password", "test.db")
 	if err != nil {
 		panic(err)
@@ -186,6 +221,12 @@ The container images can be provided in any form (like pointing to file or shub)
 required to be set as _JobCategory_ for each job.
 
 ```go
+
+    import (
+        "github.com/dgruber/drmaa2os
+        _ "github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
+    )
+
 	sm, err := drmaa2os.NewSingularitySessionManager("testdb.db")
 	if err != nil {
 		panic(err)
@@ -212,7 +253,5 @@ required to be set as _JobCategory_ for each job.
 	js.Close()
 	sm.DestroyJobSession("jobsession")
 ```
-
-
 
 

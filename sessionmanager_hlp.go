@@ -1,18 +1,22 @@
 package drmaa2os
 
 import (
-	"code.cloudfoundry.org/lager"
 	"errors"
+	"fmt"
+	"os"
+	"sync"
+	"sync/atomic"
+
+	"code.cloudfoundry.org/lager"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/cftracker"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/slurmcli"
 	"github.com/dgruber/drmaa2os/pkg/storage"
 	"github.com/dgruber/drmaa2os/pkg/storage/boltstore"
-	"os"
+)
+
+// atomicTrackers is the list of registered JobTracker
+var (
+	trackerMutex   sync.Mutex
+	atomicTrackers atomic.Value
 )
 
 type cfContact struct {
@@ -21,6 +25,7 @@ type cfContact struct {
 	password string
 }
 
+/*
 func (sm *SessionManager) newJobTracker(name string) (jobtracker.JobTracker, error) {
 	switch sm.sessionType {
 	case DockerSession:
@@ -37,6 +42,23 @@ func (sm *SessionManager) newJobTracker(name string) (jobtracker.JobTracker, err
 	default: // DefaultSession
 		return simpletracker.New(name), nil
 	}
+}
+*/
+
+// newRegisteredJobTracker creates a new JobTracker by calling the
+// JobTracker creator which must be previously registered. Registering
+// is done by importing the JobTracker packager where then the init()
+// method is called. That decouples the JobTracker implementation from
+// the rest of the code and only compiles dependencies which are required.
+func (sm *SessionManager) newRegisteredJobTracker(jobSessionName string, params interface{}) (jobtracker.JobTracker, error) {
+	jtMap := atomicTrackers.Load().(map[SessionType]jobtracker.Allocator)
+	if jtMap == nil {
+		return nil, errors.New("no JobTracker registered")
+	}
+	if _, exists := jtMap[sm.sessionType]; !exists {
+		return nil, fmt.Errorf("JobTracker type %v not registered", sm.sessionType)
+	}
+	return jtMap[sm.sessionType].New(jobSessionName, params)
 }
 
 func makeSessionManager(dbpath string, st SessionType) (*SessionManager, error) {
