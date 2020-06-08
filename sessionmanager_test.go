@@ -1,24 +1,20 @@
-package drmaa2os
+package drmaa2os_test
 
 import (
-	"code.cloudfoundry.org/lager"
 	"github.com/dgruber/drmaa2interface"
-	"github.com/dgruber/drmaa2os/pkg/storage/boltstore"
+	"github.com/dgruber/drmaa2os"
+
+	"os"
+
+	// test with process tracker
+	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
+	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
+	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"os"
 )
 
 const smtempdb string = "drmaa2ostest.db"
-
-func createSessionManager() drmaa2interface.SessionManager {
-	os.Remove(smtempdb)
-	s := boltstore.NewBoltStore(smtempdb)
-	s.Init()
-	l := lager.NewLogger("drmaa2ostest")
-	l.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
-	return &SessionManager{store: s, log: l}
-}
 
 var _ = Describe("Sessionmanager", func() {
 
@@ -28,7 +24,8 @@ var _ = Describe("Sessionmanager", func() {
 
 	BeforeEach(func() {
 		os.Remove("drmaa2ostest")
-		sm, _ = NewDefaultSessionManager("drmaa2ostest")
+		sm, _ = drmaa2os.NewDefaultSessionManager("drmaa2ostest")
+		//sm, _ = drmaa2os.NewDockerSessionManager("drmaa2ostest")
 	})
 
 	Describe("Create and Destroy Job Session", func() {
@@ -221,21 +218,21 @@ var _ = Describe("Sessionmanager", func() {
 			rs, err := sm.CreateReservationSession("reservationSession", "")
 			Ω(rs).Should(BeNil())
 			Ω(err).ShouldNot(BeNil())
-			Ω(err).Should(Equal(ErrorUnsupportedOperation))
+			Ω(err).Should(Equal(drmaa2os.ErrorUnsupportedOperation))
 
 			rs, err = sm.OpenReservationSession("reservationSession")
 			Ω(rs).Should(BeNil())
 			Ω(err).ShouldNot(BeNil())
-			Ω(err).Should(Equal(ErrorUnsupportedOperation))
+			Ω(err).Should(Equal(drmaa2os.ErrorUnsupportedOperation))
 
 			err = sm.DestroyReservationSession("reservationSession")
 			Ω(err).ShouldNot(BeNil())
-			Ω(err).Should(Equal(ErrorUnsupportedOperation))
+			Ω(err).Should(Equal(drmaa2os.ErrorUnsupportedOperation))
 
 			names, err := sm.GetReservationSessionNames()
 			Ω(names).Should(BeNil())
 			Ω(err).ShouldNot(BeNil())
-			Ω(err).Should(Equal(ErrorUnsupportedOperation))
+			Ω(err).Should(Equal(drmaa2os.ErrorUnsupportedOperation))
 		})
 
 	})
