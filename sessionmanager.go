@@ -29,8 +29,11 @@ const (
 	SingularitySession
 	// SlurmSession manages slurm jobs
 	SlurmSession
-	// DRMAASession uses libdrmaa.so (v1) for managing job
-	DRMAASession
+	// LibDRMAASession manages jobs through libdrmaa.so
+	LibDRMAASession
+	// ExternalSession can be used by external JobTracker implementations
+	// during development time before they get added here
+	ExternalSession
 )
 
 func init() {
@@ -129,11 +132,20 @@ func NewSlurmSessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, SlurmSession)
 }
 
-// NewDRMAASessionManager creates a new session manager which wraps the
-// libdrmaa.so provided by different workloadmanagers.
-func NewDRMAASessionManager(dbpath string) (*SessionManager, error) {
-	// TODO check if registered?
-	return makeSessionManager(dbpath, DRMAASession)
+// NewLibDRMAASessionManager creates a new session manager which wraps
+// libdrmaa.so (DRMAA v1) through the Go DRMAA library. Please check out
+// the details of github.com/dgruber/drmaa before using it. Make sure
+// all neccessary paths are set (C header files, LD_LIBRARY_PATH).
+func NewLibDRMAASessionManager(dbpath string) (*SessionManager, error) {
+	return makeSessionManager(dbpath, LibDRMAASession)
+}
+
+// NexExternalSessionManager creates a new external session. This can be
+// used when a JobTrack is implemented outside of the repository.
+// Note that only one ExternalSession is available so it makes sense to
+// add a constant here.
+func NexExternalSessionManager(dbpath string) (*SessionManager, error) {
+	return makeSessionManager(dbpath, ExternalSession)
 }
 
 // CreateJobSession creates a new JobSession for managing jobs.
