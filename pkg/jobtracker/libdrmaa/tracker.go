@@ -9,8 +9,26 @@ import (
 	"github.com/dgruber/drmaa"
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/helper"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 )
+
+// init registers the libdrmaa tracker at the SessionManager
+func init() {
+	drmaa2os.RegisterJobTracker(drmaa2os.LibDRMAASession, NewAllocator())
+}
+
+type allocator struct{}
+
+func NewAllocator() *allocator {
+	return &allocator{}
+}
+
+// New is called by the SessionManager when a new JobSession is allocated.
+func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{}) (jobtracker.JobTracker, error) {
+	// a job session name has no meaning in DRMAA v1.
+	return NewDRMAATracker()
+}
 
 // WorkloadManagerType is related to a specific drmaa.so backend as
 // there are minor differences in terms of capabilities
