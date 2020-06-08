@@ -61,13 +61,13 @@ var _ = Describe("Tracker", func() {
 			defer d.DestroySession()
 			Expect(d).NotTo(BeNil())
 
-			arrayJobID, err := d.AddArrayJob(sleeperJob, 1, 100, 1, 0)
+			arrayJobID, err := d.AddArrayJob(sleeperJob, 1, 10, 1, 0)
 			Expect(err).To(BeNil())
 			Expect(arrayJobID).NotTo(Equal(""))
 
 			ids, err := d.ListArrayJobs(arrayJobID)
 			Expect(err).To(BeNil())
-			Expect(len(ids)).To(BeNumerically("==", 100))
+			Expect(len(ids)).To(BeNumerically("==", 10))
 			for _, id := range ids {
 				err = d.Wait(id, time.Second*31, drmaa2interface.Done, drmaa2interface.Failed)
 				Expect(err).To(BeNil())
@@ -80,13 +80,13 @@ var _ = Describe("Tracker", func() {
 
 			jobs, err := d.ListJobs()
 			Expect(err).To(BeNil())
-			Expect(len(jobs)).To(BeNumerically("==", 100))
+			Expect(len(jobs)).To(BeNumerically("==", 10))
 
-			state, _, err := d.JobState(ids[99])
+			state, _, err := d.JobState(ids[9])
 			Expect(err).To(BeNil())
 			Expect(state).To(Equal(drmaa2interface.Done))
 
-			jobInfo, err := d.JobInfo(ids[99])
+			jobInfo, err := d.JobInfo(ids[9])
 			Expect(err).To(BeNil())
 			Expect(jobInfo.State).To(Equal(drmaa2interface.Done))
 		})
@@ -195,6 +195,8 @@ var _ = Describe("Tracker", func() {
 	})
 
 	Measure("it should submit jobs in a short time", func(b Benchmarker) {
+		<-time.Tick(time.Second * 5)
+
 		d, err := NewDRMAATracker()
 		Expect(err).To(BeNil())
 		defer d.DestroySession()
@@ -204,6 +206,6 @@ var _ = Describe("Tracker", func() {
 			d.AddJob(sleeperJob)
 		})
 		Expect(submissiontime.Seconds()).To(BeNumerically("<", 0.050), "Submitting a job shouldn't take longer than 3 ms in avg.")
-	}, 100)
+	}, 20)
 
 })

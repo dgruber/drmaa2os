@@ -32,13 +32,13 @@ var _ = Describe("Jobinfo", func() {
 			before := time.Now().Add(-time.Second)
 			jobID, err := d.AddJob(drmaa2interface.JobTemplate{
 				RemoteCommand: "sleep",
-				Args:          []string{"1"},
+				Args:          []string{"0"},
 			})
 			Expect(err).To(BeNil())
 			Expect(jobID).NotTo(Equal(""))
 
 			// could interfere with other tests
-			err = d.Wait(jobID, time.Second*30, drmaa2interface.Done, drmaa2interface.Failed)
+			err = d.Wait(jobID, time.Second*60, drmaa2interface.Done, drmaa2interface.Failed)
 			Expect(err).To(BeNil())
 
 			ji, err := d.JobInfo(jobID)

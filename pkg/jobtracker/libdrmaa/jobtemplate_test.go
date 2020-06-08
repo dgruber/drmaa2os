@@ -51,7 +51,7 @@ var _ = Describe("Jobtemplate", func() {
 			jobID, err := d.AddJob(jt)
 			Expect(err).To(BeNil())
 
-			err = d.Wait(jobID, time.Second*31, drmaa2interface.Failed, drmaa2interface.Done)
+			err = d.Wait(jobID, time.Second*60, drmaa2interface.Failed, drmaa2interface.Done)
 			Expect(err).To(BeNil())
 
 			ji, err := d.JobInfo(jobID)
