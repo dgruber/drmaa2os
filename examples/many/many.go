@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
-	"time"
+	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 )
 
 func main() {

@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
+
+	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 )
 
 func removeJob(jobs []drmaa2interface.Job, job drmaa2interface.Job) (result []drmaa2interface.Job) {

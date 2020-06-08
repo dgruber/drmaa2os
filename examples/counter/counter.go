@@ -3,6 +3,9 @@ package main
 import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
+
+	// need to register process tracker
+	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 )
 
 func main() {
