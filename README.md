@@ -254,4 +254,34 @@ required to be set as _JobCategory_ for each job.
 	sm.DestroyJobSession("jobsession")
 ```
 
+### DRMAA (version 1) - libdrmaa.so
+
+The _LibDRMAASessionManager_ can be used for submitting jobs through a pre-existing _libdrmaa.so_ which
+is available and supported by many HPC workload managers (like Univa Grid Engine, SLURM, PBS, LSF,
+Son of Grid Engine, ...).
+
+There are a few things to consider at compile time and runtime. The CGO_LDFLAGS and CGO_CFLAGS must be
+set according to the documentation in [https://github.com/dgruber/drmaa](https://github.com/dgruber/drmaa).
+Also the LD_LIBRARY_PATH needs to be set accordingly.
+
+An example using Grid Engine running in a container is [here](https://github.com/dgruber/drmaa2os/tree/master/examples/libdrmaa)
+
+The compile time configuration is external meaning the C library must be in the path or LD_LIBRARY_PATH and 
+CGO_LDFLAGS and CGO_CFLAGS must be set according to the documentation in [https://github.com/dgruber/drmaa](https://github.com/dgruber/drmaa).
+
+```go
+
+    import (
+        "github.com/dgruber/drmaa2os
+        _ "github.com/dgruber/drmaa2os/pkg/jobtracker/libdrmaa"
+    )
+    
+	sm, err := drmaa2os.NewLibDRMAASessionManager("testdb.db")
+	if err != nil {
+		panic(err)
+	}
+```
+
+	
+
 
