@@ -37,6 +37,7 @@ For details about the mapping of job operations please consult the platform spec
   * [Docker / Moby](pkg/jobtracker/dockertracker/README.md)
   * [Kubernetes](pkg/jobtracker/kubernetestracker/README.md)
   * [Singularity](pkg/jobtracker/singularity/README.md)
+  * [libdrmaa.so](pkg/jobtracker/libdrmaa/README.md)
 
 [Feedback](mailto:info@gridengine.eu) welcome!
 
