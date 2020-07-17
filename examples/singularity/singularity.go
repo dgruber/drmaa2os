@@ -8,6 +8,8 @@ import (
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
+
+	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
 )
 
 // Simple example of using drmaa2 with Singularity. Please remove any
