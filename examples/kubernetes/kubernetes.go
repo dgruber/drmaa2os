@@ -62,7 +62,7 @@ func main() {
 	}
 	print(ji)
 
-	fmt.Println("Starting job array with 1000 jobs")
+	fmt.Println("Starting job array with 100 jobs")
 	fmt.Println(time.Now())
 	jobs, err := js.RunBulkJobs(jt, 1, 100, 1, 100)
 	if err != nil {
