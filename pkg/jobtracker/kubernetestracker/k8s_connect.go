@@ -3,17 +3,33 @@ package kubernetestracker
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"k8s.io/client-go/kubernetes"
 	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // support for GCP / GKE
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
-	"path/filepath"
 )
 
 // NewClientSet create a new clientset by parsing the .kube/config file
 // in the home directory.
 func NewClientSet() (*kubernetes.Clientset, error) {
+	// when running inside Kubernetes as pod we need to use rest
+	// rather than kubeconfig
+	if _, exists := os.LookupEnv("KUBERNETES_SERVICE_HOST"); exists == true {
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			return nil, fmt.Errorf("expecting running inside a pod but do not get cluster config: %v", err)
+		}
+		clientSet, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			return nil, fmt.Errorf("expecting running inside a pod but do not get client set: %v", err)
+		}
+		return clientSet, nil
+	}
+
 	kubeconfig, err := kubeConfigFile()
 	if err != nil {
 		return nil, fmt.Errorf("opening .kube/config file: %s", err.Error())

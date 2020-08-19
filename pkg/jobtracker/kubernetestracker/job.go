@@ -1,8 +1,10 @@
 package kubernetestracker
 
 import (
+	"context"
 	"errors"
 	"fmt"
+
 	batchv1 "k8s.io/api/batch/v1"
 	k8sapi "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -39,7 +41,7 @@ func jobStateChange(jc clientBatchv1.JobInterface, job *batchv1.Job, action stri
 		return errors.New("Unsupported Operation")
 	case "terminate":
 		// activeDeadlineSeconds to zero
-		return jc.Delete(job.GetName(), &k8sapi.DeleteOptions{})
+		return jc.Delete(context.TODO(), job.GetName(), k8sapi.DeleteOptions{})
 	}
 	return fmt.Errorf("Undefined job operation")
 }
@@ -49,9 +51,9 @@ func deleteJob(jc clientBatchv1.JobInterface, job *batchv1.Job) error {
 		return errors.New("internal error: can't delete job: job is nil")
 	}
 	policy := k8sapi.DeletePropagationBackground
-	return jc.Delete(job.GetName(), &k8sapi.DeleteOptions{PropagationPolicy: &policy})
+	return jc.Delete(context.TODO(), job.GetName(), k8sapi.DeleteOptions{PropagationPolicy: &policy})
 }
 
 func getJobByID(jc clientBatchv1.JobInterface, jobid string) (*batchv1.Job, error) {
-	return jc.Get(jobid, k8sapi.GetOptions{})
+	return jc.Get(context.TODO(), jobid, k8sapi.GetOptions{})
 }

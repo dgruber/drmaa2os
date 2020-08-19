@@ -4,12 +4,10 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/lager"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 
-	//	"github.com/dgruber/drmaa2os/pkg/jobtracker/slurmcli"
 	"github.com/dgruber/drmaa2os/pkg/storage"
 )
 
@@ -115,8 +113,9 @@ func NewCloudFoundrySessionManager(addr, username, password, dbpath string) (*Se
 }
 
 // NewKubernetesSessionManager creates a new session manager which uses
-// Kubernetes tasks as execution backend for jobs.
-func NewKubernetesSessionManager(cs *kubernetes.Clientset, dbpath string) (*SessionManager, error) {
+// Kubernetes tasks as execution backend for jobs. The first parameter must
+// be either a *kubernetes.Clientset or nil to allocate a new one.
+func NewKubernetesSessionManager(cs interface{}, dbpath string) (*SessionManager, error) {
 	sm, err := makeSessionManager(dbpath, KubernetesSession)
 	if err != nil {
 		return sm, err

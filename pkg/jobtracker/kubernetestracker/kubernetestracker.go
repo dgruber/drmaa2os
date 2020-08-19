@@ -1,6 +1,7 @@
 package kubernetestracker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -33,10 +34,17 @@ func NewAllocator() *allocator {
 }
 
 // New is called by the SessionManager when a new JobSession is allocated.
+// jobTrackerInitParams must be a kubernetes.Clientset if not nil. If nil
+// a new Clientset is allocated.
 func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{}) (jobtracker.JobTracker, error) {
-	cs, ok := jobTrackerInitParams.(*kubernetes.Clientset)
-	if !ok {
-		return nil, errors.New("jobTrackerInitParams is not of type *kubernetes.Clientset")
+	var cs *kubernetes.Clientset
+	//
+	if jobTrackerInitParams != nil {
+		var ok bool
+		cs, ok = jobTrackerInitParams.(*kubernetes.Clientset)
+		if !ok {
+			return nil, errors.New("jobTrackerInitParams is not of type *kubernetes.Clientset")
+		}
 	}
 	return New(jobSessionName, cs)
 }
@@ -69,7 +77,7 @@ func (kt *KubernetesTracker) ListJobs() ([]string, error) {
 		return nil, fmt.Errorf("ListJobs: %s", err.Error())
 	}
 	labelSelector := fmt.Sprintf("drmaa2jobsession=%s", kt.jobsession)
-	jobsList, err := jc.List(k8sapi.ListOptions{LabelSelector: labelSelector})
+	jobsList, err := jc.List(context.TODO(), k8sapi.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return nil, fmt.Errorf("listing jobs with client: %s", err.Error())
 	}
@@ -91,7 +99,7 @@ func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, err
 	if err != nil {
 		return "", fmt.Errorf("get client: %s", err.Error())
 	}
-	j, err := jc.Create(job)
+	j, err := jc.Create(context.TODO(), job, k8sapi.CreateOptions{})
 	if err != nil {
 		return "", fmt.Errorf("creating new job: %s", err.Error())
 	}
