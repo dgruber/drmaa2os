@@ -5,7 +5,7 @@ go 1.14
 replace (
 	github.com/docker/docker => github.com/docker/docker v1.13.1
 	github.com/docker/go-connections => github.com/docker/go-connections v0.4.0
-	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
+	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
 )
 
 require (
