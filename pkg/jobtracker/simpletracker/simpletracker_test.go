@@ -419,9 +419,11 @@ var _ = Describe("Simpletracker", func() {
 			jobid2, err := tracker.AddJob(t)
 			Ω(err).Should(BeNil())
 
-			tracker.Wait(jobid2, 0.0, drmaa2interface.Done)
+			err = tracker.Wait(jobid2, time.Second*5, drmaa2interface.Done)
+			Expect(err).To(BeNil())
+
 			state, _, _ := tracker.JobState(jobid)
-			Ω(state).Should(Equal(drmaa2interface.Done))
+			Ω(state.String()).Should(Equal(drmaa2interface.Done.String()))
 		})
 
 	})
