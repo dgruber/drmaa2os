@@ -7,6 +7,7 @@ replace (
 )
 
 require (
+    github.com/googleapis/gnostic v0.4.1
 	github.com/Azure/go-autorest/autorest v0.11.4 // indirect
 	github.com/dgruber/drmaa2interface v1.0.2
 	github.com/dgruber/drmaa2os v0.3.0

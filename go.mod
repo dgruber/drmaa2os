@@ -11,6 +11,7 @@ require (
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	github.com/Azure/go-autorest/autorest/adal v0.9.2 // indirect
 	github.com/Microsoft/go-winio v0.4.14 // indirect
+	github.com/cloudfoundry-community/go-cfclient v0.0.0-20200413172050-18981bf12b4b
 	github.com/dgruber/drmaa2interface v1.0.2
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1
