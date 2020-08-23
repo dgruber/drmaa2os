@@ -1,13 +1,13 @@
 package simpletracker_test
 
 import (
+	sigar "github.com/cloudfoundry/gosigar"
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/dgruber/drmaa2interface"
-	"github.com/scalingdata/gosigar"
 
 	"io/ioutil"
 	"os"
