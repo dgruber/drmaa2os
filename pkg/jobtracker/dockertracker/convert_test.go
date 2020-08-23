@@ -164,11 +164,17 @@ var _ = Describe("Convert", func() {
 
 		It("should set the portBindings when exposedPorts set in JobTemplate", func() {
 			jt.ExtensionList = map[string]string{"exposedPorts": "80:6445/tcp"}
+			jt.ExtensionList["restart"] = "unless-stopped"
+			jt.ExtensionList["net"] = "host"
+			jt.ExtensionList["privileged"] = "true"
 			hc, err := jobTemplateToHostConfig(jt)
 			Ω(err).Should(BeNil())
 			Ω(hc).ShouldNot(BeNil())
 			Ω(len(hc.PortBindings)).Should(BeNumerically("==", 1))
 			Ω(hc.PortBindings).Should(HaveKey(nat.Port("6445/tcp")))
+			Ω(hc.RestartPolicy.IsUnlessStopped()).Should(BeTrue())
+			Ω(hc.NetworkMode.IsHost()).Should(BeTrue())
+			Ω(hc.Privileged).Should(BeTrue())
 		})
 	})
 

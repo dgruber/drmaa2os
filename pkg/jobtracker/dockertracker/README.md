@@ -57,6 +57,11 @@ Mapping between the job template and the Docker container config request:
 | OutputPath           | Writes stdout into a local file. |
 | Extension: "user"    | User / must exist in container if set |
 | Extension: "exposedPorts" | -p / multiple entries are splitted with "," |
+| Extension: "net" | --net  / like "host" |
+| Extension: "privileged" | --privileged  / "true"  when enabled, default "false"|
+| Extension: "restart" | --restart  / like "unless-stopped", default "no" / use with care|
+
+
 
 If more extensions needed just open an issue.
 

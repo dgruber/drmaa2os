@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
-	"strings"
-	"time"
 )
 
 func checkJobTemplate(jt drmaa2interface.JobTemplate) error {
@@ -77,7 +78,6 @@ func jobTemplateToContainerConfig(jobsession string, jt drmaa2interface.JobTempl
 	if jt.ExtensionList != nil {
 		cc.User = jt.ExtensionList["user"]
 		cc.ExposedPorts = newPortSet(jt.ExtensionList["exposedPorts"])
-
 	}
 
 	//cc.Tty = true // merges stderr into stdout
@@ -97,6 +97,26 @@ func jobTemplateToHostConfig(jt drmaa2interface.JobTemplate) (*container.HostCon
 	for outer, inner := range jt.StageInFiles {
 		hc.Binds = append(hc.Binds, fmt.Sprintf("%s:%s", outer, inner))
 	}
+	if jt.ExtensionList != nil {
+		restart, exists := jt.ExtensionList["restart"]
+		if exists {
+			// experimental / should be handled outside
+			// like --restart=unless-stopped
+			hc.RestartPolicy = container.RestartPolicy{
+				Name: restart,
+			}
+		}
+		privileged, exists := jt.ExtensionList["privileged"]
+		if exists && strings.ToUpper(privileged) != "FALSE" {
+			hc.Privileged = true
+		}
+		net, exists := jt.ExtensionList["net"]
+		if exists {
+			// like --net host
+			hc.NetworkMode = container.NetworkMode(net)
+		}
+	}
+
 	hc.PortBindings = newPortBindings(jt.ExtensionList["exposedPorts"])
 	return &hc, nil
 }
