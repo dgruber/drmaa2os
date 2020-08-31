@@ -115,6 +115,24 @@ func jobTemplateToHostConfig(jt drmaa2interface.JobTemplate) (*container.HostCon
 			// like --net host
 			hc.NetworkMode = container.NetworkMode(net)
 		}
+		ipc, exists := jt.ExtensionList["ipc"]
+		if exists {
+			hc.IpcMode = container.IpcMode(ipc)
+		}
+		uts, exists := jt.ExtensionList["uts"]
+		if exists {
+			hc.UTSMode = container.UTSMode(uts)
+		}
+		pid, exists := jt.ExtensionList["pid"]
+		if exists {
+			hc.PidMode = container.PidMode(pid)
+		}
+		rm, exists := jt.ExtensionList["rm"]
+		if exists {
+			if strings.ToUpper(rm) == "TRUE" {
+				hc.AutoRemove = true
+			}
+		}
 	}
 
 	hc.PortBindings = newPortBindings(jt.ExtensionList["exposedPorts"])

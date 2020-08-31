@@ -167,6 +167,10 @@ var _ = Describe("Convert", func() {
 			jt.ExtensionList["restart"] = "unless-stopped"
 			jt.ExtensionList["net"] = "host"
 			jt.ExtensionList["privileged"] = "true"
+			jt.ExtensionList["ipc"] = "host"
+			jt.ExtensionList["uts"] = "host"
+			jt.ExtensionList["pid"] = "host"
+			jt.ExtensionList["rm"] = "true"
 			hc, err := jobTemplateToHostConfig(jt)
 			Ω(err).Should(BeNil())
 			Ω(hc).ShouldNot(BeNil())
@@ -175,6 +179,10 @@ var _ = Describe("Convert", func() {
 			Ω(hc.RestartPolicy.IsUnlessStopped()).Should(BeTrue())
 			Ω(hc.NetworkMode.IsHost()).Should(BeTrue())
 			Ω(hc.Privileged).Should(BeTrue())
+			Ω(hc.AutoRemove).Should(BeTrue())
+			Ω(hc.IpcMode.IsHost()).Should(BeTrue())
+			Ω(hc.UTSMode.IsHost()).Should(BeTrue())
+			Ω(hc.PidMode.IsHost()).Should(BeTrue())
 		})
 	})
 

@@ -60,8 +60,10 @@ Mapping between the job template and the Docker container config request:
 | Extension: "net" | --net  / like "host" |
 | Extension: "privileged" | --privileged  / "true"  when enabled, default "false"|
 | Extension: "restart" | --restart  / like "unless-stopped", default "no" / use with care|
-
-
+| Extension: "ipc" | --ipc "host" |
+| Extension: "uts" | --uts "host" |
+| Extension: "pid" | --pid "host" |
+| Extension: "rm" | --rm  "true" or "TRUE"|
 
 If more extensions needed just open an issue.
 
