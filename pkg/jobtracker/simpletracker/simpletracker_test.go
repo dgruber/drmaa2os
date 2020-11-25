@@ -429,6 +429,7 @@ var _ = Describe("Simpletracker", func() {
 	})
 
 	Context("Basic error cases", func() {
+
 		It("must fail to add a job when JobTemplate is not correct", func() {
 			tracker := New("testsession")
 			Ω(tracker).NotTo(BeNil())

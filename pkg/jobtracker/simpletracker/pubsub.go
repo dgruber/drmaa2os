@@ -2,8 +2,9 @@ package simpletracker
 
 import (
 	"errors"
-	"github.com/dgruber/drmaa2interface"
 	"sync"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
 // JobEvent is send whenever a job status change is happening
@@ -103,6 +104,14 @@ func (ps *PubSub) StartBookKeeper() {
 	go func() {
 		for event := range ps.jobch {
 			ps.Lock()
+			ps.jobState[event.JobID] = event.JobState
+			if info, exists := ps.jobInfo[event.JobID]; exists {
+				ps.jobInfo[event.JobID] = mergeJobInfo(info, event.JobInfo)
+			} else {
+				// TODO deep copy
+				ps.jobInfo[event.JobID] = event.JobInfo
+			}
+
 			// inform registered functions
 			for _, waiter := range ps.waitFunctions[event.JobID] {
 				// inform when expected state is reached
@@ -112,14 +121,6 @@ func (ps *PubSub) StartBookKeeper() {
 					}
 				}
 			}
-			ps.jobState[event.JobID] = event.JobState
-			if info, exists := ps.jobInfo[event.JobID]; exists {
-				ps.jobInfo[event.JobID] = mergeJobInfo(info, event.JobInfo)
-			} else {
-				// TODO deep copy
-				ps.jobInfo[event.JobID] = event.JobInfo
-			}
-
 			ps.Unlock()
 			if event.callback != nil {
 				event.callback <- true
