@@ -1,20 +1,95 @@
 package kubernetestracker
 
 import (
+	"context"
+	"crypto/md5"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	k8sapi "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/client-go/kubernetes"
 )
 
+func volumeName(jobName, path string, kind string) string {
+	sum := md5.Sum([]byte(path))
+	return jobName + "-" + fmt.Sprintf("%.8x", sum) + "-" + kind + "-volume"
+}
+
+func configMapName(jobName, path string) string {
+	sum := md5.Sum([]byte(path))
+	return jobName + "-" + fmt.Sprintf("%.8x", sum) + "-configmap"
+}
+
+func secretName(jobName, path string) string {
+	sum := md5.Sum([]byte(path))
+	return jobName + "-" + fmt.Sprintf("%.8x", sum) + "-secret"
+}
+
+// newVolumes creates volumes for staging in data into the containers.
+// The volumes are build on existing secrets or configmaps containing
+// the data.
 func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
-	//v := k8sv1.Volume{}
+	if jt.StageInFiles != nil {
+		// naming scheme of the objects jobname-filename-{secret|cm}-volume
+		volumes := make([]k8sv1.Volume, 0, 2)
+		for k, v := range jt.StageInFiles {
+			if strings.HasPrefix(k, "secret:") {
+				volumes = append(volumes,
+					k8sv1.Volume{
+						Name: volumeName(jt.JobName, v, "secret"),
+						VolumeSource: k8sv1.VolumeSource{
+							Secret: &k8sv1.SecretVolumeSource{
+								SecretName: secretName(jt.JobName, v),
+							}}})
+			} else if strings.HasPrefix(k, "configmap:") {
+				volumes = append(volumes,
+					k8sv1.Volume{
+						Name: volumeName(jt.JobName, v, "cm"),
+						VolumeSource: k8sv1.VolumeSource{
+							ConfigMap: &k8sv1.ConfigMapVolumeSource{
+								LocalObjectReference: v1.LocalObjectReference{Name: configMapName(jt.JobName, v)},
+							}}})
+			} else {
+				// TODO: Compatibility with docker: localpath: remotepath
+			}
+		}
+		return volumes, nil
+	}
 	return nil, nil
+}
+
+func getVolumeMounts(jt drmaa2interface.JobTemplate) []v1.VolumeMount {
+	if len(jt.StageInFiles) == 0 {
+		return nil
+	}
+	vmounts := make([]v1.VolumeMount, 0, len(jt.StageInFiles))
+	for k, v := range jt.StageInFiles {
+		_, file := filepath.Split(v)
+		if strings.HasPrefix(k, "secret:") {
+			vmounts = append(vmounts, v1.VolumeMount{
+				Name:      volumeName(jt.JobName, v, "secret"),
+				MountPath: v,
+				SubPath:   file,
+			})
+		} else if strings.HasPrefix(k, "configmap:") {
+			vmounts = append(vmounts, v1.VolumeMount{
+				Name:      volumeName(jt.JobName, v, "cm"),
+				MountPath: v,
+				SubPath:   file,
+			})
+		}
+	}
+	return vmounts
 }
 
 func newContainers(jt drmaa2interface.JobTemplate) ([]k8sv1.Container, error) {
@@ -31,6 +106,8 @@ func newContainers(jt drmaa2interface.JobTemplate) ([]k8sv1.Container, error) {
 		Args:       jt.Args,
 		WorkingDir: jt.WorkingDirectory,
 	}
+
+	c.VolumeMounts = getVolumeMounts(jt)
 
 	for name, value := range jt.JobEnvironment {
 		c.Env = append(c.Env, k8sv1.EnvVar{Name: name, Value: value})
@@ -113,6 +190,125 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 	}
 
 	return job
+}
+
+func getJobStageInSecrets(jt drmaa2interface.JobTemplate) ([]*v1.Secret, error) {
+	if jt.StageInFiles == nil {
+		return nil, nil
+	}
+	secrets := make([]*v1.Secret, 0, 2)
+	for k, v := range jt.StageInFiles {
+		if strings.HasPrefix(k, "secret:") {
+			content := strings.TrimPrefix(k, "secret:")
+			decoded, err := base64.StdEncoding.DecodeString(content)
+			if err != nil {
+				return nil, fmt.Errorf("failed to base64 decode the secret: %v", err)
+			}
+			_, file := filepath.Split(v)
+			secrets = append(secrets, &v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: secretName(jt.JobName, v),
+				},
+				Data: map[string][]byte{
+					file: decoded,
+				},
+			})
+		}
+	}
+	return secrets, nil
+}
+
+func getJobStageInConfigMaps(jt drmaa2interface.JobTemplate) ([]*v1.ConfigMap, error) {
+	if jt.StageInFiles == nil {
+		return nil, nil
+	}
+	configmaps := make([]*v1.ConfigMap, 0, 2)
+	for k, v := range jt.StageInFiles {
+		if strings.HasPrefix(k, "configmap:") {
+			content := strings.TrimPrefix(k, "configmap:")
+			decoded, err := base64.StdEncoding.DecodeString(content)
+			if err != nil {
+				return nil, fmt.Errorf("failed to base64 decode the configmap: %v", err)
+			}
+			_, file := filepath.Split(v)
+			configmaps = append(configmaps,
+				&v1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: configMapName(jt.JobName, v),
+					},
+					BinaryData: map[string][]byte{
+						file: decoded,
+					},
+				})
+		}
+	}
+	return configmaps, nil
+
+}
+
+// removeArtifacts deletes all created secrets and configmaps
+func removeArtifacts(cs *kubernetes.Clientset, jt drmaa2interface.JobTemplate) error {
+	if jt.StageInFiles == nil {
+		return nil
+	}
+	var err error
+	secrets, secretCreateErr := getJobStageInSecrets(jt)
+	if secretCreateErr != nil {
+		err = secretCreateErr
+	}
+	for _, secret := range secrets {
+		errDelete := cs.CoreV1().Secrets("default").Delete(context.TODO(),
+			secret.Name, k8sapi.DeleteOptions{})
+		if err != nil {
+			err = fmt.Errorf("%w %v", err, errDelete)
+		}
+	}
+	configmaps, cmCreateErr := getJobStageInConfigMaps(jt)
+	if cmCreateErr != nil {
+		err = fmt.Errorf("%w %v", err, cmCreateErr)
+	}
+	for _, cm := range configmaps {
+		errDelete := cs.CoreV1().ConfigMaps("default").Delete(context.TODO(),
+			cm.Name, k8sapi.DeleteOptions{})
+		if err != nil {
+			err = fmt.Errorf("%w %v", err, errDelete)
+		}
+	}
+	return err
+}
+
+func removeArtifactsByJobID(cs *kubernetes.Clientset, jobID string) error {
+	// list secrets and delete those which match the label and jobID
+	secretList, err := cs.CoreV1().Secrets("default").List(context.TODO(),
+		metav1.ListOptions{})
+	for _, secret := range secretList.Items {
+		fmt.Printf("found secret %s\n", secret.Name)
+		if strings.HasPrefix(secret.Name, jobID+"-") {
+			fmt.Println("prefix match")
+			errDelete := cs.CoreV1().Secrets("default").Delete(context.TODO(),
+				secret.Name, k8sapi.DeleteOptions{})
+			if err != nil {
+				fmt.Println("delete error")
+				err = fmt.Errorf("%w %v", err, errDelete)
+			}
+		}
+	}
+	// list configmaps and delete those which match the label and jobID
+	configMapList, err := cs.CoreV1().ConfigMaps("default").List(context.TODO(),
+		metav1.ListOptions{})
+	for _, cm := range configMapList.Items {
+		fmt.Printf("found cm %s\n", cm.Name)
+		if strings.HasPrefix(cm.Name, jobID+"-") {
+			fmt.Println("prefix match")
+			errDelete := cs.CoreV1().ConfigMaps("default").Delete(context.TODO(),
+				cm.Name, k8sapi.DeleteOptions{})
+			if err != nil {
+				fmt.Println("delete error")
+				err = fmt.Errorf("%w %v", err, errDelete)
+			}
+		}
+	}
+	return err
 }
 
 func convertJob(jobsession string, jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {

@@ -1,11 +1,14 @@
 package kubernetestracker
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/dgruber/drmaa2interface"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
 var _ = Describe("Convert", func() {
@@ -137,6 +140,75 @@ var _ = Describe("Convert", func() {
 				Ω(err).ShouldNot(BeNil())
 				Ω(job).Should(BeNil())
 			})
+		})
+
+		Context("File staging: ConfigMaps and Secrets", func() {
+
+			var jt drmaa2interface.JobTemplate
+
+			BeforeEach(func() {
+				jt = drmaa2interface.JobTemplate{
+					JobName: "name",
+				}
+				jt.StageInFiles = map[string]string{
+					"secret:c2VjcmV0Cg==":    "/my/secret.txt",
+					"configmap:c2VjcmV0Cg==": "/my/configmap.txt",
+					"secret:c2VjcmV0Mgo=":    "/my/othersecret.txt",
+				}
+			})
+
+			It("should create appropriate names for configmaps, secrets, and volumes", func() {
+				v := volumeName("job123", "/mount/file/here.txt", "secret")
+				Ω(v).Should(ContainSubstring("job123-"))
+				Ω(v).Should(ContainSubstring("-secret-volume"))
+
+				v2 := volumeName("job123", "/mount/file/here2.txt", "configmap")
+				Ω(v2).Should(ContainSubstring("job123-"))
+				Ω(v2).Should(ContainSubstring("-configmap-volume"))
+
+				Ω(v).ShouldNot(Equal(v2))
+
+				cm1 := configMapName("job123", "/mount/file/bla")
+				cm2 := configMapName("job123", "/mount/file/bla2")
+				Ω(cm1).ShouldNot(Equal(cm2))
+
+				Ω(cm1).Should(ContainSubstring("job123-"))
+				Ω(cm2).Should(ContainSubstring("job123-"))
+
+				s1 := secretName("job123", "/mount/file/bla")
+				s2 := secretName("job123", "/mount/file/bla2")
+				Ω(s1).ShouldNot(Equal(s2))
+
+				Ω(s1).Should(ContainSubstring("job123-"))
+				Ω(s2).Should(ContainSubstring("job123-"))
+			})
+
+			It("should create new volumes", func() {
+				v, err := newVolumes(jt)
+				Ω(err).Should(BeNil())
+				Ω(len(v)).Should(BeNumerically("==", 3))
+				Ω(v[0].Name).ShouldNot(Equal(""))
+				Ω(v[1].Name).ShouldNot(Equal(""))
+				Ω(v[2].Name).ShouldNot(Equal(""))
+				Ω(v[0].VolumeSource).ShouldNot(BeNil())
+				Ω(v[1].VolumeSource).ShouldNot(BeNil())
+				Ω(v[2].VolumeSource).ShouldNot(BeNil())
+			})
+
+			It("should create volume mounts", func() {
+				v := getVolumeMounts(jt)
+				Ω(len(v)).Should(BeNumerically("==", 3))
+				Ω(v[0].Name).ShouldNot(Equal(""))
+				Ω(v[1].Name).ShouldNot(Equal(""))
+				Ω(v[2].Name).ShouldNot(Equal(""))
+				Ω(v[0].MountPath).ShouldNot(BeNil())
+				Ω(v[1].MountPath).ShouldNot(BeNil())
+				Ω(v[2].MountPath).ShouldNot(BeNil())
+				Ω(strings.HasSuffix(v[0].MountPath, v[0].SubPath)).Should(BeTrue())
+				Ω(strings.HasSuffix(v[1].MountPath, v[1].SubPath)).Should(BeTrue())
+				Ω(strings.HasSuffix(v[2].MountPath, v[2].SubPath)).Should(BeTrue())
+			})
+
 		})
 
 	})

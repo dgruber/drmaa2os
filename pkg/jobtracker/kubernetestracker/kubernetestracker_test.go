@@ -1,6 +1,8 @@
 package kubernetestracker_test
 
 import (
+	"encoding/base64"
+
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
 
 	. "github.com/onsi/ginkgo"
@@ -68,6 +70,41 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(cats).ShouldNot(BeNil())
 			Ω(len(cats)).Should(BeNumerically("==", 0))
+		})
+
+	})
+
+	Context("File staging", func() {
+
+		It("should create map some content as a file inside the container", func() {
+			jt := drmaa2interface.JobTemplate{
+				JobCategory:   "busybox:latest",
+				RemoteCommand: "cat",
+				Args:          []string{"/my/file.txt", "/my/otherfile.txt"},
+			}
+
+			b64 := base64.StdEncoding.EncodeToString([]byte("content"))
+			jt.StageInFiles = map[string]string{
+				"configmap:" + b64: "/my/file.txt",
+				"secret:" + b64:    "/my/otherfile.txt"}
+
+			kt, err := New("jobsession", nil)
+			Ω(err).Should(BeNil())
+
+			jobid, err := kt.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			err = kt.Wait(jobid, drmaa2interface.InfiniteTime,
+				drmaa2interface.Done, drmaa2interface.Failed)
+			Ω(err).Should(BeNil())
+			state, _, err := kt.JobState(jobid)
+			Ω(err).Should(BeNil())
+			Ω(state.String()).Should(Equal(drmaa2interface.Done.String()))
+
+			// delete configmap and secret
+			err = kt.DeleteJob(jobid)
+			Ω(err).Should(BeNil())
 		})
 
 	})

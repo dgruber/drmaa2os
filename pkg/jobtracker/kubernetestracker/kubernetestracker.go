@@ -91,16 +91,49 @@ func (kt *KubernetesTracker) ListJobs() ([]string, error) {
 // AddJob converts the given DRMAA2 job template into a batchv1.Job and creates
 // the job within Kubernetes.
 func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) {
+	// unique job name is required for secrets, configmap names and pod
+	if jt.JobName == "" {
+		jt.JobName = fmt.Sprintf("d2-%d", time.Now().UnixNano())
+	}
+
+	// create secrets and configmaps with file contents from StageInFiles
+	secrets, err := getJobStageInSecrets(jt)
+	if err != nil {
+		return "", err
+	}
+	for _, secret := range secrets {
+		_, err := kt.clientSet.CoreV1().Secrets("default").Create(context.TODO(),
+			secret, k8sapi.CreateOptions{})
+		if err != nil {
+			return "", err
+		}
+	}
+
+	configmaps, err := getJobStageInConfigMaps(jt)
+	if err != nil {
+		return "", err
+	}
+	for _, configmap := range configmaps {
+		_, err := kt.clientSet.CoreV1().ConfigMaps("default").Create(context.TODO(),
+			configmap, k8sapi.CreateOptions{})
+		if err != nil {
+			return "", fmt.Errorf("failed to create configmap: %v", err)
+		}
+	}
+
 	job, err := convertJob(kt.jobsession, jt)
 	if err != nil {
+		removeArtifacts(kt.clientSet, jt)
 		return "", fmt.Errorf("converting job template into a k8s job: %s", err.Error())
 	}
 	jc, err := getJobsClient(kt.clientSet)
 	if err != nil {
+		removeArtifacts(kt.clientSet, jt)
 		return "", fmt.Errorf("get client: %s", err.Error())
 	}
 	j, err := jc.Create(context.TODO(), job, k8sapi.CreateOptions{})
 	if err != nil {
+		removeArtifacts(kt.clientSet, jt)
 		return "", fmt.Errorf("creating new job: %s", err.Error())
 	}
 	return string(j.Name), nil
@@ -135,7 +168,8 @@ func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, err
 func (kt *KubernetesTracker) JobControl(jobid, state string) error {
 	jc, job, err := getJobInterfaceAndJob(kt.clientSet, jobid)
 	if err != nil {
-		return fmt.Errorf("JobControl: %s", err.Error())
+		return fmt.Errorf("JobControl failed for jobID %s and action %s: %v",
+			jobid, state, err)
 	}
 	return jobStateChange(jc, job, state)
 }
@@ -148,9 +182,14 @@ func (kt *KubernetesTracker) Wait(jobid string, timeout time.Duration, states ..
 
 // DeleteJob removes a job from kubernetes.
 func (kt *KubernetesTracker) DeleteJob(jobid string) error {
+	// TODO remove secrets and config maps
 	jc, job, err := getJobInterfaceAndJob(kt.clientSet, jobid)
 	if err != nil {
-		return fmt.Errorf("DeleteJob: %s", err.Error())
+		return fmt.Errorf("DeleteJob error: %v", err)
 	}
-	return deleteJob(jc, job)
+	err = deleteJob(jc, job)
+	if err != nil {
+		return err
+	}
+	return removeArtifactsByJobID(kt.clientSet, jobid)
 }
