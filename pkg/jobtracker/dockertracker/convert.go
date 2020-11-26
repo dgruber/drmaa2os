@@ -73,6 +73,10 @@ func jobTemplateToContainerConfig(jobsession string, jt drmaa2interface.JobTempl
 		cc.Cmd = cmdSlice
 	}
 
+	if jt.WorkingDirectory != "" {
+		cc.WorkingDir = jt.WorkingDirectory
+	}
+
 	cc.Env = setEnv(jt.JobEnvironment)
 	// Docker specific settings in the extensions
 	if jt.ExtensionList != nil {
