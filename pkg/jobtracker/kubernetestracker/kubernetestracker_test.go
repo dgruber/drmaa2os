@@ -85,9 +85,8 @@ var _ = Describe("KubernetesTracker", func() {
 
 			b64 := base64.StdEncoding.EncodeToString([]byte("content"))
 			jt.StageInFiles = map[string]string{
-				"configmap:" + b64: "/my/file.txt",
-				"secret:" + b64:    "/my/otherfile.txt"}
-
+				"/my/file.txt":      "configmap:" + b64,
+				"/my/otherfile.txt": "secret:" + b64}
 			kt, err := New("jobsession", nil)
 			Ω(err).Should(BeNil())
 

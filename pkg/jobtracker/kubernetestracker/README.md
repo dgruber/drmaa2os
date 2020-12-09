@@ -58,20 +58,19 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 
 Support for staging files to the job's pod so that they can be accessed
 by the job is accomplished by setting the _StageInFiles_ string map in
-the JobTemplate.
+the _JobTemplate_.
 
-The key in the map is the type of the volume (like _secret_ or _configmap_)
-followed by a colon and the Go base64 encoded content. The value of
+The value in the map is the type of the volume (like _secret_ or _configmap_)
+followed by a colon and the Go base64 encoded content. The key of
 the map must contain the path where the file is mounted inside the job's pod.
 Note that only one file can be generated with the same content as the key
-in the map is unique. Future enhancements are providing a file name in the
-key as source file, which is compatible to file staging using Docker.
+in the map is unique.
 
 Example:
 
     jobtemplate.StageInFiles = map[string]string{
-        "configmap:"+base64.StdEncoding.EncodeToString([]byte("content")): "/path/file.txt",
-        "secret:"+base64.StdEncoding.EncodeToString([]byte("secret")): "/path/password.txt",
+        "/path/file.txt": "configmap:"+base64.StdEncoding.EncodeToString([]byte("content")),
+        "/path/password.txt": "secret:"+base64.StdEncoding.EncodeToString([]byte("secret")),
     }
 
 Job Template extensions:

@@ -43,21 +43,21 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 		// naming scheme of the objects jobname-filename-{secret|cm}-volume
 		volumes := make([]k8sv1.Volume, 0, 2)
 		for k, v := range jt.StageInFiles {
-			if strings.HasPrefix(k, "secret:") {
+			if strings.HasPrefix(v, "secret:") {
 				volumes = append(volumes,
 					k8sv1.Volume{
-						Name: volumeName(jt.JobName, v, "secret"),
+						Name: volumeName(jt.JobName, k, "secret"),
 						VolumeSource: k8sv1.VolumeSource{
 							Secret: &k8sv1.SecretVolumeSource{
-								SecretName: secretName(jt.JobName, v),
+								SecretName: secretName(jt.JobName, k),
 							}}})
-			} else if strings.HasPrefix(k, "configmap:") {
+			} else if strings.HasPrefix(v, "configmap:") {
 				volumes = append(volumes,
 					k8sv1.Volume{
-						Name: volumeName(jt.JobName, v, "cm"),
+						Name: volumeName(jt.JobName, k, "cm"),
 						VolumeSource: k8sv1.VolumeSource{
 							ConfigMap: &k8sv1.ConfigMapVolumeSource{
-								LocalObjectReference: v1.LocalObjectReference{Name: configMapName(jt.JobName, v)},
+								LocalObjectReference: v1.LocalObjectReference{Name: configMapName(jt.JobName, k)},
 							}}})
 			} else {
 				// TODO: Compatibility with docker: localpath: remotepath
@@ -74,17 +74,17 @@ func getVolumeMounts(jt drmaa2interface.JobTemplate) []v1.VolumeMount {
 	}
 	vmounts := make([]v1.VolumeMount, 0, len(jt.StageInFiles))
 	for k, v := range jt.StageInFiles {
-		_, file := filepath.Split(v)
-		if strings.HasPrefix(k, "secret:") {
+		_, file := filepath.Split(k)
+		if strings.HasPrefix(v, "secret:") {
 			vmounts = append(vmounts, v1.VolumeMount{
-				Name:      volumeName(jt.JobName, v, "secret"),
-				MountPath: v,
+				Name:      volumeName(jt.JobName, k, "secret"),
+				MountPath: k,
 				SubPath:   file,
 			})
-		} else if strings.HasPrefix(k, "configmap:") {
+		} else if strings.HasPrefix(v, "configmap:") {
 			vmounts = append(vmounts, v1.VolumeMount{
-				Name:      volumeName(jt.JobName, v, "cm"),
-				MountPath: v,
+				Name:      volumeName(jt.JobName, k, "cm"),
+				MountPath: k,
 				SubPath:   file,
 			})
 		}
@@ -198,16 +198,16 @@ func getJobStageInSecrets(jt drmaa2interface.JobTemplate) ([]*v1.Secret, error) 
 	}
 	secrets := make([]*v1.Secret, 0, 2)
 	for k, v := range jt.StageInFiles {
-		if strings.HasPrefix(k, "secret:") {
-			content := strings.TrimPrefix(k, "secret:")
+		if strings.HasPrefix(v, "secret:") {
+			content := strings.TrimPrefix(v, "secret:")
 			decoded, err := base64.StdEncoding.DecodeString(content)
 			if err != nil {
 				return nil, fmt.Errorf("failed to base64 decode the secret: %v", err)
 			}
-			_, file := filepath.Split(v)
+			_, file := filepath.Split(k)
 			secrets = append(secrets, &v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: secretName(jt.JobName, v),
+					Name: secretName(jt.JobName, k),
 				},
 				Data: map[string][]byte{
 					file: decoded,
@@ -224,17 +224,17 @@ func getJobStageInConfigMaps(jt drmaa2interface.JobTemplate) ([]*v1.ConfigMap, e
 	}
 	configmaps := make([]*v1.ConfigMap, 0, 2)
 	for k, v := range jt.StageInFiles {
-		if strings.HasPrefix(k, "configmap:") {
-			content := strings.TrimPrefix(k, "configmap:")
+		if strings.HasPrefix(v, "configmap:") {
+			content := strings.TrimPrefix(v, "configmap:")
 			decoded, err := base64.StdEncoding.DecodeString(content)
 			if err != nil {
 				return nil, fmt.Errorf("failed to base64 decode the configmap: %v", err)
 			}
-			_, file := filepath.Split(v)
+			_, file := filepath.Split(k)
 			configmaps = append(configmaps,
 				&v1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: configMapName(jt.JobName, v),
+						Name: configMapName(jt.JobName, k),
 					},
 					BinaryData: map[string][]byte{
 						file: decoded,
