@@ -65,6 +65,6 @@ func homeDir() string {
 	return os.Getenv("USERPROFILE")
 }
 
-func getJobsClient(cs *kubernetes.Clientset) (batchv1.JobInterface, error) {
-	return cs.BatchV1().Jobs("default"), nil
+func getJobsClient(cs *kubernetes.Clientset, namespace string) (batchv1.JobInterface, error) {
+	return cs.BatchV1().Jobs(namespace), nil
 }

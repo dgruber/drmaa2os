@@ -11,11 +11,11 @@ import (
 	clientBatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 )
 
-func getJobInterfaceAndJob(kt *kubernetes.Clientset, jobid string) (clientBatchv1.JobInterface, *batchv1.Job, error) {
+func getJobInterfaceAndJob(kt *kubernetes.Clientset, jobid, namespace string) (clientBatchv1.JobInterface, *batchv1.Job, error) {
 	if kt == nil {
 		return nil, nil, errors.New("no clientset")
 	}
-	jc, err := getJobsClient(kt)
+	jc, err := getJobsClient(kt, namespace)
 	if err != nil {
 		return nil, nil, fmt.Errorf("can't get k8s client: %s", err.Error())
 	}
@@ -51,9 +51,9 @@ func deleteJob(jc clientBatchv1.JobInterface, job *batchv1.Job) error {
 		return errors.New("internal error: can't delete job: job is nil")
 	}
 	policy := k8sapi.DeletePropagationBackground
-	return jc.Delete(context.TODO(), job.GetName(), k8sapi.DeleteOptions{PropagationPolicy: &policy})
+	return jc.Delete(context.Background(), job.GetName(), k8sapi.DeleteOptions{PropagationPolicy: &policy})
 }
 
 func getJobByID(jc clientBatchv1.JobInterface, jobid string) (*batchv1.Job, error) {
-	return jc.Get(context.TODO(), jobid, k8sapi.GetOptions{})
+	return jc.Get(context.Background(), jobid, k8sapi.GetOptions{})
 }

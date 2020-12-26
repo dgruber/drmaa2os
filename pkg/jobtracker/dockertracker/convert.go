@@ -99,6 +99,10 @@ func jobTemplateToHostConfig(jt drmaa2interface.JobTemplate) (*container.HostCon
 	//hc.CpusetMems
 	//hc.Ulimits
 	for outer, inner := range jt.StageInFiles {
+		// TODO: Mapping must be the other way around as you might
+		// want to map the same file/directory to multiple locations
+		// inside the container. So the destination is unique and
+		// must be the key (and the source the value).
 		hc.Binds = append(hc.Binds, fmt.Sprintf("%s:%s", outer, inner))
 	}
 	if jt.ExtensionList != nil {

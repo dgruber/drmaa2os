@@ -40,7 +40,7 @@ var _ = Describe("Job", func() {
 		})
 
 		It("should error when job is not found", func() {
-			ji, jc, err := getJobInterfaceAndJob(nil, "x")
+			ji, jc, err := getJobInterfaceAndJob(nil, "x", "default")
 			Ω(err).ShouldNot(BeNil())
 			Ω(ji).Should(BeNil())
 			Ω(jc).Should(BeNil())

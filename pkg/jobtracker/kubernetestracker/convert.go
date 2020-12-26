@@ -1,9 +1,7 @@
 package kubernetestracker
 
 import (
-	"context"
 	"crypto/md5"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -14,10 +12,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	k8sapi "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/client-go/kubernetes"
 )
 
 func volumeName(jobName, path string, kind string) string {
@@ -169,10 +164,6 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 	if jt.ExtensionList == nil {
 		return job
 	}
-	if namespace, set := jt.ExtensionList["namespace"]; set && namespace != "" {
-		//Namespace: v1.NamespaceDefault
-		job.Namespace = namespace
-	}
 	if labels, set := jt.ExtensionList["labels"]; set && labels != "" {
 		// "key=value,key=value,..."
 		for _, label := range strings.Split(labels, ",") {
@@ -192,126 +183,7 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 	return job
 }
 
-func getJobStageInSecrets(jt drmaa2interface.JobTemplate) ([]*v1.Secret, error) {
-	if jt.StageInFiles == nil {
-		return nil, nil
-	}
-	secrets := make([]*v1.Secret, 0, 2)
-	for k, v := range jt.StageInFiles {
-		if strings.HasPrefix(v, "secret:") {
-			content := strings.TrimPrefix(v, "secret:")
-			decoded, err := base64.StdEncoding.DecodeString(content)
-			if err != nil {
-				return nil, fmt.Errorf("failed to base64 decode the secret: %v", err)
-			}
-			_, file := filepath.Split(k)
-			secrets = append(secrets, &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: secretName(jt.JobName, k),
-				},
-				Data: map[string][]byte{
-					file: decoded,
-				},
-			})
-		}
-	}
-	return secrets, nil
-}
-
-func getJobStageInConfigMaps(jt drmaa2interface.JobTemplate) ([]*v1.ConfigMap, error) {
-	if jt.StageInFiles == nil {
-		return nil, nil
-	}
-	configmaps := make([]*v1.ConfigMap, 0, 2)
-	for k, v := range jt.StageInFiles {
-		if strings.HasPrefix(v, "configmap:") {
-			content := strings.TrimPrefix(v, "configmap:")
-			decoded, err := base64.StdEncoding.DecodeString(content)
-			if err != nil {
-				return nil, fmt.Errorf("failed to base64 decode the configmap: %v", err)
-			}
-			_, file := filepath.Split(k)
-			configmaps = append(configmaps,
-				&v1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: configMapName(jt.JobName, k),
-					},
-					BinaryData: map[string][]byte{
-						file: decoded,
-					},
-				})
-		}
-	}
-	return configmaps, nil
-
-}
-
-// removeArtifacts deletes all created secrets and configmaps
-func removeArtifacts(cs *kubernetes.Clientset, jt drmaa2interface.JobTemplate) error {
-	if jt.StageInFiles == nil {
-		return nil
-	}
-	var err error
-	secrets, secretCreateErr := getJobStageInSecrets(jt)
-	if secretCreateErr != nil {
-		err = secretCreateErr
-	}
-	for _, secret := range secrets {
-		errDelete := cs.CoreV1().Secrets("default").Delete(context.TODO(),
-			secret.Name, k8sapi.DeleteOptions{})
-		if err != nil {
-			err = fmt.Errorf("%w %v", err, errDelete)
-		}
-	}
-	configmaps, cmCreateErr := getJobStageInConfigMaps(jt)
-	if cmCreateErr != nil {
-		err = fmt.Errorf("%w %v", err, cmCreateErr)
-	}
-	for _, cm := range configmaps {
-		errDelete := cs.CoreV1().ConfigMaps("default").Delete(context.TODO(),
-			cm.Name, k8sapi.DeleteOptions{})
-		if err != nil {
-			err = fmt.Errorf("%w %v", err, errDelete)
-		}
-	}
-	return err
-}
-
-func removeArtifactsByJobID(cs *kubernetes.Clientset, jobID string) error {
-	// list secrets and delete those which match the label and jobID
-	secretList, err := cs.CoreV1().Secrets("default").List(context.TODO(),
-		metav1.ListOptions{})
-	for _, secret := range secretList.Items {
-		fmt.Printf("found secret %s\n", secret.Name)
-		if strings.HasPrefix(secret.Name, jobID+"-") {
-			fmt.Println("prefix match")
-			errDelete := cs.CoreV1().Secrets("default").Delete(context.TODO(),
-				secret.Name, k8sapi.DeleteOptions{})
-			if err != nil {
-				fmt.Println("delete error")
-				err = fmt.Errorf("%w %v", err, errDelete)
-			}
-		}
-	}
-	// list configmaps and delete those which match the label and jobID
-	configMapList, err := cs.CoreV1().ConfigMaps("default").List(context.TODO(),
-		metav1.ListOptions{})
-	for _, cm := range configMapList.Items {
-		fmt.Printf("found cm %s\n", cm.Name)
-		if strings.HasPrefix(cm.Name, jobID+"-") {
-			fmt.Println("prefix match")
-			errDelete := cs.CoreV1().ConfigMaps("default").Delete(context.TODO(),
-				cm.Name, k8sapi.DeleteOptions{})
-			if err != nil {
-				fmt.Println("delete error")
-				err = fmt.Errorf("%w %v", err, errDelete)
-			}
-		}
-	}
-	return err
-}
-
-func convertJob(jobsession string, jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
+func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*batchv1.Job, error) {
 	volumes, err := newVolumes(jt)
 	if err != nil {
 		return nil, fmt.Errorf("converting job (newVolumes): %s", err)
@@ -345,6 +217,7 @@ func convertJob(jobsession string, jt drmaa2interface.JobTemplate) (*batchv1.Job
 			Name:         jt.JobName,
 			Labels:       map[string]string{"drmaa2jobsession": jobsession},
 			GenerateName: "drmaa2os",
+			Namespace:    namespace,
 		},
 		// Specification of the desired behavior of a job.
 		// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status

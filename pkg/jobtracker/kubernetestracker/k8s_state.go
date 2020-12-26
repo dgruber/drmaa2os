@@ -1,10 +1,11 @@
 package kubernetestracker
 
 import (
-	"github.com/dgruber/drmaa2interface"
-	"k8s.io/api/batch/v1"
-	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
+	v1 "k8s.io/api/batch/v1"
+	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 )
 
 func convertJobStatus2JobState(status *v1.JobStatus) drmaa2interface.JobState {

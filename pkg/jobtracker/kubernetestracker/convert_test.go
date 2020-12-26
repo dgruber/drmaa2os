@@ -51,7 +51,7 @@ var _ = Describe("Convert", func() {
 		})
 
 		It("should convert the JobTemplate into a Job", func() {
-			job, err := convertJob("jobsession", jt)
+			job, err := convertJob("jobsession", "default", jt)
 			Ω(err).Should(BeNil())
 			Ω(job).ShouldNot(BeNil())
 			Ω(job.TypeMeta.Kind).Should(Equal("Job"))
@@ -69,21 +69,8 @@ var _ = Describe("Convert", func() {
 			Ω(*deadline).Should(BeNumerically("<=", 10))
 		})
 
-		It("should add a namespace to the job object when requested as extension", func() {
-			job, err := convertJob("jobsession", jt)
-			Ω(err).Should(BeNil())
-			Ω(job).ShouldNot(BeNil())
-			jt.ExtensionList = map[string]string{"namespace": "ns"}
-			job = addExtensions(job, jt)
-			Ω(job.Namespace).Should(Equal("ns"))
-			job, err = convertJob("jobsession", jt)
-			Ω(err).Should(BeNil())
-			Ω(job).ShouldNot(BeNil())
-			Ω(job.Namespace).Should(Equal("ns"))
-		})
-
 		It("should add a label to the job object when requested as extension", func() {
-			job, err := convertJob("jobsession", jt)
+			job, err := convertJob("jobsession", "default", jt)
 			Ω(err).Should(BeNil())
 			Ω(job).ShouldNot(BeNil())
 			jt.ExtensionList = map[string]string{"labels": "label1=foo,label2=bar,drmaa2jobsession=UI"}
@@ -95,7 +82,7 @@ var _ = Describe("Convert", func() {
 		})
 
 		It("should select a scheduler when requested as extension", func() {
-			job, err := convertJob("jobsession", jt)
+			job, err := convertJob("jobsession", "default", jt)
 			Ω(err).Should(BeNil())
 			Ω(job).ShouldNot(BeNil())
 			jt.ExtensionList = map[string]string{"scheduler": "poseidon"}
@@ -122,21 +109,21 @@ var _ = Describe("Convert", func() {
 
 			It("should fail converting the JobTemplate when the JobCategory is missing", func() {
 				jt.JobCategory = ""
-				job, err := convertJob("", jt)
+				job, err := convertJob("", "default", jt)
 				Ω(err).ShouldNot(BeNil())
 				Ω(job).Should(BeNil())
 			})
 
 			It("should fail converting the JobTemplate when the RemoteCommand is missing", func() {
 				jt.RemoteCommand = ""
-				job, err := convertJob("", jt)
+				job, err := convertJob("", "default", jt)
 				Ω(err).ShouldNot(BeNil())
 				Ω(job).Should(BeNil())
 			})
 
 			It("should fail converting the JobTemplate when DeadlineTime is in the past", func() {
 				jt.DeadlineTime = time.Now().Add(time.Second * -1)
-				job, err := convertJob("", jt)
+				job, err := convertJob("", "default", jt)
 				Ω(err).ShouldNot(BeNil())
 				Ω(job).Should(BeNil())
 			})
@@ -208,7 +195,7 @@ var _ = Describe("Convert", func() {
 				Ω(v[0].MountPath).ShouldNot(BeNil())
 				Ω(v[1].MountPath).ShouldNot(BeNil())
 				Ω(v[2].MountPath).ShouldNot(BeNil())
-				//Ω(strings.HasSuffix(v[0].MountPath, v[0].SubPath)).Should(BeTrue())
+				Ω(strings.HasSuffix(v[0].MountPath, v[0].SubPath)).Should(BeTrue())
 				Ω(strings.HasSuffix(v[1].MountPath, v[1].SubPath)).Should(BeTrue())
 				Ω(strings.HasSuffix(v[2].MountPath, v[2].SubPath)).Should(BeTrue())
 			})

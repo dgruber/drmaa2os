@@ -20,6 +20,7 @@ const K8S_JT_EXTENSION_LABELS = "labels"
 type KubernetesTracker struct {
 	clientSet  *kubernetes.Clientset
 	jobsession string
+	namespace  string
 }
 
 // init registers the Kubernetes job tracker at the SessionManager
@@ -33,25 +34,37 @@ func NewAllocator() *allocator {
 	return &allocator{}
 }
 
+// KubernetesTrackerParameters can be used as parameter in
+// NewKubernetesSessionManager. Note, that the namespace
+// if set must exist. If not set the "default" namespace
+// is used.
+type KubernetesTrackerParameters struct {
+	Namespace string // if not set it will become "default"
+	ClientSet *kubernetes.Clientset
+}
+
 // New is called by the SessionManager when a new JobSession is allocated.
-// jobTrackerInitParams must be a kubernetes.Clientset if not nil. If nil
-// a new Clientset is allocated.
+// jobTrackerInitParams must be either a *kubernetes.Clientset or a
+// KubernetesTrackerParameters struct or nil. If nil or KubernetesTrackerParameters
+// has a nil clientset a new Kubernetes clientset is allocated.
 func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{}) (jobtracker.JobTracker, error) {
-	var cs *kubernetes.Clientset
-	//
 	if jobTrackerInitParams != nil {
-		var ok bool
-		cs, ok = jobTrackerInitParams.(*kubernetes.Clientset)
-		if !ok {
-			return nil, errors.New("jobTrackerInitParams is not of type *kubernetes.Clientset")
+		switch v := jobTrackerInitParams.(type) {
+		case *kubernetes.Clientset:
+			return New(jobSessionName, "default", v)
+		case KubernetesTrackerParameters:
+			return New(jobSessionName, v.Namespace, v.ClientSet)
+		default:
+			return nil, errors.New("jobTrackerInitParams is not of type *kubernetes.Clientset or KubernetesTrackerParameters")
+
 		}
 	}
-	return New(jobSessionName, cs)
+	return New(jobSessionName, "default", nil)
 }
 
 // New creates a new KubernetesTracker either by using a given kubernetes Clientset
 // or by allocating a new one (if the parameter is zero).
-func New(jobsession string, cs *kubernetes.Clientset) (*KubernetesTracker, error) {
+func New(jobsession string, namespace string, cs *kubernetes.Clientset) (*KubernetesTracker, error) {
 	if cs == nil {
 		var err error
 		cs, err = NewClientSet()
@@ -59,9 +72,13 @@ func New(jobsession string, cs *kubernetes.Clientset) (*KubernetesTracker, error
 			return nil, err
 		}
 	}
+	if namespace == "" {
+		namespace = "default"
+	}
 	return &KubernetesTracker{
 		clientSet:  cs,
 		jobsession: jobsession,
+		namespace:  namespace,
 	}, nil
 }
 
@@ -72,7 +89,7 @@ func (kt *KubernetesTracker) ListJobCategories() ([]string, error) {
 // ListJobs returns a list of job IDs associated with the current
 // DRMAA2 job session.
 func (kt *KubernetesTracker) ListJobs() ([]string, error) {
-	jc, err := getJobsClient(kt.clientSet)
+	jc, err := getJobsClient(kt.clientSet, kt.namespace)
 	if err != nil {
 		return nil, fmt.Errorf("ListJobs: %s", err.Error())
 	}
@@ -102,7 +119,7 @@ func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, err
 		return "", err
 	}
 	for _, secret := range secrets {
-		_, err := kt.clientSet.CoreV1().Secrets("default").Create(context.TODO(),
+		_, err := kt.clientSet.CoreV1().Secrets(kt.namespace).Create(context.TODO(),
 			secret, k8sapi.CreateOptions{})
 		if err != nil {
 			return "", err
@@ -114,29 +131,33 @@ func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, err
 		return "", err
 	}
 	for _, configmap := range configmaps {
-		_, err := kt.clientSet.CoreV1().ConfigMaps("default").Create(context.TODO(),
+		_, err := kt.clientSet.CoreV1().ConfigMaps(kt.namespace).Create(context.TODO(),
 			configmap, k8sapi.CreateOptions{})
 		if err != nil {
 			return "", fmt.Errorf("failed to create configmap: %v", err)
 		}
 	}
 
-	job, err := convertJob(kt.jobsession, jt)
+	job, err := convertJob(kt.jobsession, kt.namespace, jt)
 	if err != nil {
-		removeArtifacts(kt.clientSet, jt)
+		removeArtifacts(kt.clientSet, jt, kt.namespace)
 		return "", fmt.Errorf("converting job template into a k8s job: %s", err.Error())
 	}
-	jc, err := getJobsClient(kt.clientSet)
+	jc, err := getJobsClient(kt.clientSet, kt.namespace)
 	if err != nil {
-		removeArtifacts(kt.clientSet, jt)
+		removeArtifacts(kt.clientSet, jt, kt.namespace)
 		return "", fmt.Errorf("get client: %s", err.Error())
 	}
-	j, err := jc.Create(context.TODO(), job, k8sapi.CreateOptions{})
+	j, err := jc.Create(context.Background(), job, k8sapi.CreateOptions{})
 	if err != nil {
-		removeArtifacts(kt.clientSet, jt)
-		return "", fmt.Errorf("creating new job: %s", err.Error())
+		removeArtifacts(kt.clientSet, jt, kt.namespace)
+		return "", fmt.Errorf("failed creating new job: %s", err.Error())
 	}
-	return string(j.Name), nil
+
+	// store JobTemplate in ConfigMap
+	err = storeJobTemplateInConfigMap(kt.clientSet, jt, kt.namespace)
+
+	return string(j.Name), err
 }
 
 func (kt *KubernetesTracker) AddArrayJob(jt drmaa2interface.JobTemplate, begin int, end int, step int, maxParallel int) (string, error) {
@@ -148,7 +169,7 @@ func (kt *KubernetesTracker) ListArrayJobs(id string) ([]string, error) {
 }
 
 func (kt *KubernetesTracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
-	jc, err := getJobsClient(kt.clientSet)
+	jc, err := getJobsClient(kt.clientSet, kt.namespace)
 	if err != nil {
 		return drmaa2interface.Undetermined, "", nil
 	}
@@ -156,19 +177,23 @@ func (kt *KubernetesTracker) JobState(jobid string) (drmaa2interface.JobState, s
 }
 
 func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
-	jc, err := getJobsClient(kt.clientSet)
+	jc, err := getJobsClient(kt.clientSet, kt.namespace)
 	if err != nil {
 		return drmaa2interface.JobInfo{}, err
 	}
-	return JobToJobInfo(jc, jobid)
+	ji, err := JobToJobInfo(jc, jobid)
+	if err != nil {
+		return drmaa2interface.JobInfo{}, err
+	}
+	return ji, nil
 }
 
 // JobControl changes the state of the given job by execution the given action
 // (suspend, resume, hold, release, terminate).
 func (kt *KubernetesTracker) JobControl(jobid, state string) error {
-	jc, job, err := getJobInterfaceAndJob(kt.clientSet, jobid)
+	jc, job, err := getJobInterfaceAndJob(kt.clientSet, jobid, kt.namespace)
 	if err != nil {
-		return fmt.Errorf("JobControl failed for jobID %s and action %s: %v",
+		return fmt.Errorf("JobControl failed for jobID %s and action %s: %w",
 			jobid, state, err)
 	}
 	return jobStateChange(jc, job, state)
@@ -180,16 +205,16 @@ func (kt *KubernetesTracker) Wait(jobid string, timeout time.Duration, states ..
 	return helper.WaitForState(kt, jobid, timeout, states...)
 }
 
-// DeleteJob removes a job from kubernetes.
+// DeleteJob removes a finished job and the objects created along
+// with the job (like configmaps and secrets) Kubernetes.
 func (kt *KubernetesTracker) DeleteJob(jobid string) error {
-	// TODO remove secrets and config maps
-	jc, job, err := getJobInterfaceAndJob(kt.clientSet, jobid)
+	jc, job, err := getJobInterfaceAndJob(kt.clientSet, jobid, kt.namespace)
 	if err != nil {
-		return fmt.Errorf("DeleteJob error: %v", err)
+		return fmt.Errorf("DeleteJob error: %w", err)
 	}
 	err = deleteJob(jc, job)
 	if err != nil {
 		return err
 	}
-	return removeArtifactsByJobID(kt.clientSet, jobid)
+	return removeArtifactsByJobID(kt.clientSet, jobid, kt.namespace)
 }

@@ -1,9 +1,12 @@
 package kubernetestracker_test
 
 import (
+	"context"
 	"encoding/base64"
+	"strings"
 
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,7 +32,7 @@ var _ = Describe("KubernetesTracker", func() {
 				Args:          []string{"-c", "sleep 0"},
 			}
 			var err error
-			kt, err = New("jobsession", nil)
+			kt, err = New("jobsession", "default", nil)
 			Ω(err).Should(BeNil())
 		})
 
@@ -87,7 +90,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jt.StageInFiles = map[string]string{
 				"/my/file.txt":      "configmap:" + b64,
 				"/my/otherfile.txt": "secret:" + b64}
-			kt, err := New("jobsession", nil)
+			kt, err := New("jobsession", "default", nil)
 			Ω(err).Should(BeNil())
 
 			jobid, err := kt.AddJob(jt)
@@ -113,7 +116,7 @@ var _ = Describe("KubernetesTracker", func() {
 
 		BeforeEach(func() {
 			var err error
-			kt, err = New("", nil)
+			kt, err = New("", "default", nil)
 			Ω(err).Should(BeNil())
 		})
 
@@ -134,7 +137,7 @@ var _ = Describe("KubernetesTracker", func() {
 				JobCategory:   "busybox:latest",
 			}
 			var err error
-			kt, err = New("jobsessionRelated", nil)
+			kt, err = New("jobsessionRelated", "default", nil)
 			Ω(err).Should(BeNil())
 			// delete jobs from session if there are any remaining
 			jobs, err := kt.ListJobs()
@@ -169,7 +172,7 @@ var _ = Describe("KubernetesTracker", func() {
 				JobCategory:   "busybox:latest",
 			}
 			var err error
-			kt, err = New("jobsession", nil)
+			kt, err = New("jobsession", "default", nil)
 			Ω(err).Should(BeNil())
 		})
 
@@ -300,7 +303,7 @@ var _ = Describe("KubernetesTracker", func() {
 				JobCategory:   "busybox:latest",
 			}
 			var err error
-			kt, err = New("jobsession", nil)
+			kt, err = New("jobsession", "default", nil)
 			Ω(err).Should(BeNil())
 		})
 
@@ -320,10 +323,90 @@ var _ = Describe("KubernetesTracker", func() {
 			home := os.Getenv("HOME")
 			defer os.Setenv("HOME", home)
 			os.Setenv("HOME", os.TempDir())
-			track, err := New("", nil)
+			track, err := New("", "default", nil)
 			Ω(err).ShouldNot(BeNil())
 			Ω(track).Should(BeNil())
 		})
+	})
+
+	FContext("JobTemplate and other artifacts", func() {
+		var kt jobtracker.JobTracker
+		var jt drmaa2interface.JobTemplate
+
+		BeforeEach(func() {
+			jt = drmaa2interface.JobTemplate{
+				//JobName:       "workfloadtestjob",
+				RemoteCommand: "/bin/sh",
+				JobCategory:   "busybox:latest",
+				StageInFiles: map[string]string{
+					"/test":  "secret:" + base64.StdEncoding.EncodeToString([]byte("test")),
+					"/test2": "configmap:" + base64.StdEncoding.EncodeToString([]byte("test")),
+				},
+			}
+			var err error
+			kt, err = New("jobsession", "default", nil)
+			Ω(err).Should(BeNil())
+		})
+
+		WhenK8sIsAvailableIt("should be possible to track the states of a job life-cycle", func() {
+			jt.Args = []string{"-c", "sleep 1"}
+			jobid, err := kt.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			Eventually(func() drmaa2interface.JobState {
+				state, _, _ := kt.JobState(jobid)
+				return state
+			}, time.Second*30, time.Millisecond*250).Should(Equal(drmaa2interface.Done))
+
+			// there should be a config map with the job template
+
+			cs, err := NewClientSet()
+			Ω(err).Should(BeNil())
+			configMapList, err := cs.CoreV1().ConfigMaps("default").List(context.Background(),
+				metav1.ListOptions{})
+
+			foundJobTemplate := false
+			foundAdditionalConfigmap := false
+
+			for _, cm := range configMapList.Items {
+				if strings.HasPrefix(cm.Name, jobid+"-jobtemplate-configmap") {
+					foundJobTemplate = true
+					continue
+				}
+				if strings.HasPrefix(cm.Name, jobid+"-") {
+					// stagein
+					foundAdditionalConfigmap = true
+					continue
+				}
+			}
+			Ω(foundJobTemplate).Should(BeTrue())
+			Ω(foundAdditionalConfigmap).Should(BeTrue())
+
+			err = kt.DeleteJob(jobid)
+			Ω(err).Should(BeNil())
+
+			configMapList, err = cs.CoreV1().ConfigMaps("default").List(context.Background(),
+				metav1.ListOptions{})
+			Ω(err).Should(BeNil())
+
+			foundJobTemplate = false
+			foundAdditionalConfigmap = false
+			for _, cm := range configMapList.Items {
+				if strings.HasPrefix(cm.Name, jobid+"-jobtemplate-configmap") {
+					foundJobTemplate = true
+					continue
+				}
+				if strings.HasPrefix(cm.Name, jobid+"-") {
+					// stagein
+					foundAdditionalConfigmap = true
+					continue
+				}
+			}
+			Ω(foundJobTemplate).Should(BeFalse())
+			Ω(foundAdditionalConfigmap).Should(BeFalse())
+		})
+
 	})
 
 })
