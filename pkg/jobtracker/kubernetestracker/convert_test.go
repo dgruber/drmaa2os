@@ -90,6 +90,25 @@ var _ = Describe("Convert", func() {
 			Ω(job.Spec.Template.Spec.SchedulerName).Should(Equal("poseidon"))
 		})
 
+		It("should run privileged when 'privileged' is set as JobTemplate extension", func() {
+			jt.ExtensionList = map[string]string{"privileged": "true"}
+
+			job, err := convertJob("jobsession", "default", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+
+			Ω(job.Spec.Template.Spec.Containers[0]).ShouldNot(BeNil())
+			Ω(job.Spec.Template.Spec.Containers[0].SecurityContext).ShouldNot(BeNil())
+			Ω(*job.Spec.Template.Spec.Containers[0].SecurityContext.Privileged).To(BeTrue())
+		})
+
+		It("should not run privileged when 'privileged' is set as JobTemplate extension", func() {
+			job, err := convertJob("jobsession", "default", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.Spec.Template.Spec.Containers[0].SecurityContext).To(BeNil())
+		})
+
 		Context("error cases", func() {
 			It("should error when the RemoteCommand is not set in the JobTemplate", func() {
 				jt.RemoteCommand = ""
@@ -104,7 +123,7 @@ var _ = Describe("Convert", func() {
 				c, err := newContainers(jt)
 				Ω(c).Should(BeNil())
 				Ω(err).ShouldNot(BeNil())
-				Ω(err.Error()).Should(Equal("JobCategory (image name) not set in JobTemplate"))
+				Ω(err.Error()).Should(Equal("JobCategory (container image name) not set in JobTemplate"))
 			})
 
 			It("should fail converting the JobTemplate when the JobCategory is missing", func() {
@@ -127,6 +146,48 @@ var _ = Describe("Convert", func() {
 				Ω(err).ShouldNot(BeNil())
 				Ω(job).Should(BeNil())
 			})
+		})
+
+		Context("File staging: Local mounts (hostpath)", func() {
+
+			var jt drmaa2interface.JobTemplate
+
+			BeforeEach(func() {
+				jt = drmaa2interface.JobTemplate{
+					JobCategory:   "busybox:latest",
+					JobName:       "name",
+					RemoteCommand: "/entrypoint.sh",
+				}
+				jt.StageInFiles = map[string]string{
+					"/root":             "hostpath:/",
+					"/usr/local/nvidia": "hostpath:/home/kubernetes/bin/nvidia",
+				}
+				jt.ExtensionList = map[string]string{
+					"privileged": "true",
+				}
+			})
+
+			It("should create new volumes", func() {
+				v, err := newVolumes(jt)
+				Ω(err).Should(BeNil())
+				Ω(len(v)).Should(BeNumerically("==", 2))
+				Ω(v[0].HostPath).ShouldNot(BeNil())
+				Ω(v[0].HostPath.Path).Should(Or(Equal("/"), Equal("/home/kubernetes/bin/nvidia")))
+				Ω(v[1].HostPath).ShouldNot(BeNil())
+				Ω(v[1].HostPath.Path).Should(Or(Equal("/"), Equal("/home/kubernetes/bin/nvidia")))
+			})
+
+			It("should convert the JobTemplate to a job spec with hostpath volumes and mounts", func() {
+				job, err := convertJob("jobsession", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job).ShouldNot(BeNil())
+				Ω(job.Spec.Template.Spec.Volumes).ShouldNot(BeNil())
+				Ω(len(job.Spec.Template.Spec.Volumes)).Should(BeNumerically("==", 2))
+				Ω(len(job.Spec.Template.Spec.Containers[0].VolumeMounts)).Should(BeNumerically("==", 2))
+				Ω(job.Spec.Template.Spec.Containers[0].VolumeMounts[0].MountPath).Should(Or(Equal("/root"), Equal("/usr/local/nvidia")))
+				Ω(job.Spec.Template.Spec.Containers[0].VolumeMounts[1].MountPath).Should(Or(Equal("/root"), Equal("/usr/local/nvidia")))
+			})
+
 		})
 
 		Context("File staging: ConfigMaps and Secrets", func() {

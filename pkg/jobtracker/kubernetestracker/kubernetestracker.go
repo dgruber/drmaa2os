@@ -168,23 +168,32 @@ func (kt *KubernetesTracker) ListArrayJobs(id string) ([]string, error) {
 	return helper.ArrayJobID2GUIDs(id)
 }
 
-func (kt *KubernetesTracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
+func (kt *KubernetesTracker) JobState(jobID string) (drmaa2interface.JobState, string, error) {
 	jc, err := getJobsClient(kt.clientSet, kt.namespace)
 	if err != nil {
 		return drmaa2interface.Undetermined, "", nil
 	}
-	return DRMAA2State(jc, jobid), "", nil
+	return DRMAA2State(jc, jobID), "", nil
 }
 
-func (kt *KubernetesTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
+func (kt *KubernetesTracker) JobInfo(jobID string) (drmaa2interface.JobInfo, error) {
 	jc, err := getJobsClient(kt.clientSet, kt.namespace)
 	if err != nil {
 		return drmaa2interface.JobInfo{}, err
 	}
-	ji, err := JobToJobInfo(jc, jobid)
+	// JobInfo should return data staged out directly
+	ji, err := JobToJobInfo(jc, jobID)
 	if err != nil {
 		return drmaa2interface.JobInfo{}, err
 	}
+	if ji.State == drmaa2interface.Done {
+		// when job is finished the sidecar of the job
+		// triggers an "epilog" job / or stores data in a 
+		// config map - this data needs to be read and
+		// put into the JobInfo object.
+
+	}
+
 	return ji, nil
 }
 

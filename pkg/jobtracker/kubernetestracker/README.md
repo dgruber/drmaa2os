@@ -34,6 +34,8 @@ after batch job finished).
 | Hold               | *Unsupported*   |
 | Release            | *Unsupported*   |
 
+_Job.Reap()_ removes the Kubernetes job and related objects from Kubernetes.
+
 ### State Mapping
 
 Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitions/#_v1_jobstatus)
@@ -46,7 +48,6 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 | Running                       | status.Active >= 1    |
 | Queued                        | -                     |
 | Undetermined                  | other  / Terminate()  |
-
 
 ### Job Template Mapping
 
@@ -64,31 +65,37 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 
 ### Filestaging using the Job Template
 
-Data movement is not on core focus of the DRMAA2 standard, but it nevertheless defines two string based maps for file staging. In 
-HPC systems typically data movement is done through parallel or network
+Data movement is not on core focus of the DRMAA2 standard, but it nevertheless defines two string based maps for file staging. In HPC systems data movement is usually done through parallel or network
 filesystems. Cloud based systems are often using services like S3, GCS etc.
 
-In order to simplify data movement between two pods the _StageIn_ and
-_StageOut_ maps defined in the Job Template are enhanced for smoother
+In order to simplify data movement between two pods the _StageInFiles_ and
+_StageOutFiles_ maps defined in the Job Template are enhanced for smoother
 Kubernetes integration. Both maps can specifiy to either move data
 from the DRMAA2 process (or workflow host) to the Kubernetes jobs,
 move data between two Kubernetes jobs, or transfer data back from
-a Kubernetes job to the local host. Note, that some of the machanism
-use have limitations by itself (like relying on Kubernetes etcd when
+a Kubernetes job to the local host. Note, that some of the machanisms
+have limitations by itself (like relying on Kubernetes etcd when
 using ConfigMaps which has storage limits itself).
 
-Both maps have following scheme:
-- Map key is alwas the target, as the target is unique.
-- Map value is always the source.
+_StageInFiles_ and _StageOutFiles_  have following scheme:
+- Map key specifies the target, as the target is unique.
+- Map value specifies the data source.
 
 Following source definition of _StageInFiles_ are currently implemented:
-- configmap:base64encodedstring can be used to pass a byte array from the workflow process to the job. Internally a configmap with the data is
-created in the target cluster.
-- secret:base64encodedstring can be used to pass a byte array from the workflow process to the job. Internally a Kubernetes secret with the data is created in the target cluster.
+- configmap:base64encodedstring can be used to pass a byte array from the workflow process to the job. Internally a ConfigMap with the data is created in the target cluster. The ConfigMap is deleted
+with the job.Reap() (Delete()) call.
+- secret:base64encodedstring can be used to pass a byte array from the workflow process to the job. Internally a Kubernetes secret with the data is created in the target cluster. The Secret is 
+removed with the job.Reap() (Delete()) call. Note, that the content of the Secret is not
+stored in the JobTemplate ConfigMap in the cluster.
+- hostpath:/path/to/host/directory can be used to mount a directory from the host where
+the Kubernetes job is executed inside of the job's pod. This requires that the job
+has root privileges which can be requested with the JobTemplate's extension "privileged".
 
 Target definitions of _StageInFiles_:
 - /path/to/file - the path of the file in which the data from the source
 definition is available
+- /path/to/directory - a path to a directory is required when using a "hostpath" 
+directory as data source.
 
 Example:
 
@@ -103,6 +110,7 @@ Example:
     jobtemplate.StageInFiles = map[string]string{
         "/path/file.txt": "configmap:"+base64.StdEncoding.EncodeToString([]byte("content")),
         "/path/password.txt": "secret:"+base64.StdEncoding.EncodeToString([]byte("secret")),
+        "/container/local/dir": "hostpath:/some/directory",
     }
 
 Following source definition of _StageOutFiles_ are currently implemented:
@@ -118,9 +126,16 @@ configmap with the name name
 
 | Extension key | Extension value                   |
 |:--------------|----------------------------------:|
-| "namespace"   | v1.Namespace                      |
 | "labels"      | "key=value,key2=value2" v1.Labels |
 | "scheduler"   | poseidon, kube-batch or any other k8s scheduler |
+| "privileged"  | "true" or "TRUE"; runs container in privileged mode |
+
+Example:
+
+    jobtemplate.ExtensionList = map[string]string{
+        "labels": "key=value",
+        "privileged": "true",
+    }
 
 Required for JobTemplate:
 * RemoteCommand

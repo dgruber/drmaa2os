@@ -1,11 +1,14 @@
 package kubernetestracker_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
 	"testing"
+
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
 )
 
 var k8sChecked bool = false
@@ -22,6 +25,7 @@ func k8sIsAvailable() bool {
 	}
 	_, err := kubernetestracker.NewClientSet()
 	if err != nil {
+		fmt.Printf("error: %v\n", err)
 		k8sChecked = true
 		k8savailable = false
 	} else {

@@ -159,6 +159,23 @@ func storeJobTemplateInConfigMap(cs *kubernetes.Clientset, jt drmaa2interface.Jo
 	return err
 }
 
+func getJobTemplateFromConfigMap(cs *kubernetes.Clientset, jobID, namespace string) (*drmaa2interface.JobTemplate, error) {
+	cm, err := cs.CoreV1().ConfigMaps(namespace).Get(context.Background(), jobID+"-jobtemplate-configmap", k8sapi.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("could not find configmap %s: %w", jobID+"-jobtemplate-configmap", err)
+	}
+	jt, exists := cm.Data["JobTemplate"]
+	if !exists {
+		return nil, fmt.Errorf("JobTemplate does not exist in configmap %s", jobID+"-jobtemplate-configmap")
+	}
+	var jobTemplate drmaa2interface.JobTemplate
+	err = json.Unmarshal([]byte(jt), &jobTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse JobTemplate data from configmap %s: %w", jobID+"-jobtemplate-configmap", err)
+	}
+	return &jobTemplate, nil
+}
+
 func convertJobTemplateToStringMap(jt drmaa2interface.JobTemplate) (map[string]string, error) {
 	j, err := json.Marshal(jt)
 	if err != nil {

@@ -34,28 +34,38 @@ func secretName(jobName, path string) string {
 // The volumes are build on existing secrets or configmaps containing
 // the data.
 func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
+
 	if jt.StageInFiles != nil {
 		// naming scheme of the objects jobname-filename-{secret|cm}-volume
 		volumes := make([]k8sv1.Volume, 0, 2)
-		for k, v := range jt.StageInFiles {
+		for path, v := range jt.StageInFiles {
 			if strings.HasPrefix(v, "secret:") {
 				volumes = append(volumes,
 					k8sv1.Volume{
-						Name: volumeName(jt.JobName, k, "secret"),
+						Name: volumeName(jt.JobName, path, "secret"),
 						VolumeSource: k8sv1.VolumeSource{
 							Secret: &k8sv1.SecretVolumeSource{
-								SecretName: secretName(jt.JobName, k),
+								SecretName: secretName(jt.JobName, path),
 							}}})
 			} else if strings.HasPrefix(v, "configmap:") {
 				volumes = append(volumes,
 					k8sv1.Volume{
-						Name: volumeName(jt.JobName, k, "cm"),
+						Name: volumeName(jt.JobName, path, "cm"),
 						VolumeSource: k8sv1.VolumeSource{
 							ConfigMap: &k8sv1.ConfigMapVolumeSource{
-								LocalObjectReference: v1.LocalObjectReference{Name: configMapName(jt.JobName, k)},
+								LocalObjectReference: v1.LocalObjectReference{Name: configMapName(jt.JobName, path)},
 							}}})
-			} else {
-				// TODO: Compatibility with docker: localpath: remotepath
+			} else if strings.HasPrefix(v, "hostpath:") {
+				sourcePath := strings.TrimPrefix(v, "hostpath:")
+				volumes = append(volumes,
+					k8sv1.Volume{
+						Name: volumeName(jt.JobName, path, "hostpath"),
+						VolumeSource: k8sv1.VolumeSource{
+							HostPath: &k8sv1.HostPathVolumeSource{
+								Path: sourcePath,
+							},
+						}})
+
 			}
 		}
 		return volumes, nil
@@ -82,6 +92,11 @@ func getVolumeMounts(jt drmaa2interface.JobTemplate) []v1.VolumeMount {
 				MountPath: k,
 				SubPath:   file,
 			})
+		} else if strings.HasPrefix(v, "hostpath:") {
+			vmounts = append(vmounts, v1.VolumeMount{
+				Name:      volumeName(jt.JobName, k, "hostpath"),
+				MountPath: k,
+			})
 		}
 	}
 	return vmounts
@@ -89,7 +104,7 @@ func getVolumeMounts(jt drmaa2interface.JobTemplate) []v1.VolumeMount {
 
 func newContainers(jt drmaa2interface.JobTemplate) ([]k8sv1.Container, error) {
 	if jt.JobCategory == "" {
-		return nil, errors.New("JobCategory (image name) not set in JobTemplate")
+		return nil, errors.New("JobCategory (container image name) not set in JobTemplate")
 	}
 	if jt.RemoteCommand == "" {
 		return nil, errors.New("RemoteCommand not set in JobTemplate")
@@ -176,8 +191,20 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 			}
 		}
 	}
+
 	if scheduler, set := jt.ExtensionList["scheduler"]; set && scheduler != "" {
 		job.Spec.Template.Spec.SchedulerName = scheduler
+	}
+
+	if privileged, set := jt.ExtensionList["privileged"]; set && privileged != "" {
+		if strings.ToUpper(privileged) == "TRUE" {
+			for i := range job.Spec.Template.Spec.Containers {
+				privileged := true
+				job.Spec.Template.Spec.Containers[i].SecurityContext = &v1.SecurityContext{
+					Privileged: &privileged,
+				}
+			}
+		}
 	}
 
 	return job

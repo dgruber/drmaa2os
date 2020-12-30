@@ -40,6 +40,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
+			kt.DeleteJob(jobid)
 		})
 
 		WhenK8sIsAvailableIt("should be possible to DeleteJob()", func() {
@@ -54,6 +55,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jobid, err := kt.AddArrayJob(jt, 1, 2, 1, 0)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
+			kt.DeleteJob(jobid)
 		})
 
 		WhenK8sIsAvailableIt("should be possible to ListJobs()", func() {
@@ -182,6 +184,8 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
 
+			defer kt.DeleteJob(jobid)
+
 			Eventually(func() drmaa2interface.JobState {
 				state, _, _ := kt.JobState(jobid)
 				return state
@@ -198,6 +202,8 @@ var _ = Describe("KubernetesTracker", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
+
+			defer kt.DeleteJob(jobid)
 
 			Eventually(func() drmaa2interface.JobState {
 				state, _, _ := kt.JobState(jobid)
@@ -219,6 +225,8 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
 
+			defer kt.DeleteJob(jobid)
+
 			go func() {
 				<-time.Tick(time.Millisecond * 333)
 				kt.JobControl(jobid, "terminate")
@@ -234,6 +242,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
+			defer kt.DeleteJob(jobid)
 			err = kt.Wait(jobid, time.Second*60, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Failed))
@@ -244,6 +253,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
+			defer kt.DeleteJob(jobid)
 			err = kt.Wait(jobid, time.Second*60, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Done))
@@ -254,6 +264,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
+			defer kt.DeleteJob(jobid)
 			err = kt.Wait(jobid, time.Second*60, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Done))
@@ -269,6 +280,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
+			defer kt.DeleteJob(jobid)
 			err = kt.Wait(jobid, time.Second*60, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Failed))
@@ -285,6 +297,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
+			defer kt.DeleteJob(jobid)
 			err = kt.Wait(jobid, time.Second*30, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Failed))
@@ -312,6 +325,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
+			defer kt.DeleteJob(jobid)
 
 			kt.Wait(jobid, 0, drmaa2interface.Failed, drmaa2interface.Done, drmaa2interface.Undetermined)
 		})
@@ -329,7 +343,7 @@ var _ = Describe("KubernetesTracker", func() {
 		})
 	})
 
-	FContext("JobTemplate and other artifacts", func() {
+	Context("JobTemplate and other artifacts", func() {
 		var kt jobtracker.JobTracker
 		var jt drmaa2interface.JobTemplate
 
@@ -353,6 +367,7 @@ var _ = Describe("KubernetesTracker", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
+			defer kt.DeleteJob(jobid)
 
 			Eventually(func() drmaa2interface.JobState {
 				state, _, _ := kt.JobState(jobid)
