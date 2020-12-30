@@ -21,8 +21,9 @@ func getJobStageInSecrets(jt drmaa2interface.JobTemplate) ([]*v1.Secret, error) 
 	}
 	secrets := make([]*v1.Secret, 0, 2)
 	for k, v := range jt.StageInFiles {
-		if strings.HasPrefix(v, "secret:") {
-			content := strings.TrimPrefix(v, "secret:")
+		// secret-data creates a new secret with the base64 decoded content
+		if strings.HasPrefix(v, "secret-data:") {
+			content := strings.TrimPrefix(v, "secret-data:")
 			decoded, err := base64.StdEncoding.DecodeString(content)
 			if err != nil {
 				return nil, fmt.Errorf("failed to base64 decode the secret: %v", err)
@@ -47,8 +48,8 @@ func getJobStageInConfigMaps(jt drmaa2interface.JobTemplate) ([]*v1.ConfigMap, e
 	}
 	configmaps := make([]*v1.ConfigMap, 0, 2)
 	for k, v := range jt.StageInFiles {
-		if strings.HasPrefix(v, "configmap:") {
-			content := strings.TrimPrefix(v, "configmap:")
+		if strings.HasPrefix(v, "configmap-data:") {
+			content := strings.TrimPrefix(v, "configmap-data:")
 			decoded, err := base64.StdEncoding.DecodeString(content)
 			if err != nil {
 				return nil, fmt.Errorf("failed to base64 decode the configmap: %v", err)
@@ -141,7 +142,7 @@ func removeArtifactsByJobID(cs *kubernetes.Clientset, jobID, namespace string) e
 func storeJobTemplateInConfigMap(cs *kubernetes.Clientset, jt drmaa2interface.JobTemplate, namespace string) error {
 	// remove content of secrets
 	for _, v := range jt.StageInFiles {
-		if strings.HasPrefix(v, "secret") {
+		if strings.HasPrefix(v, "secret-data") {
 			jt.StageInFiles[v] = "<removed>"
 		}
 	}

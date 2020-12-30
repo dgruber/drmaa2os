@@ -39,7 +39,7 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 		// naming scheme of the objects jobname-filename-{secret|cm}-volume
 		volumes := make([]k8sv1.Volume, 0, 2)
 		for path, v := range jt.StageInFiles {
-			if strings.HasPrefix(v, "secret:") {
+			if strings.HasPrefix(v, "secret-data:") {
 				volumes = append(volumes,
 					k8sv1.Volume{
 						Name: volumeName(jt.JobName, path, "secret"),
@@ -47,7 +47,7 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 							Secret: &k8sv1.SecretVolumeSource{
 								SecretName: secretName(jt.JobName, path),
 							}}})
-			} else if strings.HasPrefix(v, "configmap:") {
+			} else if strings.HasPrefix(v, "configmap-data:") {
 				volumes = append(volumes,
 					k8sv1.Volume{
 						Name: volumeName(jt.JobName, path, "cm"),
@@ -66,6 +66,33 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 							},
 						}})
 
+			} else if strings.HasPrefix(v, "configmap:") {
+				existingConfigMapName := strings.TrimPrefix(v, "configmap:")
+				volumes = append(volumes,
+					k8sv1.Volume{
+						Name: volumeName(jt.JobName, path, "cm"),
+						VolumeSource: k8sv1.VolumeSource{
+							ConfigMap: &k8sv1.ConfigMapVolumeSource{
+								LocalObjectReference: v1.LocalObjectReference{Name: existingConfigMapName},
+							}}})
+			} else if strings.HasPrefix(v, "secret:") {
+				existingSecretName := strings.TrimPrefix(v, "secret:")
+				volumes = append(volumes,
+					k8sv1.Volume{
+						Name: volumeName(jt.JobName, path, "secret"),
+						VolumeSource: k8sv1.VolumeSource{
+							Secret: &k8sv1.SecretVolumeSource{
+								SecretName: existingSecretName,
+							}}})
+			} else if strings.HasPrefix(v, "pvc:") {
+				existingPVCName := strings.TrimPrefix(v, "pvc:")
+				volumes = append(volumes,
+					k8sv1.Volume{
+						Name: volumeName(jt.JobName, path, "pvc"),
+						VolumeSource: k8sv1.VolumeSource{
+							PersistentVolumeClaim: &k8sv1.PersistentVolumeClaimVolumeSource{
+								ClaimName: existingPVCName,
+							}}})
 			}
 		}
 		return volumes, nil
@@ -80,13 +107,13 @@ func getVolumeMounts(jt drmaa2interface.JobTemplate) []v1.VolumeMount {
 	vmounts := make([]v1.VolumeMount, 0, len(jt.StageInFiles))
 	for k, v := range jt.StageInFiles {
 		_, file := filepath.Split(k)
-		if strings.HasPrefix(v, "secret:") {
+		if strings.HasPrefix(v, "secret-data:") {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "secret"),
 				MountPath: k,
 				SubPath:   file,
 			})
-		} else if strings.HasPrefix(v, "configmap:") {
+		} else if strings.HasPrefix(v, "configmap-data:") {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "cm"),
 				MountPath: k,
@@ -95,6 +122,21 @@ func getVolumeMounts(jt drmaa2interface.JobTemplate) []v1.VolumeMount {
 		} else if strings.HasPrefix(v, "hostpath:") {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "hostpath"),
+				MountPath: k,
+			})
+		} else if strings.HasPrefix(v, "configmap:") {
+			vmounts = append(vmounts, v1.VolumeMount{
+				Name:      volumeName(jt.JobName, k, "cm"),
+				MountPath: k,
+			})
+		} else if strings.HasPrefix(v, "secret:") {
+			vmounts = append(vmounts, v1.VolumeMount{
+				Name:      volumeName(jt.JobName, k, "secret"),
+				MountPath: k,
+			})
+		} else if strings.HasPrefix(v, "pvc:") {
+			vmounts = append(vmounts, v1.VolumeMount{
+				Name:      volumeName(jt.JobName, k, "pvc"),
 				MountPath: k,
 			})
 		}

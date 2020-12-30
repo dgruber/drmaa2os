@@ -199,9 +199,12 @@ var _ = Describe("Convert", func() {
 					JobName: "name",
 				}
 				jt.StageInFiles = map[string]string{
-					"/my/secret.txt":      "secret:c2VjcmV0Cg==",
-					"/my/configmap.txt":   "configmap:c2VjcmV0Cg==",
-					"/my/othersecret.txt": "secret:c2VjcmV0Mgo=",
+					"/my/secret.txt":            "secret-data:c2VjcmV0Cg==",
+					"/my/configmap.txt":         "configmap-data:c2VjcmV0Cg==",
+					"/my/othersecret.txt":       "secret-data:c2VjcmV0Mgo=",
+					"/existing/input.txt":       "configmap:existingConfigMapName",
+					"/existing/secretInput.txt": "secret:existingSecretName",
+					"/existing/pvc":             "pvc:existingPVCName",
 				}
 			})
 
@@ -234,31 +237,63 @@ var _ = Describe("Convert", func() {
 			It("should create new volumes", func() {
 				v, err := newVolumes(jt)
 				Ω(err).Should(BeNil())
-				Ω(len(v)).Should(BeNumerically("==", 3))
+				Ω(len(v)).Should(BeNumerically("==", 6))
 				Ω(v[0].Name).ShouldNot(Equal(""))
 				Ω(v[1].Name).ShouldNot(Equal(""))
 				Ω(v[2].Name).ShouldNot(Equal(""))
+				Ω(v[3].Name).ShouldNot(Equal(""))
+				Ω(v[4].Name).ShouldNot(Equal(""))
+				Ω(v[5].Name).ShouldNot(Equal(""))
 				Ω(v[0].VolumeSource).ShouldNot(BeNil())
 				Ω(v[1].VolumeSource).ShouldNot(BeNil())
 				Ω(v[2].VolumeSource).ShouldNot(BeNil())
+				Ω(v[3].VolumeSource).ShouldNot(BeNil())
+				Ω(v[4].VolumeSource).ShouldNot(BeNil())
+				Ω(v[5].VolumeSource).ShouldNot(BeNil())
 				// contains the unique job id
 				Ω(v[0].Name).Should(ContainSubstring("name"))
 				Ω(v[1].Name).Should(ContainSubstring("name"))
 				Ω(v[2].Name).Should(ContainSubstring("name"))
+				Ω(v[3].Name).Should(ContainSubstring("name"))
+				Ω(v[4].Name).Should(ContainSubstring("name"))
+				Ω(v[5].Name).Should(ContainSubstring("name"))
+
+				pvc := 0
+				for _, vol := range v {
+					if strings.Contains(vol.Name, "pvc") {
+						Ω(vol.PersistentVolumeClaim.ClaimName).Should(Equal("existingPVCName"))
+						pvc++
+					}
+				}
+				Ω(pvc).Should(BeNumerically("==", 1))
 			})
 
 			It("should create volume mounts", func() {
 				v := getVolumeMounts(jt)
-				Ω(len(v)).Should(BeNumerically("==", 3))
+				Ω(len(v)).Should(BeNumerically("==", 6))
 				Ω(v[0].Name).ShouldNot(Equal(""))
 				Ω(v[1].Name).ShouldNot(Equal(""))
 				Ω(v[2].Name).ShouldNot(Equal(""))
+				Ω(v[3].Name).ShouldNot(Equal(""))
+				Ω(v[4].Name).ShouldNot(Equal(""))
+				Ω(v[5].Name).ShouldNot(Equal(""))
 				Ω(v[0].MountPath).ShouldNot(BeNil())
 				Ω(v[1].MountPath).ShouldNot(BeNil())
 				Ω(v[2].MountPath).ShouldNot(BeNil())
-				Ω(strings.HasSuffix(v[0].MountPath, v[0].SubPath)).Should(BeTrue())
-				Ω(strings.HasSuffix(v[1].MountPath, v[1].SubPath)).Should(BeTrue())
-				Ω(strings.HasSuffix(v[2].MountPath, v[2].SubPath)).Should(BeTrue())
+				Ω(v[3].MountPath).ShouldNot(BeNil())
+				Ω(v[4].MountPath).ShouldNot(BeNil())
+				Ω(v[5].MountPath).ShouldNot(BeNil())
+
+				pvc := 0
+				for _, vol := range v {
+					if strings.Contains(vol.Name, "pvc") {
+						Ω(vol.MountPath).Should(Equal("/existing/pvc"))
+						Ω(vol.SubPath).Should(Equal(""))
+						pvc++
+					}
+				}
+				Ω(pvc).Should(BeNumerically("==", 1))
+
 			})
 
 		})

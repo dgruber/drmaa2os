@@ -82,20 +82,24 @@ _StageInFiles_ and _StageOutFiles_  have following scheme:
 - Map value specifies the data source.
 
 Following source definition of _StageInFiles_ are currently implemented:
-- configmap:base64encodedstring can be used to pass a byte array from the workflow process to the job. Internally a ConfigMap with the data is created in the target cluster. The ConfigMap is deleted
-with the job.Reap() (Delete()) call.
-- secret:base64encodedstring can be used to pass a byte array from the workflow process to the job. Internally a Kubernetes secret with the data is created in the target cluster. The Secret is 
-removed with the job.Reap() (Delete()) call. Note, that the content of the Secret is not
-stored in the JobTemplate ConfigMap in the cluster.
-- hostpath:/path/to/host/directory can be used to mount a directory from the host where
+- "configmap-data:base64encodedstring" can be used to pass a byte array from the workflow process to the job. Internally a ConfigMap with the data is created in the target cluster. The ConfigMap is deleted
+with the job.Reap() (Delete()) call. The ConfigMap is mounted to the file path specified in the
+target definition.
+- "secret-data:base64encodedstring" can be used to pass a byte array from the workflow 
+process to the job. Internally a Kubernetes secret with the data is created in the 
+target cluster. The Secret is removed with the job.Reap() (Delete()) call. Note, that
+the content of the Secret is not stored in the JobTemplate ConfigMap in the cluster.
+- "hostpath:/path/to/host/directory "can be used to mount a directory from the host where
 the Kubernetes job is executed inside of the job's pod. This requires that the job
 has root privileges which can be requested with the JobTemplate's extension "privileged".
+- "configmap:name" Mounts an existing ConfigMap into the directory specified as target
+- "pvc:name" Mounts an existing PVC with into the directory specified as target in the map. 
 
 Target definitions of _StageInFiles_:
 - /path/to/file - the path of the file in which the data from the source
-definition is available
+definition is available (for configmap-data and secret-data)
 - /path/to/directory - a path to a directory is required when using a "hostpath" 
-directory as data source.
+directory as data source or a pre-existing ConfigMap or Secret.
 
 Example:
 
@@ -108,19 +112,10 @@ in the map is unique.
 Example:
 
     jobtemplate.StageInFiles = map[string]string{
-        "/path/file.txt": "configmap:"+base64.StdEncoding.EncodeToString([]byte("content")),
-        "/path/password.txt": "secret:"+base64.StdEncoding.EncodeToString([]byte("secret")),
+        "/path/file.txt": "configmap-data:"+base64.StdEncoding.EncodeToString([]byte("content")),
+        "/path/password.txt": "secret-data:"+base64.StdEncoding.EncodeToString([]byte("secret")),
         "/container/local/dir": "hostpath:/some/directory",
     }
-
-Following source definition of _StageOutFiles_ are currently implemented:
-- /path/to/file - the path of the file in which the data from the source
-definition is read
-
-Target definitions of _StageInFiles_:
-- configmap-name:name can be used to store the data in a newly created
-configmap with the name name
-- /tmp/local.txt : A local path to a file which is created.
 
 ### Job Template extensions
 

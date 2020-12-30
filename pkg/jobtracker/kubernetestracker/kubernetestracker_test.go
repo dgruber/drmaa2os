@@ -90,8 +90,8 @@ var _ = Describe("KubernetesTracker", func() {
 
 			b64 := base64.StdEncoding.EncodeToString([]byte("content"))
 			jt.StageInFiles = map[string]string{
-				"/my/file.txt":      "configmap:" + b64,
-				"/my/otherfile.txt": "secret:" + b64}
+				"/my/file.txt":      "configmap-data:" + b64,
+				"/my/otherfile.txt": "secret-data:" + b64}
 			kt, err := New("jobsession", "default", nil)
 			Ω(err).Should(BeNil())
 
@@ -353,8 +353,8 @@ var _ = Describe("KubernetesTracker", func() {
 				RemoteCommand: "/bin/sh",
 				JobCategory:   "busybox:latest",
 				StageInFiles: map[string]string{
-					"/test":  "secret:" + base64.StdEncoding.EncodeToString([]byte("test")),
-					"/test2": "configmap:" + base64.StdEncoding.EncodeToString([]byte("test")),
+					"/test":  "secret-data:" + base64.StdEncoding.EncodeToString([]byte("test")),
+					"/test2": "configmap-data:" + base64.StdEncoding.EncodeToString([]byte("test")),
 				},
 			}
 			var err error

@@ -188,12 +188,10 @@ func (kt *KubernetesTracker) JobInfo(jobID string) (drmaa2interface.JobInfo, err
 	}
 	if ji.State == drmaa2interface.Done {
 		// when job is finished the sidecar of the job
-		// triggers an "epilog" job / or stores data in a 
+		// triggers an "epilog" job / or stores data in a
 		// config map - this data needs to be read and
 		// put into the JobInfo object.
-
 	}
-
 	return ji, nil
 }
 
