@@ -10,6 +10,7 @@ import (
 
 	"github.com/dgruber/drmaa2interface"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	k8sapi "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -32,6 +33,10 @@ func getJobStageInSecrets(jt drmaa2interface.JobTemplate) ([]*v1.Secret, error) 
 			secrets = append(secrets, &v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: secretName(jt.JobName, k),
+					Labels: map[string]string{
+						"origin": "drmaa2os",
+						"jobid":  jt.JobName,
+					},
 				},
 				Data: map[string][]byte{
 					file: decoded,
@@ -55,19 +60,52 @@ func getJobStageInConfigMaps(jt drmaa2interface.JobTemplate) ([]*v1.ConfigMap, e
 				return nil, fmt.Errorf("failed to base64 decode the configmap: %v", err)
 			}
 			_, file := filepath.Split(k)
+			if file == "" {
+				return nil, fmt.Errorf("StageInFiles map has no file path set: %s", k)
+			}
 			configmaps = append(configmaps,
 				&v1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: configMapName(jt.JobName, k),
+						Labels: map[string]string{
+							"origin": "drmaa2os",
+							"jobid":  jt.JobName,
+						},
 					},
-					BinaryData: map[string][]byte{
-						file: decoded,
+					Data: map[string]string{
+						file: string(decoded),
 					},
 				})
 		}
 	}
 	return configmaps, nil
+}
 
+func getJobStageInPVCs(jt drmaa2interface.JobTemplate) ([]*v1.PersistentVolumeClaim, error) {
+	pvcs := make([]*v1.PersistentVolumeClaim, 0, 2)
+	for k, v := range jt.StageInFiles {
+		if strings.HasPrefix(v, "storageclass:") {
+			storageClassName := strings.TrimPrefix(v, "storageclass:")
+			quantity := resource.NewQuantity(100, resource.DecimalSI)
+
+			pvcs = append(pvcs, &v1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: pvcName(jt.JobName, k),
+				},
+				Spec: v1.PersistentVolumeClaimSpec{
+					StorageClassName: &storageClassName,
+					AccessModes: []v1.PersistentVolumeAccessMode{
+						v1.ReadWriteOnce,
+					},
+					Resources: v1.ResourceRequirements{
+						Requests: v1.ResourceList{
+							v1.ResourceStorage: *quantity,
+						},
+					},
+				}})
+		}
+	}
+	return pvcs, nil
 }
 
 // removeArtifacts deletes all created secrets and configmaps
@@ -75,6 +113,7 @@ func removeArtifacts(cs *kubernetes.Clientset, jt drmaa2interface.JobTemplate, n
 	if jt.StageInFiles == nil {
 		return nil
 	}
+
 	var err error
 	secrets, secretCreateErr := getJobStageInSecrets(jt)
 	if secretCreateErr != nil {
@@ -87,6 +126,7 @@ func removeArtifacts(cs *kubernetes.Clientset, jt drmaa2interface.JobTemplate, n
 			err = fmt.Errorf("%w %v", err, errDelete)
 		}
 	}
+
 	configmaps, cmCreateErr := getJobStageInConfigMaps(jt)
 	if cmCreateErr != nil {
 		err = fmt.Errorf("%w %v", err, cmCreateErr)
@@ -114,7 +154,7 @@ func removeArtifactsByJobID(cs *kubernetes.Clientset, jobID, namespace string) e
 			errDelete := cs.CoreV1().Secrets(namespace).Delete(context.Background(),
 				secret.Name, k8sapi.DeleteOptions{})
 			if err != nil {
-				fmt.Println("delete error")
+				fmt.Println("secret delete error")
 				err = fmt.Errorf("%w %v", err, errDelete)
 			}
 		}
@@ -127,7 +167,20 @@ func removeArtifactsByJobID(cs *kubernetes.Clientset, jobID, namespace string) e
 			errDelete := cs.CoreV1().ConfigMaps(namespace).Delete(context.Background(),
 				cm.Name, k8sapi.DeleteOptions{})
 			if err != nil {
-				fmt.Println("delete error")
+				fmt.Println("configmap delete error")
+				err = fmt.Errorf("%w %v", err, errDelete)
+			}
+		}
+	}
+	// list pvcs and delete job related pvcs
+	pvcList, err := cs.CoreV1().PersistentVolumeClaims(namespace).List(context.Background(),
+		metav1.ListOptions{})
+	for _, pvc := range pvcList.Items {
+		if strings.HasPrefix(pvc.Name, jobID+"-") {
+			errDelete := cs.CoreV1().PersistentVolumeClaims(namespace).Delete(context.Background(),
+				pvc.Name, k8sapi.DeleteOptions{})
+			if err != nil {
+				fmt.Println("pvc delete error")
 				err = fmt.Errorf("%w %v", err, errDelete)
 			}
 		}

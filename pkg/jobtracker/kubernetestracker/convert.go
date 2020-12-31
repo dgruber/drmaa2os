@@ -20,6 +20,11 @@ func volumeName(jobName, path string, kind string) string {
 	return jobName + "-" + fmt.Sprintf("%.8x", sum) + "-" + kind + "-volume"
 }
 
+func pvcName(jobName, path string) string {
+	sum := md5.Sum([]byte(path))
+	return jobName + "-" + fmt.Sprintf("%.8x", sum) + "-pvc"
+}
+
 func configMapName(jobName, path string) string {
 	sum := md5.Sum([]byte(path))
 	return jobName + "-" + fmt.Sprintf("%.8x", sum) + "-configmap"
@@ -93,6 +98,37 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 							PersistentVolumeClaim: &k8sv1.PersistentVolumeClaimVolumeSource{
 								ClaimName: existingPVCName,
 							}}})
+			} else if strings.HasPrefix(v, "gce-disk:") {
+				existingPDName := strings.TrimPrefix(v, "gce-disk:")
+				volumes = append(volumes,
+					k8sv1.Volume{
+						Name: volumeName(jt.JobName, path, "gce-disk"),
+						VolumeSource: k8sv1.VolumeSource{
+							GCEPersistentDisk: &k8sv1.GCEPersistentDiskVolumeSource{
+								PDName:   existingPDName,
+								FSType:   "ext4",
+								ReadOnly: false,
+							}}})
+			} else if strings.HasPrefix(v, "gce-disk-read:") {
+				existingPDName := strings.TrimPrefix(v, "gce-disk-read:")
+				volumes = append(volumes,
+					k8sv1.Volume{
+						Name: volumeName(jt.JobName, path, "gce-disk-read"),
+						VolumeSource: k8sv1.VolumeSource{
+							GCEPersistentDisk: &k8sv1.GCEPersistentDiskVolumeSource{
+								PDName:   existingPDName,
+								FSType:   "ext4",
+								ReadOnly: true,
+							}}})
+			} else if strings.HasPrefix(v, "storageclass:") {
+				volumes = append(volumes,
+					k8sv1.Volume{
+						Name: volumeName(jt.JobName, path, "storageclass"),
+						VolumeSource: k8sv1.VolumeSource{
+							PersistentVolumeClaim: &k8sv1.PersistentVolumeClaimVolumeSource{
+								ClaimName: pvcName(jt.JobName, path),
+							},
+						}})
 			}
 		}
 		return volumes, nil
@@ -137,6 +173,22 @@ func getVolumeMounts(jt drmaa2interface.JobTemplate) []v1.VolumeMount {
 		} else if strings.HasPrefix(v, "pvc:") {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "pvc"),
+				MountPath: k,
+			})
+		} else if strings.HasPrefix(v, "gce-disk:") {
+			vmounts = append(vmounts, v1.VolumeMount{
+				Name:      volumeName(jt.JobName, k, "pd"),
+				MountPath: k,
+			})
+		} else if strings.HasPrefix(v, "gce-disk-read:") {
+			vmounts = append(vmounts, v1.VolumeMount{
+				Name:      volumeName(jt.JobName, k, "pd"),
+				MountPath: k,
+				ReadOnly:  true,
+			})
+		} else if strings.HasPrefix(v, "storageclass:") {
+			vmounts = append(vmounts, v1.VolumeMount{
+				Name:      volumeName(jt.JobName, k, "storageclass"),
 				MountPath: k,
 			})
 		}
@@ -307,6 +359,7 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 					Name:         "drmaa2osjob",
 					GenerateName: "drmaa2os",
 					//Labels: options.labels,
+					Namespace: namespace,
 				},
 				Spec: podSpec,
 			},

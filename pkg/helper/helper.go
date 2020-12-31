@@ -3,9 +3,11 @@ package helper
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
-	"time"
 )
 
 // ArrayJobID2GUIDs converts the array job ID returned from
@@ -37,6 +39,14 @@ func Guids2ArrayJobID(guids []string) string {
 func AddArrayJobAsSingleJobs(jt drmaa2interface.JobTemplate, t jobtracker.JobTracker, begin int, end int, step int) (string, error) {
 	var guids []string
 	for i := begin; i <= end; i += step {
+		// add task ID as env variable
+		if jt.JobEnvironment == nil {
+			jt.JobEnvironment = map[string]string{
+				"TASK_ID": fmt.Sprintf("%d", i),
+			}
+		} else {
+			jt.JobEnvironment["TASK_ID"] = fmt.Sprintf("%d", i)
+		}
 		guid, err := t.AddJob(jt)
 		if err != nil {
 			return Guids2ArrayJobID(guids), err

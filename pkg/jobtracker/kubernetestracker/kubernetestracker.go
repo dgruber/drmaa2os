@@ -138,6 +138,19 @@ func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, err
 		}
 	}
 
+	// create PVC when storage class is used
+	pvcs, err := getJobStageInPVCs(jt)
+	if err != nil {
+		return "", err
+	}
+	for _, pvc := range pvcs {
+		_, err := kt.clientSet.CoreV1().PersistentVolumeClaims(kt.namespace).Create(context.Background(),
+			pvc, k8sapi.CreateOptions{})
+		if err != nil {
+			return "", fmt.Errorf("failed to create PVC for StorageClass: %w", err)
+		}
+	}
+
 	job, err := convertJob(kt.jobsession, kt.namespace, jt)
 	if err != nil {
 		removeArtifacts(kt.clientSet, jt, kt.namespace)

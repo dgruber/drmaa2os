@@ -1,12 +1,12 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
-	"time"
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
-	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
 )
 
 func createJobSession(sm drmaa2interface.SessionManager) drmaa2interface.JobSession {
@@ -29,7 +29,16 @@ func print(ji drmaa2interface.JobInfo) {
 }
 
 func main() {
-	sm, err := drmaa2os.NewKubernetesSessionManager(nil, "testdb.db")
+
+	// Allocate a SessionManager managing jobs in the "default"
+	// namespace, with no pre-initialized ClientSet (so that a
+	// new one gets allocated). The local DB is used by the
+	// SessionManager to make some job details persistent.
+	sm, err := drmaa2os.NewKubernetesSessionManager(
+		kubernetestracker.KubernetesTrackerParameters{
+			Namespace: "default",
+			ClientSet: nil,
+		}, "testdb.db")
 	if err != nil {
 		panic(err)
 	}
@@ -39,19 +48,31 @@ func main() {
 
 	jt := drmaa2interface.JobTemplate{
 		// JobName must be unique or not set ("").
-		// JobName:       "testjob",
 		RemoteCommand: "/bin/sh",
-		JobCategory:   "golang",
-		Args:          []string{"-c", `sleep 2`},
+		JobCategory:   "busybox:latest",
+		Args:          []string{"-c", `cp /input/data.txt /persistent/data.txt`},
 	}
 
-	fmt.Printf("running job \"sleep 1\"\n")
+	// Use storage from existing PVC "nfs-pvc" and mount inside the container to
+	// directory "/persistent". Note that the storage needs to support multi-write
+	// as multiple jobs are accessing it concurrently here. Examples of this
+	// kind of storage are Google Filestore (for GKE) or a self-provisioned
+	// NFS server.
+	//
+	// Stage data into job which gets mounted under /input/data.txt
+	// as a ConfigMap
+	jt.StageInFiles = map[string]string{
+		"/persistent": "pvc:nfs-pvc",
+		"/input/data.txt": "configmap-data:" +
+			base64.StdEncoding.EncodeToString([]byte("my input data set")),
+	}
+
+	fmt.Println("running data pre-processing job")
 
 	job, err := js.RunJob(jt)
 	if err != nil {
 		panic(err)
 	}
-
 	fmt.Println("job submitted successfully / waiting until finished")
 
 	job.WaitTerminated(drmaa2interface.InfiniteTime)
@@ -62,20 +83,34 @@ func main() {
 	}
 	print(ji)
 
-	fmt.Println("Starting job array with 100 jobs")
-	fmt.Println(time.Now())
-	jobs, err := js.RunBulkJobs(jt, 1, 100, 1, 100)
+	// removing job and config map object from Kubernetes
+	job.Reap()
+
+	fmt.Println("Starting job array with 17 jobs each transforming on char to upper case")
+	jt.StageInFiles = map[string]string{
+		"/persistent": "pvc:nfs-pvc",
+	}
+	jt.Args = []string{"-c", `cut -c$(TASK_ID) /persistent/data.txt | tr [:lower:] [:upper:] > /persistent/data_$(TASK_ID).txt`}
+
+	jobs, err := js.RunBulkJobs(jt, 1, 17, 1, 17)
 	if err != nil {
 		panic(err)
 	}
 	for _, j := range jobs.GetJobs() {
 		j.WaitTerminated(drmaa2interface.InfiniteTime)
 		fmt.Printf("Job %s finished\n", j.GetID())
-	}
-	fmt.Println("All finished")
-	fmt.Println(time.Now())
-	for _, j := range jobs.GetJobs() {
 		j.Reap()
 	}
-	fmt.Println(time.Now())
+
+	fmt.Println("All data processing jobs finished. Starting post-processing.")
+
+	// output data is not in order! :)
+	jt.Args = []string{"-c", `cat /persistent/data_*.txt > /persistent/output_data.txt`}
+	job, err = js.RunJob(jt)
+	if err != nil {
+		panic(err)
+	}
+	job.WaitTerminated(drmaa2interface.InfiniteTime)
+	fmt.Printf("Post-processing job finished in state: %s\n", job.GetState().String())
+	job.Reap()
 }
