@@ -325,7 +325,11 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 	}
 	podSpec := newPodSpec(volumes, containers, nodeSelector, dl)
 
+	podSpec.RestartPolicy = v1.RestartPolicyNever
+
 	var one int32 = 1
+	var zero int32 = 0
+
 	job := batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Job",
@@ -344,13 +348,9 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 		// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
 		// +optional
 		Spec: batchv1.JobSpec{
-			/*ManualSelector: ,
-			Selector: &unversioned.LabelSelector{
-				MatchLabels: options.labels,
-			}, */
 			Parallelism:  &one,
 			Completions:  &one,
-			BackoffLimit: &one,
+			BackoffLimit: &zero,
 
 			// Describes the pod that will be created when executing a job.
 			// More info: https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/
