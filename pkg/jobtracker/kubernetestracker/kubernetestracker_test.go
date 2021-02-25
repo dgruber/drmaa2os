@@ -85,7 +85,7 @@ var _ = Describe("KubernetesTracker", func() {
 
 	Context("File staging", func() {
 
-		It("should create map some content as a file inside the container", func() {
+		It("should map some content as a file inside the container", func() {
 			jt := drmaa2interface.JobTemplate{
 				JobCategory:   "busybox:latest",
 				RemoteCommand: "cat",
@@ -261,7 +261,8 @@ var _ = Describe("KubernetesTracker", func() {
 			defer kt.DeleteJob(jobid)
 			err = kt.Wait(jobid, time.Second*60, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
-			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+			state, _, _ := kt.JobState(jobid)
+			Ω(state.String()).Should(Equal(drmaa2interface.Done.String()))
 		})
 
 		WhenK8sIsAvailableIt("should return JobInfo after the job is finished", func() {
@@ -276,7 +277,7 @@ var _ = Describe("KubernetesTracker", func() {
 			ji, err := kt.JobInfo(jobid)
 			Ω(err).Should(BeNil())
 			Ω(ji.ID).Should(Equal(jobid))
-			Ω(ji.State).Should(Equal(drmaa2interface.Done))
+			Ω(ji.State.String()).Should(Equal(drmaa2interface.Done.String()))
 			Ω(ji.ExitStatus).Should(BeNumerically("==", 0))
 		})
 
@@ -306,6 +307,22 @@ var _ = Describe("KubernetesTracker", func() {
 			err = kt.Wait(jobid, time.Second*30, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Failed))
+		})
+
+		WhenK8sIsAvailableIt("should be possible to get the jobs output", func() {
+			jt.Args = []string{"-c", "echo ouTpuT"}
+			jobid, err := kt.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+			defer kt.DeleteJob(jobid)
+			err = kt.Wait(jobid, time.Second*30, drmaa2interface.Failed, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+
+			jinfo, err := kt.JobInfo(jobid)
+			Ω(err).Should(BeNil())
+			Ω(len(jinfo.ExtensionList)).To(BeNumerically(">=", 1))
+			Ω(jinfo.ExtensionList["output"]).To(Equal("ouTpuT\n"))
 		})
 
 	})

@@ -199,11 +199,31 @@ func (kt *KubernetesTracker) JobInfo(jobID string) (drmaa2interface.JobInfo, err
 	if err != nil {
 		return drmaa2interface.JobInfo{}, err
 	}
-	if ji.State == drmaa2interface.Done {
+	if ji.State == drmaa2interface.Done || ji.State == drmaa2interface.Failed {
+		// read job output
+		output, err := GetJobOutput(kt.clientSet, kt.namespace, jobID)
+		if err == nil {
+			if ji.ExtensionList == nil {
+				ji.ExtensionList = make(map[string]string)
+			}
+			ji.ExtensionList["output"] = string(output)
+		} else {
+			fmt.Printf("error: %v\n", err)
+		}
 		// when job is finished the sidecar of the job
 		// triggers an "epilog" job / or stores data in a
 		// config map - this data needs to be read and
 		// put into the JobInfo object.
+		/*
+			output, err := getConfigMapData(kt.clientSet, kt.namespace, jobID+"-output-configmap", "output")
+			if err != nil {
+				return ji, nil
+			}
+			if ji.ExtensionList == nil {
+				ji.ExtensionList = make(map[string]string)
+			}
+			ji.ExtensionList["output"] = output
+		*/
 	}
 	return ji, nil
 }

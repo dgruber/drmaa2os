@@ -16,8 +16,6 @@ RUN source /etc/profile
 RUN echo 'export PATH=$PATH:/usr/local/go/bin' >> /root/.bashrc
 RUN mkdir -p /root/go/bin
 
-
 RUN mkdir -p /root/go/src/github.com/dgruber
 RUN cd /root/go/src/github.com/dgruber && git clone https://github.com/dgruber/drmaa.git
 RUN cd /root/go/src/github.com/dgruber && git clone https://github.com/dgruber/drmaa2os.git
-

@@ -4,10 +4,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 var _ = Describe("K8sState", func() {
@@ -63,6 +66,49 @@ var _ = Describe("K8sState", func() {
 			var s batchv1.JobStatus
 			Ω(convertJobStatus2JobState(&s)).Should(Equal(drmaa2interface.Undetermined))
 		})
+	})
+
+	Context("JobStatus conversion", func() {
+
+		It("should return the output of a finsihed job", func() {
+			cs := fake.NewSimpleClientset(
+				&corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"job-name": "job",
+						},
+						Name:      "podname",
+						Namespace: "default"},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name:  "job",
+								Image: "image",
+							},
+						},
+					},
+					Status: corev1.PodStatus{
+						ContainerStatuses: []corev1.ContainerStatus{
+							{
+								Name: "job",
+								State: corev1.ContainerState{
+									Terminated: &corev1.ContainerStateTerminated{
+										FinishedAt: metav1.NewTime(time.Now()),
+									},
+								},
+								ContainerID: "docker://sidecarid123",
+							},
+						},
+					},
+				},
+			)
+
+			output, err := GetJobOutput(cs, "default", "job")
+			Ω(err).Should(BeNil())
+			Ω(string(output)).Should(Equal("fake logs"))
+
+		})
+
 	})
 
 })

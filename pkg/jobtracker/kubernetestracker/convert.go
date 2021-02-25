@@ -129,6 +129,20 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 								ClaimName: pvcName(jt.JobName, path),
 							},
 						}})
+			} else if strings.HasPrefix(v, "nfs:") {
+				nfs := strings.Split(v, ":")
+				if len(nfs) != 3 {
+					return nil, errors.New("nfs source config needs to be in format nfs:server:path")
+				}
+				volumes = append(volumes,
+					k8sv1.Volume{
+						Name: volumeName(jt.JobName, path, "nfs"),
+						VolumeSource: k8sv1.VolumeSource{
+							NFS: &k8sv1.NFSVolumeSource{
+								Server: nfs[1],
+								Path:   nfs[2],
+							},
+						}})
 			}
 		}
 		return volumes, nil
@@ -189,6 +203,11 @@ func getVolumeMounts(jt drmaa2interface.JobTemplate) []v1.VolumeMount {
 		} else if strings.HasPrefix(v, "storageclass:") {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "storageclass"),
+				MountPath: k,
+			})
+		} else if strings.HasPrefix(v, "nfs:") {
+			vmounts = append(vmounts, v1.VolumeMount{
+				Name:      volumeName(jt.JobName, k, "nfs"),
 				MountPath: k,
 			})
 		}
@@ -325,6 +344,34 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 	}
 	podSpec := newPodSpec(volumes, containers, nodeSelector, dl)
 
+	// Add sidecar which stores the output of the job in a configmap.
+	if jt.ExtensionList != nil {
+		jo, exists := jt.ExtensionList["DRMAA2_JOB_OUTPUT_IN_JOBINFO"]
+		if exists && strings.ToUpper(jo) == "TRUE" {
+			podSpec.Containers = append(podSpec.Containers, v1.Container{
+				Name:    jt.JobName + "-drmaa2os-sidecar",
+				Image:   "drmaa/drmaa2os-basic-sidecar:latest",
+				Command: []string{"/sidecar"},
+				Env: []v1.EnvVar{
+					{
+						Name: "DRMAA2OS_POD_NAME",
+						ValueFrom: &v1.EnvVarSource{
+							FieldRef: &v1.ObjectFieldSelector{
+								FieldPath: "metadata.name",
+							}},
+					},
+					{
+						Name: "DRMAA2OS_POD_NAMESPACE",
+						ValueFrom: &v1.EnvVarSource{
+							FieldRef: &v1.ObjectFieldSelector{
+								FieldPath: "metadata.namespace",
+							}},
+					},
+				},
+			})
+		}
+	}
+
 	podSpec.RestartPolicy = v1.RestartPolicyNever
 
 	var one int32 = 1
@@ -335,25 +382,17 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 			Kind:       "Job",
 			APIVersion: "v1",
 		},
-		// Standard object's metadata.
-		// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
-		// +optional
 		ObjectMeta: metav1.ObjectMeta{
 			Name:         jt.JobName,
 			Labels:       map[string]string{"drmaa2jobsession": jobsession},
 			GenerateName: "drmaa2os",
 			Namespace:    namespace,
 		},
-		// Specification of the desired behavior of a job.
-		// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
-		// +optional
 		Spec: batchv1.JobSpec{
 			Parallelism:  &one,
 			Completions:  &one,
 			BackoffLimit: &zero,
 
-			// Describes the pod that will be created when executing a job.
-			// More info: https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:         "drmaa2osjob",

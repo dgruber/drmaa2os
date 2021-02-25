@@ -21,12 +21,12 @@ This is a Go API based on an open standard ([Open Grid Forum DRMAA2](https://www
 supervising workloads running in operating system processes, containers, PODs, tasks, or HPC batch jobs.
 
 The API allows you to develop and run job workflows in OS processes and switch later to 
-containers running in Kubernetes, as Cloud Foundry tasks, pure Docker, or Singularity, 
-or any HPC workload manager which supports the DRMAA standard through libdrmaa.so 
-(like SLURM, Grid Enginee, ...) without changing the application logic.
+containers running in Kubernetes, as Cloud Foundry tasks, pure Docker, Singularity, 
+or any HPC workload manager which supports the DRMAA standard through the C _libdrmaa.so
+library (like SLURM, Grid Engine, ...) without changing the application logic.
 
 Its main pupose is supporting you with an abstraction layer on top of platforms, workload managers, 
-and HPC cluster schedulers, so that you don't need to deal with the underlaying details and differences.
+and HPC cluster schedulers, so that a software developer don't need to deal with the underlaying details and differences of job submission, status checking, and more.
 
 An even simpler interface for creating job workflows without dealing with the DRMAA2 details is
 [*wfl*](https://github.com/dgruber/wfl) which is based on the Go DRMAA2 implementation.

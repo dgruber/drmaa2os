@@ -1,10 +1,16 @@
 package kubernetestracker
 
 import (
+	"context"
+	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
 	v1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 )
 
@@ -46,8 +52,7 @@ func exitStatusFromJobState(status drmaa2interface.JobState) int {
 	return 0
 }
 
-// JobToJobInfo converts a kubernetes job to a DRMAA2 JobInfo
-// representation.
+// JobToJobInfo converts a kubernetes job to a DRMAA2 JobInfo representation.
 func JobToJobInfo(jc batchv1.JobInterface, jobid string) (drmaa2interface.JobInfo, error) {
 	ji := drmaa2interface.JobInfo{}
 	job, err := getJobByID(jc, jobid)
@@ -67,4 +72,29 @@ func JobToJobInfo(jc batchv1.JobInterface, jobid string) (drmaa2interface.JobInf
 	ji.ID = jobid
 	ji.ExitStatus = exitStatusFromJobState(ji.State)
 	return ji, nil
+}
+
+// GetJobOutput returns the output of a job pod after after it has been finished.
+func GetJobOutput(cs kubernetes.Interface, namespace string, jobID string) ([]byte, error) {
+	podList, err := cs.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "job-name=" + jobID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not get pods of job %s in namespace %s: %v",
+			jobID, namespace, err)
+	}
+	if len(podList.Items) != 1 {
+		return nil, fmt.Errorf("expected to find 1 pod for job %s in namespace %s but found %d",
+			jobID, namespace, len(podList.Items))
+	}
+	req := cs.CoreV1().Pods(namespace).GetLogs(podList.Items[0].Name, &corev1.PodLogOptions{
+		Container: jobID,
+		Follow:    false,
+	})
+	output, err := req.Stream(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get output stream of pod %s from job %s in namespace %s: %v",
+			podList.Items[0].Name, jobID, namespace, err)
+	}
+	return ioutil.ReadAll(output)
 }

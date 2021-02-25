@@ -57,7 +57,7 @@ func getJobStageInConfigMaps(jt drmaa2interface.JobTemplate) ([]*v1.ConfigMap, e
 			content := strings.TrimPrefix(v, "configmap-data:")
 			decoded, err := base64.StdEncoding.DecodeString(content)
 			if err != nil {
-				return nil, fmt.Errorf("failed to base64 decode the configmap: %v", err)
+				return nil, fmt.Errorf("failed to base64-decode the configmap: %v", err)
 			}
 			_, file := filepath.Split(k)
 			if file == "" {
@@ -236,4 +236,16 @@ func convertJobTemplateToStringMap(jt drmaa2interface.JobTemplate) (map[string]s
 		return nil, err
 	}
 	return map[string]string{"JobTemplate": string(j)}, nil
+}
+
+func getConfigMapData(cs kubernetes.Interface, namespace, configMapName, field string) (string, error) {
+	cm, err := cs.CoreV1().ConfigMaps(namespace).Get(context.Background(), configMapName, k8sapi.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("could not find configmap %s: %w", configMapName, err)
+	}
+	data, exists := cm.Data[field]
+	if !exists {
+		return "", fmt.Errorf("configmap %s does not contain data %s", configMapName, field)
+	}
+	return data, nil
 }

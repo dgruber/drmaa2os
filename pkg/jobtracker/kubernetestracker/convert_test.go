@@ -205,6 +205,7 @@ var _ = Describe("Convert", func() {
 					"/existing/input.txt":       "configmap:existingConfigMapName",
 					"/existing/secretInput.txt": "secret:existingSecretName",
 					"/existing/pvc":             "pvc:existingPVCName",
+					"/nfs":                      "nfs:server:/share/directory",
 				}
 			})
 
@@ -237,19 +238,21 @@ var _ = Describe("Convert", func() {
 			It("should create new volumes", func() {
 				v, err := newVolumes(jt)
 				Ω(err).Should(BeNil())
-				Ω(len(v)).Should(BeNumerically("==", 6))
+				Ω(len(v)).Should(BeNumerically("==", 7))
 				Ω(v[0].Name).ShouldNot(Equal(""))
 				Ω(v[1].Name).ShouldNot(Equal(""))
 				Ω(v[2].Name).ShouldNot(Equal(""))
 				Ω(v[3].Name).ShouldNot(Equal(""))
 				Ω(v[4].Name).ShouldNot(Equal(""))
 				Ω(v[5].Name).ShouldNot(Equal(""))
+				Ω(v[6].Name).ShouldNot(Equal(""))
 				Ω(v[0].VolumeSource).ShouldNot(BeNil())
 				Ω(v[1].VolumeSource).ShouldNot(BeNil())
 				Ω(v[2].VolumeSource).ShouldNot(BeNil())
 				Ω(v[3].VolumeSource).ShouldNot(BeNil())
 				Ω(v[4].VolumeSource).ShouldNot(BeNil())
 				Ω(v[5].VolumeSource).ShouldNot(BeNil())
+				Ω(v[6].VolumeSource).ShouldNot(BeNil())
 				// contains the unique job id
 				Ω(v[0].Name).Should(ContainSubstring("name"))
 				Ω(v[1].Name).Should(ContainSubstring("name"))
@@ -257,43 +260,24 @@ var _ = Describe("Convert", func() {
 				Ω(v[3].Name).Should(ContainSubstring("name"))
 				Ω(v[4].Name).Should(ContainSubstring("name"))
 				Ω(v[5].Name).Should(ContainSubstring("name"))
+				Ω(v[6].Name).Should(ContainSubstring("name"))
 
 				pvc := 0
+				nfs := 0
 				for _, vol := range v {
 					if strings.Contains(vol.Name, "pvc") {
 						Ω(vol.PersistentVolumeClaim.ClaimName).Should(Equal("existingPVCName"))
 						pvc++
 					}
-				}
-				Ω(pvc).Should(BeNumerically("==", 1))
-			})
-
-			It("should create volume mounts", func() {
-				v := getVolumeMounts(jt)
-				Ω(len(v)).Should(BeNumerically("==", 6))
-				Ω(v[0].Name).ShouldNot(Equal(""))
-				Ω(v[1].Name).ShouldNot(Equal(""))
-				Ω(v[2].Name).ShouldNot(Equal(""))
-				Ω(v[3].Name).ShouldNot(Equal(""))
-				Ω(v[4].Name).ShouldNot(Equal(""))
-				Ω(v[5].Name).ShouldNot(Equal(""))
-				Ω(v[0].MountPath).ShouldNot(BeNil())
-				Ω(v[1].MountPath).ShouldNot(BeNil())
-				Ω(v[2].MountPath).ShouldNot(BeNil())
-				Ω(v[3].MountPath).ShouldNot(BeNil())
-				Ω(v[4].MountPath).ShouldNot(BeNil())
-				Ω(v[5].MountPath).ShouldNot(BeNil())
-
-				pvc := 0
-				for _, vol := range v {
-					if strings.Contains(vol.Name, "pvc") {
-						Ω(vol.MountPath).Should(Equal("/existing/pvc"))
-						Ω(vol.SubPath).Should(Equal(""))
-						pvc++
+					if strings.Contains(vol.Name, "nfs") {
+						Ω(vol.NFS).ShouldNot(BeNil())
+						Ω(vol.NFS.Server).Should(Equal("server"))
+						Ω(vol.NFS.Path).Should(Equal("/share/directory"))
+						nfs++
 					}
 				}
 				Ω(pvc).Should(BeNumerically("==", 1))
-
+				Ω(nfs).Should(BeNumerically("==", 1))
 			})
 
 		})
