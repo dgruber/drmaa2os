@@ -207,7 +207,11 @@ var _ = Describe("JobSession", func() {
 		})
 
 		It("should be possible to terminate a job array (bulk job)", func() {
-			jt.Args = []string{"100"}
+			jt := drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sleep",
+				Args:          []string{"100"},
+				JobCategory:   "busybox:latest",
+			}
 
 			arrayjob, err := js.RunBulkJobs(jt, 1, 10, 1, 5)
 			Ω(err).Should(BeNil())
