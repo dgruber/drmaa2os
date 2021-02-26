@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"golang.org/x/net/context"
 )
 
@@ -43,6 +44,10 @@ func runJob(jobsession string, cli *client.Client, jt drmaa2interface.JobTemplat
 		config,
 		hostConfig,
 		networkingConfig,
+		&v1.Platform{
+			Architecture: "amd64",
+			OS:           "linux",
+		},
 		jt.JobName)
 
 	if err != nil {
