@@ -1,9 +1,10 @@
 package drmaa2os
 
 import (
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
-	"time"
 )
 
 // Job represents a single computational activity that is

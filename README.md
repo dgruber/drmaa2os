@@ -1,4 +1,4 @@
-# drmaa2os - A Go API for OS Processes, Docker Containers, Cloud Foundry Tasks, Kubernetes Jobs, Grid Engine Jobs and more...
+# drmaa2os - A Go API for OS Processes, Docker Containers, Cloud Foundry Tasks, Kubernetes Jobs, Grid Engine Jobs, Podman containers, and more...
 
 _DRMAA2 for OS processes and more_
 
@@ -39,6 +39,7 @@ For details about the mapping of job operations please consult the platform spec
   * [Kubernetes](pkg/jobtracker/kubernetestracker/README.md)
   * [Singularity](pkg/jobtracker/singularity/README.md)
   * [libdrmaa.so](pkg/jobtracker/libdrmaa/README.md)
+  * [Podman](pkg/jobtracker/podmantracker/README.md)
 
 [Feedback](mailto:info@gridengine.eu) welcome!
 
@@ -283,6 +284,31 @@ CGO_LDFLAGS and CGO_CFLAGS must be set according to the documentation in [https:
 		panic(err)
 	}
 ```
+
+### Podman
+
+First experimental version is implemented and tested on macos accessing Podman
+on a remote VM. When compiling on macos _brew install gpgme_ helped me getting
+the C header dependencies of Podman installed. Accessing podman can be achieved
+through _ssh_ in that case (calling podman system service --time=0 unix:///tmp/podman.sock
+in the podman VM for which the ssh port is defined at localhost:2222 on a Vagrant
+based vbox VM).
+
+```go
+
+    import (
+        "github.com/dgruber/drmaa2os
+        _ "github.com/dgruber/drmaa2os/pkg/jobtracker/podmantracker"
+    )
+    
+	sm, err := drmaa2os.NewPodmanSessionManager(PodmanTrackerParams{
+					ConnectionURIOverride: "ssh://vagrant@localhost:2222/tmp/podman.sock?secure=False",
+				}, "testdb.db")
+	if err != nil {
+		panic(err)
+	}
+```
+
 
 	
 

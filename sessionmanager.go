@@ -29,6 +29,8 @@ const (
 	SlurmSession
 	// LibDRMAASession manages jobs through libdrmaa.so
 	LibDRMAASession
+	// PodmanSession manages jobs as podman containers either locally or remote
+	PodmanSession
 	// ExternalSession can be used by external JobTracker implementations
 	// during development time before they get added here
 	ExternalSession
@@ -69,8 +71,6 @@ type SessionManager struct {
 	log                    lager.Logger
 	sessionType            SessionType
 	jobTrackerCreateParams interface{}
-	// cf          cfContact
-	//slurm       *slurmcli.Slurm
 }
 
 // NewDefaultSessionManager creates a SessionManager which starts jobs
@@ -102,13 +102,6 @@ func NewCloudFoundrySessionManager(addr, username, password, dbpath string) (*Se
 	}
 	// specific parameters for Cloud Foundry
 	sm.jobTrackerCreateParams = []string{addr, username, password}
-	/*
-		sm.cf = cfContact{
-			addr:     addr,
-			username: username,
-			password: password,
-		}
-	*/
 	return sm, nil
 }
 
@@ -139,6 +132,19 @@ func NewLibDRMAASessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, LibDRMAASession)
 }
 
+// NewPodmanSessionManager creates a new session manager for Podman.
+// The first parameter is either nil for using defaults or must be
+// of type _podmantracker.PodmanTrackerParams_.
+func NewPodmanSessionManager(ps interface{}, dbpath string) (*SessionManager, error) {
+	sm, err := makeSessionManager(dbpath, PodmanSession)
+	if err != nil {
+		return sm, err
+	}
+	// specific parameters for Podman
+	sm.jobTrackerCreateParams = ps
+	return sm, nil
+}
+
 // NexExternalSessionManager creates a new external session. This can be
 // used when a JobTrack is implemented outside of the repository.
 // Note that only one ExternalSession is available so it makes sense to
@@ -152,12 +158,6 @@ func (sm *SessionManager) CreateJobSession(name, contact string) (drmaa2interfac
 	if err := sm.create(storage.JobSessionType, name, contact); err != nil {
 		return nil, err
 	}
-	/*
-		jt, err := sm.newJobTracker(name)
-		if err != nil {
-			return nil, err
-		}
-	*/
 	// allocate a registered job tracker - registration happens
 	// when the package is imported in the init method of the
 	// JobTracker implementation package

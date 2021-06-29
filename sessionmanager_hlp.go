@@ -19,32 +19,6 @@ var (
 	atomicTrackers atomic.Value
 )
 
-type cfContact struct {
-	addr     string
-	username string
-	password string
-}
-
-/*
-func (sm *SessionManager) newJobTracker(name string) (jobtracker.JobTracker, error) {
-	switch sm.sessionType {
-	case DockerSession:
-		return dockertracker.New(name)
-	case CloudFoundrySession:
-		return cftracker.New(sm.cf.addr, sm.cf.username, sm.cf.password, name)
-	case KubernetesSession:
-		return kubernetestracker.New(name, nil)
-	case SingularitySession:
-		return singularity.New(name)
-	case SlurmSession:
-		return slurmcli.New(name, slurmcli.NewSlurm("sbatch",
-			"squeue", "scontrol", "scancel", "sacct", true))
-	default: // DefaultSession
-		return simpletracker.New(name), nil
-	}
-}
-*/
-
 // newRegisteredJobTracker creates a new JobTracker by calling the
 // JobTracker creator which must be previously registered. Registering
 // is done by importing the JobTracker packager where then the init()
