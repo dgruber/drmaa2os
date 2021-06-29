@@ -18,6 +18,7 @@ jobs:
     working_directory: /go/src/github.com/dgruber/drmaa2os
     steps:
       - checkout
+      - run: sudo apt-get install -y libbtrfs-dev
       - run: go get github.com/dgruber/drmaa2interface
       - run: GO111MODULE=off; go build -v -p 1
       - run: GO111MODULE=on; go build -v -p 1
