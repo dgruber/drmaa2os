@@ -11,7 +11,7 @@ func ListPodmanContainers(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	containers := make([]string, 0, 16)
+	containers := make([]string, 0, len(containerList))
 	for _, cl := range containerList {
 		containers = append(containers, cl.ID)
 	}

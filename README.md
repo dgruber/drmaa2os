@@ -22,7 +22,7 @@ supervising workloads running in operating system processes, containers, PODs, t
 
 The API allows you to develop and run job workflows in OS processes and switch later to 
 containers running in Kubernetes, as Cloud Foundry tasks, pure Docker, Singularity, 
-or any HPC workload manager which supports the DRMAA standard through the C _libdrmaa.so
+or any HPC workload manager which supports the DRMAA standard through the C _libdrmaa.so_
 library (like SLURM, Grid Engine, ...) without changing the application logic.
 
 Its main pupose is supporting you with an abstraction layer on top of platforms, workload managers, 

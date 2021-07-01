@@ -2,9 +2,11 @@ package drmaa2os
 
 import (
 	"errors"
+	"fmt"
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
-	"time"
 )
 
 func newJobSession(name string, tracker []jobtracker.JobTracker) *JobSession {
@@ -18,6 +20,10 @@ func waitAny(waitForStartedState bool, jobs []drmaa2interface.Job, timeout time.
 	started := make(chan int, len(jobs))
 	errored := make(chan int, len(jobs))
 	abort := make(chan bool, len(jobs))
+
+	if jobs == nil || len(jobs) == 0 {
+		return nil, fmt.Errorf("no job to wait for")
+	}
 
 	for i := 0; i < len(jobs); i++ {
 		index := i // closure fun

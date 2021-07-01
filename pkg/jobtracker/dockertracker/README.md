@@ -2,13 +2,13 @@
 
 ## Introduction
 
-Docker Tracker implements the JobTracker interface used by the Go DRMAA2 implementation
+Docker Tracker implements the _JobTracker_ interface used of the Go DRMAA2 implementation
 in order to use Docker as a backend for managing jobs as containers from the DRMAA2
 interface.
 
 ## Functionality
 
-## Basic Usage
+### Basic Usage
 
 A JobTemplate requires:
   * JobCategory -> which maps to an installed Docker image
@@ -48,8 +48,8 @@ Mapping between the job template and the Docker container config request:
 | :-------------------:|:-------------------------------:|
 | RemoteCommand        | Cmd[0]                          |
 | Args                 | Cmd[1:]                         |
-| CandidateMachines[0] | Hostname                        |
 | JobCategory          | Image                           |
+| CandidateMachines[0] | Hostname                        |
 | WorkingDir           | WorkingDir                      |
 | JobEnvironment (k: v)| Env ("k=v")                     |
 | StageInFiles         | -v localPath:containerPath      |

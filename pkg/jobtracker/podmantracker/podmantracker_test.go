@@ -1,7 +1,10 @@
 package podmantracker_test
 
 import (
+	"bufio"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
 	"runtime"
 	"time"
@@ -164,6 +167,50 @@ var _ = Describe("Podmantracker", func() {
 			state, _, err := pt.JobState(jobid)
 			Expect(err).To(BeNil())
 			Expect(state.String()).To(Equal(drmaa2interface.Running.String()))
+		})
+
+		It("should print output to files", func() {
+			if pt == nil {
+				Skip("podman is not installed")
+			}
+			f, err := ioutil.TempFile("", "podmantrackertest")
+			Expect(err).To(BeNil())
+			outpath := f.Name()
+			f.Close()
+			defer os.Remove(outpath)
+
+			f, err = ioutil.TempFile("", "podmantrackertest")
+			Expect(err).To(BeNil())
+			errpath := f.Name()
+			f.Close()
+			defer os.Remove(errpath)
+
+			jobid, err := pt.AddJob(drmaa2interface.JobTemplate{
+				JobCategory:   "busybox:latest",
+				RemoteCommand: "/bin/sh",
+				Args:          []string{"-c", `echo oLaLa && echo oLaLa`},
+				OutputPath:    outpath,
+				ErrorPath:     errpath,
+			})
+			Expect(err).To(BeNil())
+			Expect(jobid).NotTo(Equal(""))
+
+			err = pt.Wait(jobid, time.Second*60, drmaa2interface.Done, drmaa2interface.Failed)
+			Expect(err).To(BeNil())
+
+			fmt.Printf("checking file: %s\n", outpath)
+
+			file, err := os.Open(outpath)
+			Expect(err).To(BeNil())
+			defer file.Close()
+
+			s := bufio.NewScanner(file)
+			count := 0
+			for s.Scan() {
+				count++
+				Expect(s.Text()).To(Equal("oLaLa"))
+			}
+			Expect(count).To(BeNumerically("==", 2))
 		})
 
 		// does not work with rootless containers and cgroups v1

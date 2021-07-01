@@ -11,7 +11,7 @@ func ListContainerImages(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	images := []string{}
+	images := make([]string, 0, len(imageSummary))
 	for _, is := range imageSummary {
 		images = append(images, is.Names...)
 	}

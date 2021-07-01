@@ -19,7 +19,7 @@ A JobTemplate requires:
 | :-----------------:|:---------------:|
 | Suspend            | Pauses the container (does not work with rootless and cgroups v1 according to podman)|
 | Resume             | Continues a paused container |
-| Terminate          | Stops a running container |
+| Terminate          | Kills a running container |
 | Hold               | *Unsupported*   |
 | Release            | *Unsupported*   |
 
@@ -27,13 +27,12 @@ A JobTemplate requires:
 
 | DRMAA2 State                          | Podman State  |
 | :------------------------------------:|:-------------:|
-| Failed                                |      |
-| Failed or Done depending on exit code |         |
-| Failed or Done depending on exit code |           |
-| Suspended                             |         |
-| Running                               |        |
-| Queued                                |     |
-| Undetermined                          | other         |
+| Failed                                | Container is not "Restarting", "Paused", "Running" had has exit code != 0|
+| Done | Container is not "Restarting", "Paused", "Running", and has exit code 0|
+| Suspended                             | Container is paused (if supported) |
+| Running                               | Container state is "Running" or "Restarting" (sets substate "restarting") |
+| Queued                                | - |
+| Undetermined                          | Container inspect fails |
 
 ## DeleteJob
 
@@ -49,6 +48,17 @@ in the most minimalistic way. More to come.
 | RemoteCommand        | Cmd[0]                          |
 | Args                 | Cmd[1:]                         |
 | JobCategory          | Image                           |
+| CandidateMachines[0] | spec.Hostname (container's hostname) |
+| WorkingDirectory     | spec.WorkDir (working dir in the container, / if not set) |
+| JobEnviornment       | spec.Env |
+| ExtensionList["user"]| spec.User (user in container) |
+| ExtensionList["exposedPorts] | Port forwarding in format [hostip:]hostPort:containerPort,... / spec.|
+| ExtensionList["privileged"]| spec.Privileged |
+| ExtensionList["restart"] | spec.RestartPolicy  / like "unless-stopped", default "no" / use with care|
+| ExtensionList["ipc"] | spec.IpcNS namespace (default private) / like docker --ipc "host" |
+| ExtensionList["uts"] | spec.UtsNS namespace (default private) / like docker --uts "host" |
+| ExtensionList["pid"] | spec.PidNS namespace (default private) / like docker --pid "host" |
+| ExtensionList["rm"] | --rm  "true" or "TRUE"|
 
 ### Job Info Mapping
 

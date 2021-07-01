@@ -6,15 +6,15 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
 
+	// also needs to register Podman backend when podmantracker package is not accessed
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/podmantracker"
-	// need to register Podman backend when podmantracker package is not accessed
-	//_ "github.com/dgruber/drmaa2os/pkg/jobtracker/podmantracker"
 )
 
 func main() {
-	sm, err := drmaa2os.NewPodmanSessionManager(podmantracker.PodmanTrackerParams{
-		ConnectionURIOverride: "ssh://vagrant@localhost:2222/tmp/podman.sock?secure=False",
-	}, "testdb.db")
+	sm, err := drmaa2os.NewPodmanSessionManager(
+		podmantracker.PodmanTrackerParams{
+			ConnectionURIOverride: "ssh://vagrant@localhost:2222/tmp/podman.sock?secure=False",
+		}, "testdb.db")
 	if err != nil {
 		panic(err)
 	}
@@ -28,26 +28,40 @@ func main() {
 	}
 
 	jt := drmaa2interface.JobTemplate{
-		RemoteCommand: "sleep",
+		RemoteCommand: "/bin/sh",
 		JobCategory:   "busybox:latest",
-		Args:          []string{"10"},
+		Args:          []string{"-c", `sleep 2 && ps -ef && ls -lisha && whoami && exit 13`},
+		OutputPath:    "/dev/stdout",
+		ErrorPath:     "/dev/null",
 	}
 
-	_, err = js.RunJob(jt)
+	job, err := js.RunJob(jt)
 	if err != nil {
 		panic(err)
 	}
 
-	jobs, _ := js.GetJobs(drmaa2interface.CreateJobInfo())
-	j, err := js.WaitAnyTerminated(jobs, drmaa2interface.InfiniteTime)
+	jobs, err := js.GetJobs(drmaa2interface.CreateJobInfo())
+	if err != nil {
+		fmt.Printf("failed getting jobs: %v\n", err)
+	}
+	fmt.Printf("found %d jobs\n", len(jobs))
 
-	if j.GetState() == drmaa2interface.Done {
-		fmt.Printf("Job %s finished successfully\n", j.GetID())
-	} else {
-		fmt.Printf("Job %s finished with failure\n", j.GetID())
+	err = job.WaitTerminated(drmaa2interface.InfiniteTime)
+	if err != nil {
+		panic(err)
 	}
 
-	ji, err := j.GetJobInfo()
+	if job.GetState() == drmaa2interface.Done {
+		fmt.Printf("Job %s finished successfully\n", job.GetID())
+	} else {
+		ji, err := job.GetJobInfo()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Job %s finished with exit code %d\n", job.GetID(), ji.ExitStatus)
+	}
+
+	ji, err := job.GetJobInfo()
 	if err != nil {
 		panic(err)
 	}
@@ -57,7 +71,7 @@ func main() {
 	name, _ := js.GetSessionName()
 	fmt.Printf("Job session: %s\n", name)
 
-	j.Reap()
+	job.Reap()
 	js.Close()
 	sm.DestroyJobSession("jobsession1")
 }

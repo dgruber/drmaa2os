@@ -26,6 +26,4 @@ func GetContainerState(ctx context.Context, id string) (drmaa2interface.JobState
 		return drmaa2interface.Failed, "", nil
 	}
 	return drmaa2interface.Done, "", nil
-
-	//return drmaa2interface.Undetermined, "", fmt.Errorf("unknown container state: %v", *c.State)
 }
