@@ -285,7 +285,7 @@ CGO_LDFLAGS and CGO_CFLAGS must be set according to the documentation in [https:
 	}
 ```
 
-### Podman
+### Podman (Remote)
 
 First experimental version is implemented and tested on macos accessing Podman
 on a remote VM. When compiling on macos _brew install gpgme_ helped me getting
@@ -293,6 +293,15 @@ the C header dependencies of Podman installed. Accessing podman can be achieved
 through _ssh_ in that case (calling podman system service --time=0 unix:///tmp/podman.sock
 in the podman VM for which the ssh port is defined at localhost:2222 on a Vagrant
 based vbox VM).
+
+If _ConnectionURIOverride_ is not set the implementation uses the default connection
+to the Podman REST API server. This server can be setup by _podman system service -t 0 &_
+in Linux enviornments. 
+
+Note, that it currently the implementation expects that the images are pre-pulled.
+
+For running podman locally the process based implementation (simpletracker) can
+be used.
 
 ```go
 
@@ -309,7 +318,11 @@ based vbox VM).
 	}
 ```
 
+### Remote
 
-	
-
+The _remote_ directory in _/pkg/jobtracker_ contains a client/server implementation of the
+_JobTracker_ interface allowing to create clients and server for any backends (JobTracker 
+implementations) mentioned above. The client/server protocol is defined in OpenAPI v3. Based
+on that _Go_ client and server stubs have been generated using _oapi-codegen_. The OpenAPI
+spec contains also the DRMAA2 data types (note, the extensions still needs to be added.).
 

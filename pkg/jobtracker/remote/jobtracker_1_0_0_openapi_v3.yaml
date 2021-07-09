@@ -1,0 +1,519 @@
+openapi: 3.0.0
+info:
+  description: 'DRMAA2OS JobTracker API allows to manage batch jobs on various interfaces. It implements the JobTracker interface out of the DRMAA2OS project with the excpetion of the wait() cal. That can be implemented on the client side by other means.'
+  version: "1.0.0"
+  title: "JobTracker API"
+  contact:
+    name: 'Daniel Gruber'
+    url: 'https://github.com/dgruber/drmaa2os'
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+servers:
+  - description: 'JobTracker API'
+    url: https://virtserver.swaggerhub.com/dgruber7/jobtracker/1.0.0
+  - description: 'host location'
+    url: '{server}/v1'
+    variables:
+      server:
+        default: https://api.example.com
+        enum:
+          - https://localhost:32320
+          - http://localhost:32321
+          - https://master:32320
+          - http://master:32321
+paths:
+  /listjobs:
+    get:
+      summary: 'lists jobs managed by jobtracker'
+      operationId: listJobs
+      description: |
+        Returns all jobs managed by the JobTracker independent of the state. That might get enhanced by a filter.
+      parameters:
+        - in: query
+          name: skip
+          description: number of records to skip for pagination
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+        - in: query
+          name: limit
+          description: maximum number of records to return
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            maximum: 100000
+      responses:
+        '200':
+          description: 'jobs visible to jobtracker'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobID'
+        '400':
+          description: bad input parameter
+  /listarrayjobs:
+    get:
+      summary: 'lists job IDs for a given array job ID'
+      operationId: listArrayJobs
+      description: |
+        Returns all job IDs for a given array job ID which can be used in the job ID based API calls.
+      parameters:
+        - in: query
+          name: arrayJobID
+          description: 'array job ID'
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: skip
+          description: 'number of records to skip for pagination'
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+        - in: query
+          name: limit
+          description: | 
+            Maximum number of records to return. If not given the number of records are not limited.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            maximum: 100000
+      responses:
+        '200':
+          description: |
+            Job IDs representing the single task of the given job array.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobID'
+        '400':
+          description: 'bad input parameter'
+        '404':
+          description: 'job not found'
+  /addjob:
+    post:
+      summary: 'submits a job based on a job template'
+      operationId: addJob
+      description: |
+        Submits a batch job described by a DRMAA2 job template to the remote backend.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobTemplate'
+      responses:
+        '200':
+          description: 'job submission accepted but there might be an error hence Error must be checked in the reponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddJobOutput'
+        '400':
+          description: 'bad input parameter'
+  /addarrayjob:
+    post:
+      summary: 'submits a set of jobs sharing the same job template'
+      operationId: addArrayJob
+      description: |
+        Submits an array of jobs based on the same job template. The amount of tasks depends on begin, end, and step. For example begin = 1, end = 10, step = 1 runs 10 tasks with task IDs ranging from 1 to 10.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: '#/components/schemas/JobTemplate'
+              - type: object
+                required:
+                  - begin
+                  - end
+                properties:
+                  begin:
+                    type: integer
+                    format: int64
+                  end:
+                    type: integer
+                    format: int64
+                  step:
+                    type: integer
+                    format: int64
+                  maxParallel:
+                    type: integer
+                    format: int64
+      responses:
+        '200':
+          description: 'returns the job array ID or an error if something went wrong'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddArrayJobOutput'
+        '400':
+          description: bad input parameter
+  /jobstate:
+    get:
+      summary: 'returns the state of a job'
+      operationId: jobState
+      description: |
+        Returns the state of the job represented by the given job ID. Depending on the backend it might also return a job substate with a more granular backend specific state.
+      parameters:
+        - in: query
+          name: jobID
+          required: true
+          description: 'job ID the current job state should be queried for'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'state of the given job'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStateOutput'
+        '404':
+          description: 'job ID not found or internal error'
+  /jobinfo:
+    get:
+      summary: 'retuns detailed information about a job' 
+      operationId: jobInfo
+      description: |
+        Returns a description based on DRMAA2's JobInfo specification about the detailed state of a job or an error string in case of an error.
+      parameters:
+        - in: query
+          name: jobID
+          required: true
+          description: 'ID if the job for which the JobInfo should be returned'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'DRMAA2 job info about a specific job'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobInfoOutput'
+        '404':
+          description: 'job ID not found'
+  /jobcontrol:
+    get:
+      summary: 'changes the state of a job'
+      operationId: jobControl
+      description: |
+        Returns all jobs managed by the JobTracker independent of the state. That might get enhanced by a filter.
+      parameters:
+        - in: query
+          name: jobID
+          required: true
+          description: 'ID of the job to manipulate'
+          schema:
+            type: string
+        - in: query
+          name: action
+          required: true
+          description: 'action to perform (suspend, resume, hold, release, terminate)'
+          schema:
+            type: string
+            enum: [suspend, resume, hold, release, terminate]
+      responses:
+        '200':
+          description: 'job control execution result'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: 'bad input parameter'
+        '404':
+          description: 'job ID not found'
+  /deletejob:
+    get:
+      summary: 'removes a finished job from interal DB'
+      operationId: deleteJob
+      description: |
+        If there is not automatic reaping of finished jobs of the execution backend
+        they might get stored for an infinit amount of time. This delete method removes
+        a job from the backend. For doing so the job must be in an end state (done,
+        failed).
+      parameters:
+        - in: query
+          name: jobID
+          required: true
+          description: 'ID of the job to manipulate'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'Job deletion result might indicate an internal error. If the error is unset the job was deleted.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: bad input parameter
+        '404':
+          description: 'job ID not found'
+  /listjobcategories:
+    get:
+      summary: 'returns available job categories'
+      operationId: listJobCategories
+      description: |
+        Returns available job categories. Job categories are translated to the means of the workload manager. They can be container image names, job classes, etc.
+      responses:
+        '200':
+          description: jobs visible to jobtracker
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: ["busybox:latest", "myjob:latest"]
+        '400':
+          description: bad input parameter
+components:
+  schemas:
+    AddJobOutput:
+      allOf:
+      - $ref: '#/components/schemas/JobID'
+      - $ref: '#/components/schemas/Error'
+    AddArrayJobOutput:
+      allOf:
+      - $ref: '#/components/schemas/JobID'
+      - $ref: '#/components/schemas/Error'
+    Error:
+      description: "error string"
+      type: string
+      nullable: true
+    JobTemplate:
+      description: "DRMAA2 job template definition"
+      type: object
+      required:
+        - remoteCommand
+        - args
+        - submitAsHold
+        - reRunnable
+        - jobEnvironment
+        - workingDirectory
+        - jobCategory
+        - email
+        - emailOnStarted
+        - emailOnTerminated
+        - jobName
+        - inputPath
+        - outputPath
+        - errorPath
+        - joinFiles
+        - reservationID
+        - queueName
+        - minSlots
+        - maxSlots
+        - priority
+        - candidateMachines
+        - minPhysMemory
+        - machineOs
+        - machineArch
+        - startTime
+        - deadlineTime
+        - stageInFiles
+        - stageOutFiles
+        - resourceLimits
+        - accountingID
+      properties:
+        remoteCommand:
+          type: string
+          example: "/bin/sleep"
+        args:
+          type: array
+          items:
+            type: string
+        submitAsHold:
+          type: boolean
+        reRunnable:
+          type: boolean
+        jobEnvironment:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            MY_ENV: Content
+            MY_OTHER_ENV: Content2
+        workingDirectory:
+          type: string
+        jobCategory:
+          type: string
+        email:
+          type: array
+          items:
+            type: string
+        emailOnStarted:
+          type: boolean
+        emailOnTerminated:
+          type: boolean
+        jobName:
+          type: string
+        inputPath:
+          type: string
+        outputPath:
+          type: string
+        errorPath:
+          type: string
+        joinFiles:
+          type: boolean
+        reservationID:
+          type: string
+        queueName:
+          type: string
+        minSlots:
+          type: integer
+          format: int64
+        maxSlots:
+          type: integer
+          format: int64
+        priority:
+          type: integer
+          format: int64
+        candidateMachines:
+          type: array
+          items:
+            type: string
+        minPhysMemory:
+          type: integer
+          format: int64
+        machineOs:
+          type: string
+          example: 'BSD'
+        machineArch:
+          type: string
+          example: 'ARM64'
+        startTime:
+          type: string
+          format: date-time
+        deadlineTime:
+          type: string
+          format: date-time
+        stageInFiles:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            '/remote/destinationfile1': 'base64:content'
+            '/remote/destinationfile2': '/source/file'
+        stageOutFiles:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            '/local/destinationfile1': '/remote/output.sta'
+        resourceLimits:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            'a100': '1'
+        accountingID:
+          type: string
+          example: 'uniqueAccountingID1'
+    JobID:
+      type: string
+      example: job123456
+    JobStateOutput:
+      allOf:
+      - $ref: '#/components/schemas/JobState'
+      - $ref: '#/components/schemas/JobSubState'      
+    JobState:
+      type: string
+      enum: [unset, undetermined, queued, queuedHeld, running, suspended, requeued, requeuedHeld, done, failed]
+      example: "running"
+    JobSubState:
+      type: string
+      example: "stopping instance"
+    JobInfoOutput:
+      allOf:
+      - $ref: '#/components/schemas/JobInfo'
+      - $ref: '#/components/schemas/Error'
+    JobInfo:
+      required:
+        - id
+        - exitStatus
+        - terminatingSignal
+        - annotation
+        - state
+        - subState
+        - allocatedMachines
+        - submissionMachine
+        - jobOwner
+        - slots
+        - queueName
+        - wallclockTime
+        - cpuTime
+        - submissionTime
+        - dispatchTime
+        - finishTime
+      properties:
+        id:
+          type: string
+          example: job123456
+        exitStatus:
+          type: integer
+          minimum: 0
+          maximum: 255
+          example: 0
+        terminatingSignal:
+          type: string
+          example: "SIGKILL"
+        annotation:
+          type: string
+          example: ""
+        state:
+          type: string
+          example: "RUNNING"
+        subState:
+          type: string
+          example: "user preempted"
+        allocatedMachines:
+          type: array
+          items:
+            type: string
+        submissionMachine:
+          type: string
+          example: "1.10.1.13"        
+        jobOwner:
+          type: string
+          example: "user1"
+        slots:
+          type: integer
+          example: "1"
+        queueName:
+          type: string
+          example: "highpriority" 
+        wallclockTime:
+          type: integer
+          format: int64
+          example: "120" 
+        cpuTime:
+          type: integer
+          format: int64
+          example: "120" 
+        submissionTime:
+          type: string
+          format: date-time
+          example: "2017-07-21T17:32:28Z" 
+        dispatchTime:
+          type: string
+          format: date-time
+          example: "2017-07-21T17:33:28Z" 
+        finishTime:
+          type: string
+          format: date-time
+          example: "2017-07-21T17:34:28Z"
+      type: object
+

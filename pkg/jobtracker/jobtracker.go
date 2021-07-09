@@ -15,6 +15,13 @@ type Allocator interface {
 	New(jobSessionName string, jobTrackerInitParams interface{}) (JobTracker, error)
 }
 
+// JobControl arguments
+const JobControlTerminate = "terminate"
+const JobControlSuspend = "suspend"
+const JobControlResume = "resume"
+const JobControlHold = "hold"
+const JobControlRelease = "release"
+
 type JobTracker interface {
 	ListJobs() ([]string, error)
 	ListArrayJobs(string) ([]string, error)

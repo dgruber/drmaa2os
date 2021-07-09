@@ -25,7 +25,6 @@ var _ = Describe("Sessionmanager", func() {
 	BeforeEach(func() {
 		os.Remove("drmaa2ostest")
 		sm, _ = drmaa2os.NewDefaultSessionManager("drmaa2ostest")
-		//sm, _ = drmaa2os.NewDockerSessionManager("drmaa2ostest")
 	})
 
 	Describe("Create and Destroy Job Session", func() {
@@ -60,7 +59,6 @@ var _ = Describe("Sessionmanager", func() {
 	})
 
 	Describe("Open a Job Session", func() {
-
 		var js drmaa2interface.JobSession
 		var err error
 

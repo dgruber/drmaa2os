@@ -70,30 +70,30 @@ func (j *Job) GetState() drmaa2interface.JobState {
 
 // Suspend triggers a job state transition from RUNNING to SUSPENDED state.
 func (j *Job) Suspend() error {
-	return j.tracker.JobControl(j.id, "suspend")
+	return j.tracker.JobControl(j.id, jobtracker.JobControlSuspend)
 }
 
 // Resume triggers a job state transition from SUSPENDED to RUNNING state.
 func (j *Job) Resume() error {
-	return j.tracker.JobControl(j.id, "resume")
+	return j.tracker.JobControl(j.id, jobtracker.JobControlResume)
 }
 
 // Hold triggers a transition from QUEUED to QUEUED_HELD,
 // or from REQUEUED to REQUEUED_HELD state.
 func (j *Job) Hold() error {
-	return j.tracker.JobControl(j.id, "hold")
+	return j.tracker.JobControl(j.id, jobtracker.JobControlHold)
 }
 
 // Release triggers a transition from QUEUED_HELD to QUEUED,
 // or from REQUEUED_HELD to REQUEUED state.
 func (j *Job) Release() error {
-	return j.tracker.JobControl(j.id, "release")
+	return j.tracker.JobControl(j.id, jobtracker.JobControlRelease)
 }
 
 // Terminate triggers a transition from any of the "Started"
 // states to one of the "Terminated" states.
 func (j *Job) Terminate() error {
-	return j.tracker.JobControl(j.id, "terminate")
+	return j.tracker.JobControl(j.id, jobtracker.JobControlTerminate)
 }
 
 // WaitStarted blocks until the job entered one of the

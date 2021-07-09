@@ -31,6 +31,8 @@ const (
 	LibDRMAASession
 	// PodmanSession manages jobs as podman containers either locally or remote
 	PodmanSession
+	// RemoteSession manages jobs over the network through a remote server
+	RemoteSession
 	// ExternalSession can be used by external JobTracker implementations
 	// during development time before they get added here
 	ExternalSession
@@ -142,6 +144,19 @@ func NewPodmanSessionManager(ps interface{}, dbpath string) (*SessionManager, er
 	}
 	// specific parameters for Podman
 	sm.jobTrackerCreateParams = ps
+	return sm, nil
+}
+
+// NewRemoteSessionManager create a new session manager for accessing
+// a remote jobtracker server implementation which can be of any
+// backend type.
+func NewRemoteSessionManager(rs interface{}, dbpath string) (*SessionManager, error) {
+	sm, err := makeSessionManager(dbpath, RemoteSession)
+	if err != nil {
+		return sm, err
+	}
+	// specific parameters for remote (like server address)
+	sm.jobTrackerCreateParams = rs
 	return sm, nil
 }
 
