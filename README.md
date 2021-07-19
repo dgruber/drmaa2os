@@ -321,8 +321,7 @@ be used.
 ### Remote
 
 The _remote_ directory in _/pkg/jobtracker_ contains a client/server implementation of the
-_JobTracker_ interface allowing to create clients and server for any backends (JobTracker 
+_JobTracker_ interface allowing to create clients and server for any backends (_JobTracker_ 
 implementations) mentioned above. The client/server protocol is defined in OpenAPI v3. Based
 on that _Go_ client and server stubs have been generated using _oapi-codegen_. The OpenAPI
 spec contains also the DRMAA2 data types (note, the extensions still needs to be added.).
-

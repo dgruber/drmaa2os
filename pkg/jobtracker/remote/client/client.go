@@ -17,7 +17,7 @@ type ClientJobTracker struct {
 
 // init registers the remote client tracker at the SessionManager
 func init() {
-	drmaa2os.RegisterJobTracker(drmaa2os.ExternalSession, NewAllocator())
+	drmaa2os.RegisterJobTracker(drmaa2os.RemoteSession, NewAllocator())
 }
 
 // New creates a new remote client job tracker.

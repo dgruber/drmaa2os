@@ -13,7 +13,7 @@ import (
 	"github.com/dgruber/drmaa2os/pkg/storage/boltstore"
 )
 
-// atomicTrackers is for the list of registered JobTracker
+// atomicTrackers is the list of registered JobTrackers
 var (
 	trackerMutex   sync.Mutex
 	atomicTrackers atomic.Value

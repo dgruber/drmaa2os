@@ -1,8 +1,6 @@
 package client
 
 import (
-	"fmt"
-
 	"github.com/dgruber/drmaa2interface"
 	genclient "github.com/dgruber/drmaa2os/pkg/jobtracker/remote/client/generated"
 )
@@ -91,8 +89,6 @@ func ConvertJobTemplate(in drmaa2interface.JobTemplate) genclient.JobTemplate {
 }
 
 func ConvertJobInfoToDRMAA2(in genclient.JobInfo) drmaa2interface.JobInfo {
-	fmt.Printf("JOB INFO: %v\n", in)
-	fmt.Printf("state: %v\n", in.State)
 	return drmaa2interface.JobInfo{
 		ID:                in.Id,
 		ExitStatus:        in.ExitStatus,
@@ -105,11 +101,10 @@ func ConvertJobInfoToDRMAA2(in genclient.JobInfo) drmaa2interface.JobInfo {
 		JobOwner:          in.JobOwner,
 		Slots:             int64(in.Slots),
 		QueueName:         in.QueueName,
-		//WallclockTime:     time.ParseDuration(in.WallclockTime * time.Second),
-		CPUTime:        in.CpuTime,
-		SubmissionTime: in.SubmissionTime,
-		DispatchTime:   in.DispatchTime,
-		FinishTime:     in.FinishTime,
+		CPUTime:           in.CpuTime,
+		SubmissionTime:    in.SubmissionTime,
+		DispatchTime:      in.DispatchTime,
+		FinishTime:        in.FinishTime,
 	}
 }
 
