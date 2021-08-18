@@ -70,22 +70,28 @@ type JobID string
 
 // JobInfo defines model for JobInfo.
 type JobInfo struct {
-	AllocatedMachines []string  `json:"allocatedMachines"`
-	Annotation        string    `json:"annotation"`
-	CpuTime           int64     `json:"cpuTime"`
-	DispatchTime      time.Time `json:"dispatchTime"`
-	ExitStatus        int       `json:"exitStatus"`
-	FinishTime        time.Time `json:"finishTime"`
-	Id                string    `json:"id"`
-	JobOwner          string    `json:"jobOwner"`
-	QueueName         string    `json:"queueName"`
-	Slots             int       `json:"slots"`
-	State             string    `json:"state"`
-	SubState          string    `json:"subState"`
-	SubmissionMachine string    `json:"submissionMachine"`
-	SubmissionTime    time.Time `json:"submissionTime"`
-	TerminatingSignal string    `json:"terminatingSignal"`
-	WallclockTime     int64     `json:"wallclockTime"`
+	AllocatedMachines []string           `json:"allocatedMachines"`
+	Annotation        string             `json:"annotation"`
+	CpuTime           int64              `json:"cpuTime"`
+	DispatchTime      time.Time          `json:"dispatchTime"`
+	ExitStatus        int                `json:"exitStatus"`
+	Extension         *JobInfo_Extension `json:"extension,omitempty"`
+	FinishTime        time.Time          `json:"finishTime"`
+	Id                string             `json:"id"`
+	JobOwner          string             `json:"jobOwner"`
+	QueueName         string             `json:"queueName"`
+	Slots             int                `json:"slots"`
+	State             string             `json:"state"`
+	SubState          string             `json:"subState"`
+	SubmissionMachine string             `json:"submissionMachine"`
+	SubmissionTime    time.Time          `json:"submissionTime"`
+	TerminatingSignal string             `json:"terminatingSignal"`
+	WallclockTime     int64              `json:"wallclockTime"`
+}
+
+// JobInfo_Extension defines model for JobInfo.Extension.
+type JobInfo_Extension struct {
+	AdditionalProperties map[string]string `json:"-"`
 }
 
 // JobInfoOutput defines model for JobInfoOutput.
@@ -120,6 +126,7 @@ type JobTemplate struct {
 	EmailOnStarted    bool                       `json:"emailOnStarted"`
 	EmailOnTerminated bool                       `json:"emailOnTerminated"`
 	ErrorPath         string                     `json:"errorPath"`
+	Extension         *JobTemplate_Extension     `json:"extension,omitempty"`
 	InputPath         string                     `json:"inputPath"`
 	JobCategory       string                     `json:"jobCategory"`
 	JobEnvironment    JobTemplate_JobEnvironment `json:"jobEnvironment"`
@@ -142,6 +149,11 @@ type JobTemplate struct {
 	StartTime         time.Time                  `json:"startTime"`
 	SubmitAsHold      bool                       `json:"submitAsHold"`
 	WorkingDirectory  string                     `json:"workingDirectory"`
+}
+
+// JobTemplate_Extension defines model for JobTemplate.Extension.
+type JobTemplate_Extension struct {
+	AdditionalProperties map[string]string `json:"-"`
 }
 
 // JobTemplate_JobEnvironment defines model for JobTemplate.JobEnvironment.
@@ -240,6 +252,112 @@ type AddArrayJobJSONRequestBody AddArrayJobJSONBody
 
 // AddJobJSONRequestBody defines body for AddJob for application/json ContentType.
 type AddJobJSONRequestBody AddJobJSONBody
+
+// Getter for additional properties for JobInfo_Extension. Returns the specified
+// element and whether it was found
+func (a JobInfo_Extension) Get(fieldName string) (value string, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for JobInfo_Extension
+func (a *JobInfo_Extension) Set(fieldName string, value string) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]string)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for JobInfo_Extension to handle AdditionalProperties
+func (a *JobInfo_Extension) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]string)
+		for fieldName, fieldBuf := range object {
+			var fieldVal string
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("error unmarshaling field %s", fieldName))
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for JobInfo_Extension to handle AdditionalProperties
+func (a JobInfo_Extension) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("error marshaling '%s'", fieldName))
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for JobTemplate_Extension. Returns the specified
+// element and whether it was found
+func (a JobTemplate_Extension) Get(fieldName string) (value string, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for JobTemplate_Extension
+func (a *JobTemplate_Extension) Set(fieldName string, value string) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]string)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for JobTemplate_Extension to handle AdditionalProperties
+func (a *JobTemplate_Extension) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]string)
+		for fieldName, fieldBuf := range object {
+			var fieldVal string
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("error unmarshaling field %s", fieldName))
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for JobTemplate_Extension to handle AdditionalProperties
+func (a JobTemplate_Extension) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("error marshaling '%s'", fieldName))
+		}
+	}
+	return json.Marshal(object)
+}
 
 // Getter for additional properties for JobTemplate_JobEnvironment. Returns the specified
 // element and whether it was found
@@ -1726,55 +1844,57 @@ func ParseListJobsResponse(rsp *http.Response) (*ListJobsResponse, error) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"pS4AAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

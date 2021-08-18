@@ -324,4 +324,46 @@ The _remote_ directory in _/pkg/jobtracker_ contains a client/server implementat
 _JobTracker_ interface allowing to create clients and server for any backends (_JobTracker_ 
 implementations) mentioned above. The client/server protocol is defined in OpenAPI v3. Based
 on that _Go_ client and server stubs have been generated using _oapi-codegen_. The OpenAPI
-spec contains also the DRMAA2 data types (note, the extensions still needs to be added.).
+spec contains also the DRMAA2 data types which might be useful for other projects.
+
+The remote _JobTracker_ server can be used in any Go DRMAA2 application.
+
+```go
+
+    import (
+        "github.com/dgruber/drmaa2os
+        _ "github.com/dgruber/drmaa2os/pkg/jobtracker/remote/client"
+    )
+    
+	sm, err := drmaa2os.NewRemoteSessionManager(ClientTrackerParams{
+					Server: "localhost:7777",
+				}, "testdb.db")
+	if err != nil {
+		panic(err)
+	}
+```
+
+The server can be implemented by using any JobTracker implementation as
+argument in the server implementation.
+
+```go
+
+    func main() {
+	    SetupHandler(simpletracker.New("jobsession"))
+    }
+
+    func SetupHandler(jobtracker jobtracker.JobTracker) {
+	    impl, _ := server.NewJobTrackerImpl(jobtracker)
+
+	    s := &http.Server{
+		    Addr:           ":8080",
+		    Handler:        genserver.Handler(impl),
+		    ReadTimeout:    10 * time.Second,
+		    WriteTimeout:   10 * time.Second,
+		    MaxHeaderBytes: 1 << 20,
+	    }
+	    log.Fatal(s.ListenAndServe())
+}
+```
+
+

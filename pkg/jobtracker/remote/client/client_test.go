@@ -121,6 +121,31 @@ var _ = Describe("Client", func() {
 
 	})
 
+	Context("extensions", func() {
+
+		It("should convert JobTemplate with extensions", func() {
+			jt := drmaa2interface.JobTemplate{
+				JobName: "name",
+				Extension: drmaa2interface.Extension{
+					ExtensionList: map[string]string{
+						"extension1": "value1",
+					},
+				},
+			}
+			gen := ConvertJobTemplate(jt)
+			Expect(gen.JobName).To(Equal("name"))
+			Expect(gen.Extension).NotTo(BeNil())
+			Expect(gen.Extension.AdditionalProperties).NotTo(BeNil())
+			Expect(gen.Extension.AdditionalProperties["extension1"]).To(Equal("value1"))
+
+			jt2 := ConvertJobTemplateToDRMAA2(gen)
+			Expect(jt2.JobName).To(Equal("name"))
+			Expect(jt2.ExtensionList).NotTo(BeNil())
+			Expect(jt2.ExtensionList["extension1"]).To(Equal("value1"))
+		})
+
+	})
+
 	Context("job control", func() {
 
 		It("should be able to terminate a job", func() {

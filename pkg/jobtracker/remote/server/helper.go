@@ -23,6 +23,7 @@ func ConvertJobInfo(in drmaa2interface.JobInfo) genserver.JobInfo {
 		SubmissionTime:    in.SubmissionTime,
 		DispatchTime:      in.DispatchTime,
 		FinishTime:        in.FinishTime,
+		Extension:         &genserver.JobInfo_Extension{AdditionalProperties: in.ExtensionList},
 	}
 }
 
@@ -35,6 +36,7 @@ func ConvertJobTemplateToDRMAA2(in genserver.JobTemplate) drmaa2interface.JobTem
 		Email:             in.Email,
 		EmailOnStarted:    in.EmailOnStarted,
 		EmailOnTerminated: in.EmailOnTerminated,
+		Extension:         drmaa2interface.Extension{ExtensionList: in.Extension.AdditionalProperties},
 		ErrorPath:         in.ErrorPath,
 		InputPath:         in.InputPath,
 		JobCategory:       in.JobCategory,

@@ -28,6 +28,7 @@ func ConvertJobTemplateToDRMAA2(in genclient.JobTemplate) drmaa2interface.JobTem
 		EmailOnStarted:    in.EmailOnStarted,
 		EmailOnTerminated: in.EmailOnTerminated,
 		ErrorPath:         in.ErrorPath,
+		Extension:         drmaa2interface.Extension{ExtensionList: in.Extension.AdditionalProperties},
 		InputPath:         in.InputPath,
 		JobCategory:       in.JobCategory,
 		JobEnvironment:    in.JobEnvironment.AdditionalProperties,
@@ -63,6 +64,7 @@ func ConvertJobTemplate(in drmaa2interface.JobTemplate) genclient.JobTemplate {
 		EmailOnStarted:    in.EmailOnStarted,
 		EmailOnTerminated: in.EmailOnTerminated,
 		ErrorPath:         in.ErrorPath,
+		Extension:         &genclient.JobTemplate_Extension{AdditionalProperties: in.ExtensionList},
 		InputPath:         in.InputPath,
 		JobCategory:       in.JobCategory,
 		JobEnvironment:    genclient.JobTemplate_JobEnvironment{AdditionalProperties: in.JobEnvironment},
@@ -105,6 +107,7 @@ func ConvertJobInfoToDRMAA2(in genclient.JobInfo) drmaa2interface.JobInfo {
 		SubmissionTime:    in.SubmissionTime,
 		DispatchTime:      in.DispatchTime,
 		FinishTime:        in.FinishTime,
+		Extension:         drmaa2interface.Extension{ExtensionList: in.Extension.AdditionalProperties},
 	}
 }
 

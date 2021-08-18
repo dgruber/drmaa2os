@@ -1,6 +1,6 @@
-openapi: 3.0.0
+iopenapi: 3.0.0
 info:
-  description: 'DRMAA2OS JobTracker API allows to manage batch jobs on various interfaces. It implements the JobTracker interface out of the DRMAA2OS project with the excpetion of the wait() cal. That can be implemented on the client side by other means.'
+  description: 'DRMAA2OS JobTracker API allows to manage batch jobs using various backend interfaces. It implements the JobTracker interface from the DRMAA2OS project. It does not implement the wait() call which must be implemented on the client side by other means.'
   version: "1.0.0"
   title: "JobTracker API"
   contact:
@@ -422,6 +422,13 @@ components:
         accountingID:
           type: string
           example: 'uniqueAccountingID1'
+        extension:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "DRMAA2_NODE_LABEL_EXTENSION": "spot"
+            "DRMAA2_NODE_HT": "off"
     JobID:
       type: string
       example: job123456
@@ -515,5 +522,11 @@ components:
           type: string
           format: date-time
           example: "2017-07-21T17:34:28Z"
+        extension:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "implementation_specific_measurement": "xyz"
       type: object
 
