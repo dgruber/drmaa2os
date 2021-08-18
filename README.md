@@ -336,7 +336,7 @@ The remote _JobTracker_ server can be used in any Go DRMAA2 application.
     )
     
 	sm, err := drmaa2os.NewRemoteSessionManager(ClientTrackerParams{
-					Server: "localhost:7777",
+					Server: "localhost:8080",
 				}, "testdb.db")
 	if err != nil {
 		panic(err)
