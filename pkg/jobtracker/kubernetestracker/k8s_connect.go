@@ -47,6 +47,10 @@ func NewClientSet() (*kubernetes.Clientset, error) {
 }
 
 func kubeConfigFile() (string, error) {
+	// let KUBECONFIG override the default
+	if env, exists := os.LookupEnv("KUBECONFIG"); exists {
+		return env, nil
+	}
 	home := homeDir()
 	if home == "" {
 		return "", errors.New("home dir not found")
