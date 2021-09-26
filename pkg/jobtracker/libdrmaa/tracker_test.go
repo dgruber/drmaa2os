@@ -194,6 +194,20 @@ var _ = Describe("Tracker", func() {
 
 	})
 
+	Context("contact string", func() {
+
+		It("should return the contact string of the drmaa connection", func() {
+			d, err := NewDRMAATracker()
+			Expect(err).To(BeNil())
+			defer d.DestroySession()
+
+			c, err := d.Contact()
+			Expect(err).To(BeNil())
+			Expect(c).NotTo(Equal(""))
+		})
+
+	})
+
 	Measure("it should submit jobs in a short time", func(b Benchmarker) {
 		<-time.Tick(time.Second * 5)
 

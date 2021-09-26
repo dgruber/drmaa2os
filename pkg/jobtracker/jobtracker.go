@@ -34,3 +34,9 @@ type JobTracker interface {
 	DeleteJob(jobid string) error
 	ListJobCategories() ([]string, error)
 }
+
+// ContactStringer is a JobTracker which offers the Contact() method which
+// returns the contact string. Used in the DRMAA1 JobTracker.
+type ContactStringer interface {
+	Contact() (string, error)
+}

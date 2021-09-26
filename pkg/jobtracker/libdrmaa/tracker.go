@@ -27,8 +27,17 @@ func NewAllocator() *allocator {
 
 // New is called by the SessionManager when a new JobSession is allocated.
 func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{}) (jobtracker.JobTracker, error) {
-	// a job session name has no meaning in DRMAA v1.
-	return NewDRMAATracker()
+	return NewDRMAATrackerWithParams(jobTrackerInitParams)
+}
+
+// LibDRMAASessionParams contains arguments which can be evaluated
+// during DRMAA2 job session creation.
+type LibDRMAASessionParams struct {
+	ContactString string
+}
+
+func (l *LibDRMAASessionParams) SetContact(contact string) {
+	l.ContactString = contact
 }
 
 // WorkloadManagerType is related to a specific drmaa.so backend as
@@ -52,6 +61,25 @@ type DRMAATracker struct {
 	store           *simpletracker.JobStore
 }
 
+func NewDRMAATrackerWithParams(params interface{}) (*DRMAATracker, error) {
+	if params == nil {
+		return NewDRMAATracker()
+	}
+
+	drmaaParams, ok := params.(*LibDRMAASessionParams)
+	if ok == false {
+		return nil, fmt.Errorf("can not initialized DRMAA job tracker as params is not of type LibDRMAASessionParams")
+	}
+
+	fmt.Printf("using contact string within drmaa tracker: %s\n", drmaaParams.ContactString)
+
+	var session drmaa.Session
+	if err := session.Init(drmaaParams.ContactString); err != nil {
+		return nil, err
+	}
+	return createTracker(session)
+}
+
 // NewDRMAATracker creates a new JobTracker interface implementation
 // which manages jobs through the drmaa (version 1) interface.
 func NewDRMAATracker() (*DRMAATracker, error) {
@@ -59,6 +87,10 @@ func NewDRMAATracker() (*DRMAATracker, error) {
 	if err != nil {
 		return nil, err
 	}
+	return createTracker(s)
+}
+
+func createTracker(s drmaa.Session) (*DRMAATracker, error) {
 	// (contact string something like "session=d1b18d34bb44.3871.1722668764")
 	// differentiate between different workload manager supporing drmaa.so
 	drm, err := s.GetDrmSystem()
@@ -87,7 +119,6 @@ func (t *DRMAATracker) DestroySession() error {
 
 // ListJobs returns all jobs previously submitted and still locally cached.
 func (t *DRMAATracker) ListJobs() ([]string, error) {
-	// need to get the job list from the internal DB
 	t.Lock()
 	defer t.Unlock()
 	return t.store.GetJobIDs(), nil
@@ -223,4 +254,10 @@ func (t *DRMAATracker) DeleteJob(jobID string) error {
 // Since this is not a drmaa v1 concept we ignore it for now.
 func (t *DRMAATracker) ListJobCategories() ([]string, error) {
 	return []string{}, nil
+}
+
+// Contact() returns the contact string. Implements GetContactStringer interface.
+// Used for getting the job session name of DRMAA1 out of Grid Engine.
+func (t *DRMAATracker) Contact() (string, error) {
+	return drmaa.GetContact()
 }
