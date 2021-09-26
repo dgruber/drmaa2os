@@ -2,7 +2,6 @@ package drmaa2os
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/dgruber/drmaa2interface"

@@ -33,6 +33,9 @@ func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{})
 // LibDRMAASessionParams contains arguments which can be evaluated
 // during DRMAA2 job session creation.
 type LibDRMAASessionParams struct {
+	// ContactString is required also for opening job sessions
+	// hence do not change the name of ContactString as SessionManager
+	// depends on that
 	ContactString string
 }
 
