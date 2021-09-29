@@ -240,7 +240,7 @@ func (sm *SessionManager) OpenJobSession(name string) (drmaa2interface.JobSessio
 				name, err)
 		}
 		log.Printf("using internal DRMAA job session %s with contact string %s\n", name, contact)
-		err = TryToSetContactString(&createParams, contact)
+		err = TryToSetContactString(createParams, contact)
 		if err != nil {
 			return nil, fmt.Errorf("could not set new contact string for opening job session %s: %v",
 				name, err)
