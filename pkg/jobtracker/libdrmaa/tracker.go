@@ -34,9 +34,16 @@ func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{})
 // during DRMAA2 job session creation.
 type LibDRMAASessionParams struct {
 	// ContactString is required also for opening job sessions
-	// hence do not change the name of ContactString as SessionManager
-	// depends on that
+	// hence do not change the name "ContactString" as SessionManager
+	// depends on that through reflection
 	ContactString string
+	// UsePersistentJobStorage saves job ids in a DB file
+	// so that they are availabe after an application restart
+	// (could be slower with massive amounts of jobs)
+	UsePersistentJobStorage bool
+	// DBFilePath points to an existing or non-existing boltdb file
+	// which is used when persistent storage is used.
+	DBFilePath string
 }
 
 func (l *LibDRMAASessionParams) SetContact(contact string) {
@@ -61,7 +68,7 @@ type DRMAATracker struct {
 	sync.Mutex
 	workloadManager WorkloadManagerType
 	session         *drmaa.Session
-	store           *simpletracker.JobStore
+	store           simpletracker.JobStorer
 }
 
 func NewDRMAATrackerWithParams(params interface{}) (*DRMAATracker, error) {
@@ -74,13 +81,29 @@ func NewDRMAATrackerWithParams(params interface{}) (*DRMAATracker, error) {
 		return nil, fmt.Errorf("can not initialized DRMAA job tracker as params is not of type LibDRMAASessionParams")
 	}
 
-	fmt.Printf("using contact string within drmaa tracker: %s\n", drmaaParams.ContactString)
+	if drmaaParams.ContactString != "" {
+		fmt.Printf("using contact string within drmaa tracker: %s\n", drmaaParams.ContactString)
+	}
+	if drmaaParams.UsePersistentJobStorage && drmaaParams.DBFilePath == "" {
+		return nil,
+			fmt.Errorf("using persistent job storage for drmaa session but DBFilePath is not set")
+	}
 
 	var session drmaa.Session
 	if err := session.Init(drmaaParams.ContactString); err != nil {
 		return nil, err
 	}
-	return createTracker(session)
+	tracker, err := createTracker(session)
+	if err != nil {
+		return tracker, err
+	}
+	if drmaaParams.UsePersistentJobStorage {
+		tracker.store, err = simpletracker.NewPersistentJobStore(drmaaParams.DBFilePath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return tracker, nil
 }
 
 // NewDRMAATracker creates a new JobTracker interface implementation

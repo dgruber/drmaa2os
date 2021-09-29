@@ -233,14 +233,14 @@ func (sm *SessionManager) OpenJobSession(name string) (drmaa2interface.JobSessio
 
 	// restore contact string from storage and set it as ContactString
 	// in job tracker create params
-	if sm.sessionType == LibDRMAASession {
+	if sm.sessionType == LibDRMAASession && createParams != nil {
 		contact, err := sm.store.Get(storage.JobSessionType, name)
 		if err != nil {
 			return nil, fmt.Errorf("could not get contact string for job session: %s: %v",
 				name, err)
 		}
 		log.Printf("using internal DRMAA job session %s with contact string %s\n", name, contact)
-		err = TryToSetContactString(createParams, contact)
+		err = TryToSetContactString(&createParams, contact)
 		if err != nil {
 			return nil, fmt.Errorf("could not set new contact string for opening job session %s: %v",
 				name, err)
