@@ -22,7 +22,7 @@ func (b *BoltStore) Init() error {
 	var err error
 	b.db, err = bolt.Open(b.dbfile, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to initialized boltdb: %v\n", err)
 	}
 	return err
 }

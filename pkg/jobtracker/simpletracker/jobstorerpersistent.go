@@ -44,7 +44,7 @@ func NewPersistentJobStore(path string) (*PersistentJobStorage, error) {
 	var err error
 	jobstore.db, err = bolt.Open(path, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to initialized boltdb for job storage: %v\n", err)
 		return nil, err
 	}
 

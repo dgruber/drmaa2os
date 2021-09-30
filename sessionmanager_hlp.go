@@ -78,14 +78,27 @@ func TryToSetContactString(createParams interface{}, contact string) error {
 	if ps.Kind() != reflect.Ptr {
 		return fmt.Errorf("createParams is not pointer")
 	}
-	createStruct := ps.Elem()
-	// it is an interface value...
-	//if createStruct.Kind() != reflect.Struct {
-	//	return fmt.Errorf("createParams must be pointer to struct")
-	//}
-	f := createStruct.FieldByName("ContactString")
+
+	// call Elem() to get interface and the second is the struct
+	createStructInterface := ps.Elem()
+
+	// ensure it is an interface
+	if createStructInterface.Kind() != reflect.Interface {
+		return fmt.Errorf("createParams are stored as interface{} - it must be called on pointer to interface but is: %s",
+			createStructInterface.Kind())
+	}
+
+	// as values contained in an interface are not addressable we
+	// need a copy
+	tmp := reflect.New(createStructInterface.Elem().Type()).Elem()
+
+	// copy incoming struct value
+	tmp.Set(createStructInterface.Elem())
+
+	f := tmp.FieldByName("ContactString")
 	if f.IsValid() {
 		if f.Kind() == reflect.String {
+			// values contained in an interface are not addressable
 			if f.CanSet() {
 				f.SetString(contact)
 			} else {
@@ -97,5 +110,9 @@ func TryToSetContactString(createParams interface{}, contact string) error {
 	} else {
 		return fmt.Errorf("ContactString is not a valid field in createParams")
 	}
+
+	// copy all back
+	createStructInterface.Set(tmp)
+
 	return nil
 }

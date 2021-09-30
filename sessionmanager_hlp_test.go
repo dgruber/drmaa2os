@@ -9,68 +9,73 @@ import (
 
 var _ = Describe("SessionmanagerHlp", func() {
 
-	FContext("reflect on ContactString in job tracker implementation specific params", func() {
+	Context("reflect on ContactString in job tracker implementation specific params", func() {
 
 		It("should set ContactString value", func() {
-			test := struct {
+			type X struct {
 				AnotherThing   int
 				ContactString  string
 				ContactString2 string
-			}{
+			}
+
+			var test interface{} = X{
 				AnotherThing:   11,
 				ContactString:  "",
 				ContactString2: "ö",
 			}
+
 			err := TryToSetContactString(&test, "ups")
 			Expect(err).To(BeNil())
-			Expect(test.ContactString).To(Equal("ups"))
-			Expect(test.AnotherThing).To(BeNumerically("==", 11))
-			Expect(test.ContactString2).To(Equal("ö"))
+			Expect(test.(X).ContactString).To(Equal("ups"))
+			Expect(test.(X).AnotherThing).To(BeNumerically("==", 11))
+			Expect(test.(X).ContactString2).To(Equal("ö"))
 
 			err = TryToSetContactString(&test, "fedex")
 			Expect(err).To(BeNil())
-			Expect(test.ContactString).To(Equal("fedex"))
-			Expect(test.AnotherThing).To(BeNumerically("==", 11))
-			Expect(test.ContactString2).To(Equal("ö"))
+			Expect(test.(X).ContactString).To(Equal("fedex"))
+			Expect(test.(X).AnotherThing).To(BeNumerically("==", 11))
+			Expect(test.(X).ContactString2).To(Equal("ö"))
 
 			err = TryToSetContactString(&test, "cat")
 			Expect(err).To(BeNil())
-			Expect(test.ContactString).To(Equal("cat"))
-			Expect(test.AnotherThing).To(BeNumerically("==", 11))
-			Expect(test.ContactString2).To(Equal("ö"))
+			Expect(test.(X).ContactString).To(Equal("cat"))
+			Expect(test.(X).AnotherThing).To(BeNumerically("==", 11))
+			Expect(test.(X).ContactString2).To(Equal("ö"))
 		})
 
 		It("should not crash if ContactString is not available", func() {
-			test := struct {
+			type X struct {
 				AnotherThing int
-			}{
+			}
+			var test interface{} = X{
 				AnotherThing: 11,
 			}
 			err := TryToSetContactString(&test, "∂")
-			Expect(test.AnotherThing).To(BeNumerically("==", 11))
+			Expect(test.(X).AnotherThing).To(BeNumerically("==", 11))
 			Expect(err).NotTo(BeNil())
 			err = TryToSetContactString(nil, "k")
-			Expect(test.AnotherThing).To(BeNumerically("==", 11))
+			Expect(test.(X).AnotherThing).To(BeNumerically("==", 11))
 			Expect(err).NotTo(BeNil())
 			err = TryToSetContactString(test, "k")
 			Expect(err).NotTo(BeNil())
-			Expect(test.AnotherThing).To(BeNumerically("==", 11))
+			Expect(test.(X).AnotherThing).To(BeNumerically("==", 11))
 		})
 
 		It("should set ContactString when struct is referenced as interface", func() {
-			test := struct {
+			type X struct {
 				ContactString string
-			}{
+			}
+			test := X{
 				ContactString: "",
 			}
 			err := TryToSetContactString(&test, "∂")
-			Expect(test.ContactString).To(Equal("∂"))
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(BeNil())
+			Expect(test.ContactString).NotTo(Equal("∂"))
 
 			f := func(asInterface interface{}) {
-				err := TryToSetContactString(&test, "†")
-				Expect(test.ContactString).To(Equal("†"))
+				err := TryToSetContactString(&asInterface, "†")
 				Expect(err).To(BeNil())
+				Expect(asInterface.(X).ContactString).To(Equal("†"))
 			}
 			f(test)
 		})
