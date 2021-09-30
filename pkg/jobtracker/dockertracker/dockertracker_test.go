@@ -7,10 +7,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	"fmt"
-	"github.com/dgruber/drmaa2interface"
 	"io/ioutil"
 	"os"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
 var _ = Describe("Dockertracker", func() {
@@ -59,7 +60,7 @@ var _ = Describe("Dockertracker", func() {
 			jt = drmaa2interface.JobTemplate{
 				RemoteCommand:  "/bin/sleep",
 				Args:           []string{"1"},
-				JobCategory:    "golang",
+				JobCategory:    "alpine",
 				StageInFiles:   map[string]string{"README.md": "/README.md"},
 				JobEnvironment: map[string]string{"test": "value"},
 			}
@@ -90,7 +91,7 @@ var _ = Describe("Dockertracker", func() {
 		})
 
 		It("should print output to file", func() {
-			jt.RemoteCommand = "/bin/bash"
+			jt.RemoteCommand = "/bin/sh"
 			jt.Args = []string{"-c", `echo prost`}
 			jt.OutputPath = "./testfile"
 
@@ -107,7 +108,7 @@ var _ = Describe("Dockertracker", func() {
 		})
 
 		It("should print stderr to file", func() {
-			jt.RemoteCommand = "/bin/bash"
+			jt.RemoteCommand = "/bin/sh"
 			jt.Args = []string{"-c", `date illegal`}
 			jt.ErrorPath = "./errtestfile"
 
@@ -128,7 +129,7 @@ var _ = Describe("Dockertracker", func() {
 		jt := drmaa2interface.JobTemplate{
 			RemoteCommand: "/bin/sleep",
 			Args:          []string{"1"},
-			JobCategory:   "golang",
+			JobCategory:   "alpine",
 		}
 
 		var tracker *DockerTracker
@@ -153,7 +154,7 @@ var _ = Describe("Dockertracker", func() {
 		jt := drmaa2interface.JobTemplate{
 			RemoteCommand: "/bin/sleep",
 			Args:          []string{"1"},
-			JobCategory:   "golang",
+			JobCategory:   "alpine",
 		}
 
 		var tracker *DockerTracker
@@ -237,7 +238,7 @@ var _ = Describe("Dockertracker", func() {
 			jt := drmaa2interface.JobTemplate{
 				RemoteCommand: "/bin/sleep",
 				Args:          []string{"1"},
-				JobCategory:   "golang",
+				JobCategory:   "alpine",
 			}
 
 			jobid, err := tracker.AddJob(jt)

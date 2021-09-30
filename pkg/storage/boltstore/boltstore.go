@@ -2,10 +2,11 @@ package boltstore
 
 import (
 	"errors"
-	"github.com/dgruber/drmaa2os/pkg/storage"
-	bolt "go.etcd.io/bbolt"
 	"log"
 	"time"
+
+	"github.com/dgruber/drmaa2os/pkg/storage"
+	bolt "go.etcd.io/bbolt"
 )
 
 func NewBoltStore(path string) storage.Storer {
@@ -39,7 +40,11 @@ func (b *BoltStore) Put(t storage.KeyType, key, value string) error {
 		if err != nil {
 			return err
 		}
-		return b.Put([]byte(key), []byte(value))
+		err = b.Put([]byte(key), []byte(value))
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 }
 
@@ -92,15 +97,19 @@ func (b *BoltStore) Delete(t storage.KeyType, key string) error {
 		if b.Get([]byte(key)) == nil {
 			return errors.New("it does not exist")
 		}
-		return b.Delete([]byte(key))
+		err := b.Delete([]byte(key))
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 }
 
 func (b *BoltStore) Exists(t storage.KeyType, key string) bool {
-	if value, err := b.Get(t, key); err == nil {
-		if value != "" {
-			return true
-		}
+	if _, err := b.Get(t, key); err == nil {
+		//		if value != "" {
+		return true
+		//		}
 	}
 	return false
 }

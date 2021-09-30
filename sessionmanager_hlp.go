@@ -54,9 +54,9 @@ func (sm *SessionManager) create(t storage.KeyType, name string, contact string)
 	if exists := sm.store.Exists(t, name); exists {
 		return sm.logErr("Session already exists")
 	}
-	if contact == "" {
-		contact = name
-	}
+	//if contact == "" {
+	//	contact = name
+	//}
 	if err := sm.store.Put(t, name, contact); err != nil {
 		return err
 	}

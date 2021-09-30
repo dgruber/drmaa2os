@@ -197,13 +197,14 @@ func (sm *SessionManager) CreateJobSession(name, contact string) (drmaa2interfac
 	js := newJobSession(name, []jobtracker.JobTracker{jt})
 
 	// for libdrmaa return contact string and store it for open job session
-	if sm.sessionType == LibDRMAASession {
+	if sm.sessionType == LibDRMAASession && sm.jobTrackerCreateParams != nil {
 		if contactStringer, ok := jt.(jobtracker.ContactStringer); ok {
 			contact, err := contactStringer.Contact()
 			if err != nil {
 				return nil, fmt.Errorf("Failed to get contact string after session creation: %v", err)
 			}
 			// store new contact string for job session
+			fmt.Printf("saving contact string %s\n", contact)
 			sm.store.Put(storage.JobSessionType, name, contact)
 		}
 	}
@@ -239,8 +240,8 @@ func (sm *SessionManager) OpenJobSession(name string) (drmaa2interface.JobSessio
 			return nil, fmt.Errorf("could not get contact string for job session: %s: %v",
 				name, err)
 		}
-		log.Printf("using internal DRMAA job session %s with contact string %s\n", name, contact)
-		err = TryToSetContactString(createParams, contact)
+		log.Printf("using internal DRMAA job session %s with contact string %s from DB\n", name, contact)
+		err = TryToSetContactString(&createParams, contact)
 		if err != nil {
 			return nil, fmt.Errorf("could not set new contact string for opening job session %s: %v",
 				name, err)

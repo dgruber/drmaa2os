@@ -332,7 +332,11 @@ func (js *PersistentJobStorage) SaveArrayJob(arrayjobid string, pids []int,
 				})
 			pid++
 		}
-		return js.saveInternalJobs(tx, arrayjobid, internalJobs)
+		err = js.saveInternalJobs(tx, arrayjobid, internalJobs)
+		if err != nil {
+			return err
+		}
+		return nil
 	})
 
 }
@@ -350,7 +354,11 @@ func (js *PersistentJobStorage) SaveArrayJobPID(arrayjobid string, taskid, pid i
 			if internalJobs[task].TaskID == taskid {
 				internalJobs[task].PID = pid
 				internalJobs[task].State = drmaa2interface.Running
-				return js.saveInternalJobs(tx, arrayjobid, internalJobs)
+				err = js.saveInternalJobs(tx, arrayjobid, internalJobs)
+				if err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 		return errors.New("task not found")

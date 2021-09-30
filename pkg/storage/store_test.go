@@ -133,17 +133,20 @@ var _ = Describe("Store", func() {
 			Expect(errPut1).To(BeNil())
 			errPut2 := store.Put(JobSessionType, "key2", "value2")
 			Expect(errPut2).To(BeNil())
-			errPut3 := store.Put(JobSessionType, "key3", "value3")
+			errPut3 := store.Put(JobSessionType, "key3", "")
 			Expect(errPut3).To(BeNil())
 
 			exists := store.Exists(JobSessionType, "key2")
-			Ω(exists).Should(BeTrue())
+			Expect(exists).Should(BeTrue())
 
 			exists2 := store.Exists(ReservationSessionType, "key2")
-			Ω(exists2).Should(BeFalse())
+			Expect(exists2).Should(BeFalse())
 
 			exists3 := store.Exists(JobSessionType, "keyX")
-			Ω(exists3).Should(BeFalse())
+			Expect(exists3).Should(BeFalse())
+
+			exists4 := store.Exists(JobSessionType, "key3", "")
+			Expect(exists4).To(BeTrue())
 		})
 	})
 

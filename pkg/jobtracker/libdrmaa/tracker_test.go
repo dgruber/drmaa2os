@@ -246,6 +246,30 @@ var _ = Describe("Tracker", func() {
 
 	})
 
+	Context("jobtracker with params", func() {
+
+		It("should error when param has wrong type", func() {
+			tracker, err := NewDRMAATrackerWithParams("string")
+			Expect(err).NotTo(BeNil())
+			Expect(tracker).To(BeNil())
+
+			// this should fail as it must not be a reference
+			tracker, err := NewDRMAATrackerWithParams(&LibDRMAASessionParams{})
+			Expect(err).NotTo(BeNil())
+			Expect(tracker).To(BeNil())
+		})
+
+		It("should error when param has wrong semantic", func() {
+			tracker, err := NewDRMAATrackerWithParams(LibDRMAASessionParams{
+				UsePersistentJobStorage: true,
+				DBFilePath:              "",
+			})
+			Expect(err).NotTo(BeNil())
+			Expect(tracker).To(BeNil())
+		})
+
+	})
+
 	Measure("it should submit jobs in a short time", func(b Benchmarker) {
 		<-time.Tick(time.Second * 5)
 

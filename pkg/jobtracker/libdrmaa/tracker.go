@@ -76,7 +76,7 @@ func NewDRMAATrackerWithParams(params interface{}) (*DRMAATracker, error) {
 		return NewDRMAATracker()
 	}
 
-	drmaaParams, ok := params.(*LibDRMAASessionParams)
+	drmaaParams, ok := params.(LibDRMAASessionParams)
 	if ok == false {
 		return nil, fmt.Errorf("can not initialized DRMAA job tracker as params is not of type LibDRMAASessionParams")
 	}
@@ -282,7 +282,7 @@ func (t *DRMAATracker) ListJobCategories() ([]string, error) {
 	return []string{}, nil
 }
 
-// Contact() returns the contact string. Implements GetContactStringer interface.
+// Contact() returns the contact string. Implements ContactStringer interface.
 // Used for getting the job session name of DRMAA1 out of Grid Engine.
 func (t *DRMAATracker) Contact() (string, error) {
 	return drmaa.GetContact()
