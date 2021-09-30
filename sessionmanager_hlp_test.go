@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("SessionmanagerHlp", func() {
 
-	Context("reflect on ContactString in job tracker implementation specific params", func() {
+	FContext("reflect on ContactString in job tracker implementation specific params", func() {
 
 		It("should set ContactString value", func() {
 			test := struct {
@@ -55,6 +55,24 @@ var _ = Describe("SessionmanagerHlp", func() {
 			err = TryToSetContactString(test, "k")
 			Expect(err).NotTo(BeNil())
 			Expect(test.AnotherThing).To(BeNumerically("==", 11))
+		})
+
+		It("should set ContactString when struct is referenced as interface", func() {
+			test := struct {
+				ContactString string
+			}{
+				ContactString: "",
+			}
+			err := TryToSetContactString(&test, "∂")
+			Expect(test.ContactString).To(Equal("∂"))
+			Expect(err).To(BeNil())
+
+			f := func(asInterface interface{}) {
+				err := TryToSetContactString(&test, "†")
+				Expect(test.ContactString).To(Equal("†"))
+				Expect(err).To(BeNil())
+			}
+			f(test)
 		})
 
 	})

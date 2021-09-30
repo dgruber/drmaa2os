@@ -79,9 +79,10 @@ func TryToSetContactString(createParams interface{}, contact string) error {
 		return fmt.Errorf("createParams is not pointer")
 	}
 	createStruct := ps.Elem()
-	if createStruct.Kind() != reflect.Struct {
-		return fmt.Errorf("createParams must be pointer to struct")
-	}
+	// it is an interface value...
+	//if createStruct.Kind() != reflect.Struct {
+	//	return fmt.Errorf("createParams must be pointer to struct")
+	//}
 	f := createStruct.FieldByName("ContactString")
 	if f.IsValid() {
 		if f.Kind() == reflect.String {
