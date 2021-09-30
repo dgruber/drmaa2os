@@ -96,7 +96,8 @@ func (js *JobSession) GetJobs(filter drmaa2interface.JobInfo) ([]drmaa2interface
 		}
 		for _, jobid := range jobs {
 			if jinfo, err := tracker.JobInfo(jobid); err != nil {
-				fmt.Printf("failed getting job info for job %s: %v", jobid, err)
+				// TODO add as exited with info from jobsession DB
+				//fmt.Printf("failed getting job info for job %s: %v\n", jobid, err)
 				continue
 			} else {
 				if d2hlp.JobInfoMatches(jinfo, filter) {
