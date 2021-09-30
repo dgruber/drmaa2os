@@ -145,7 +145,7 @@ var _ = Describe("Store", func() {
 			exists3 := store.Exists(JobSessionType, "keyX")
 			Expect(exists3).Should(BeFalse())
 
-			exists4 := store.Exists(JobSessionType, "key3", "")
+			exists4 := store.Exists(JobSessionType, "key3")
 			Expect(exists4).To(BeTrue())
 		})
 	})
