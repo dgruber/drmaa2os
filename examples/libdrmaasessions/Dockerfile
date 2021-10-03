@@ -11,9 +11,9 @@ ENV GOPATH /go
 ENV PATH /usr/local/go/bin:${PATH}:${GOPATH}/bin
 ENV PATH ${PATH}:/opt/sge/include
 
-RUN mkdir -p /go/src/github.com/dgruber/drmaa2os/pkg/jobtracker/libdrmaa
-
-COPY . /go/src/github.com/dgruber/drmaa2os/pkg/jobtracker/libdrmaa
+RUN go get github.com/dgruber/drmaa2interface
+RUN mkdir -p /go/src/github.com/dgruber/drmaa2os/examples/libdrmaasessions
+ADD . /go/src/github.com/dgruber/drmaa2os/examples/libdrmaasessions
 
 ADD entrypoint.sh /entrypoint.sh
 

@@ -1,6 +1,7 @@
 package drmaa2os
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
@@ -14,6 +15,9 @@ import (
 type JobSession struct {
 	name    string
 	tracker []jobtracker.JobTracker
+	// libdrmaa stores newly created internal job session name
+	// inside contact string
+	contact string
 }
 
 // Close MUST perform the necessary action to disengage from the DRM system.
@@ -39,7 +43,12 @@ func (js *JobSession) Close() error {
 // value was originally provided, the default contact string from the
 // implementation MUST be returned.
 func (js *JobSession) GetContact() (string, error) {
-	return "", nil
+	if len(js.tracker) >= 1 {
+		if cs, ok := js.tracker[0].(jobtracker.ContactStringer); ok {
+			return cs.Contact()
+		}
+	}
+	return "not implemented", nil
 }
 
 // GetSessionName reports the session name, a value that resulted from the
@@ -82,10 +91,13 @@ func (js *JobSession) GetJobs(filter drmaa2interface.JobInfo) ([]drmaa2interface
 	for _, tracker := range js.tracker {
 		jobs, err := tracker.ListJobs()
 		if err != nil {
+			fmt.Printf("error listings jobs: %v", err)
 			return nil, err
 		}
 		for _, jobid := range jobs {
 			if jinfo, err := tracker.JobInfo(jobid); err != nil {
+				// TODO add as exited with info from jobsession DB
+				//fmt.Printf("failed getting job info for job %s: %v\n", jobid, err)
 				continue
 			} else {
 				if d2hlp.JobInfoMatches(jinfo, filter) {

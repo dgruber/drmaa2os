@@ -2,6 +2,8 @@ package drmaa2os
 
 import (
 	"errors"
+	"fmt"
+	"log"
 
 	"code.cloudfoundry.org/lager"
 
@@ -134,6 +136,18 @@ func NewLibDRMAASessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, LibDRMAASession)
 }
 
+// NewLibDRMAASessionManagerWithParams creates a Go DRMAA session manager
+// like NewLibDRMAASessionManager but with additional parameters. The
+// parameters must be of type _libdrmaa.LibDRMAASessionParams_.
+func NewLibDRMAASessionManagerWithParams(ds interface{}, dbpath string) (*SessionManager, error) {
+	sm, err := makeSessionManager(dbpath, LibDRMAASession)
+	if err != nil {
+		return sm, err
+	}
+	sm.jobTrackerCreateParams = ds
+	return sm, nil
+}
+
 // NewPodmanSessionManager creates a new session manager for Podman.
 // The first parameter is either nil for using defaults or must be
 // of type _podmantracker.PodmanTrackerParams_.
@@ -181,6 +195,20 @@ func (sm *SessionManager) CreateJobSession(name, contact string) (drmaa2interfac
 		return nil, err
 	}
 	js := newJobSession(name, []jobtracker.JobTracker{jt})
+
+	// for libdrmaa return contact string and store it for open job session
+	if sm.sessionType == LibDRMAASession && sm.jobTrackerCreateParams != nil {
+		if contactStringer, ok := jt.(jobtracker.ContactStringer); ok {
+			contact, err := contactStringer.Contact()
+			if err != nil {
+				return nil, fmt.Errorf("Failed to get contact string after session creation: %v", err)
+			}
+			// store new contact string for job session
+			fmt.Printf("saving contact string %s\n", contact)
+			sm.store.Put(storage.JobSessionType, name, contact)
+		}
+	}
+
 	return js, nil
 }
 
@@ -200,7 +228,27 @@ func (sm *SessionManager) OpenJobSession(name string) (drmaa2interface.JobSessio
 	if exists := sm.store.Exists(storage.JobSessionType, name); !exists {
 		return nil, errors.New("JobSession does not exist")
 	}
-	jt, err := sm.newRegisteredJobTracker(name, sm.jobTrackerCreateParams)
+
+	// require a copy as it gets modified
+	createParams := sm.jobTrackerCreateParams
+
+	// restore contact string from storage and set it as ContactString
+	// in job tracker create params
+	if sm.sessionType == LibDRMAASession && createParams != nil {
+		contact, err := sm.store.Get(storage.JobSessionType, name)
+		if err != nil {
+			return nil, fmt.Errorf("could not get contact string for job session: %s: %v",
+				name, err)
+		}
+		log.Printf("using internal DRMAA job session %s with contact string %s from DB\n", name, contact)
+		err = TryToSetContactString(&createParams, contact)
+		if err != nil {
+			return nil, fmt.Errorf("could not set new contact string for opening job session %s: %v",
+				name, err)
+		}
+	}
+
+	jt, err := sm.newRegisteredJobTracker(name, createParams)
 	if err != nil {
 		return nil, err
 	}

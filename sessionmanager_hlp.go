@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"sync"
 	"sync/atomic"
 
@@ -53,9 +54,9 @@ func (sm *SessionManager) create(t storage.KeyType, name string, contact string)
 	if exists := sm.store.Exists(t, name); exists {
 		return sm.logErr("Session already exists")
 	}
-	if contact == "" {
-		contact = name
-	}
+	//if contact == "" {
+	//	contact = name
+	//}
 	if err := sm.store.Put(t, name, contact); err != nil {
 		return err
 	}
@@ -66,5 +67,52 @@ func (sm *SessionManager) delete(t storage.KeyType, name string) error {
 	if err := sm.store.Delete(t, name); err != nil {
 		return sm.logErr("Error while deleting")
 	}
+	return nil
+}
+
+// TryToSetContactString sets the contact string in the job tracker
+// create params if create params has a contact string field.
+func TryToSetContactString(createParams interface{}, contact string) error {
+	// createParams must be pointer
+	ps := reflect.ValueOf(createParams)
+	if ps.Kind() != reflect.Ptr {
+		return fmt.Errorf("createParams is not pointer")
+	}
+
+	// call Elem() to get interface and the second is the struct
+	createStructInterface := ps.Elem()
+
+	// ensure it is an interface
+	if createStructInterface.Kind() != reflect.Interface {
+		return fmt.Errorf("createParams are stored as interface{} - it must be called on pointer to interface but is: %s",
+			createStructInterface.Kind())
+	}
+
+	// as values contained in an interface are not addressable we
+	// need a copy
+	tmp := reflect.New(createStructInterface.Elem().Type()).Elem()
+
+	// copy incoming struct value
+	tmp.Set(createStructInterface.Elem())
+
+	f := tmp.FieldByName("ContactString")
+	if f.IsValid() {
+		if f.Kind() == reflect.String {
+			// values contained in an interface are not addressable
+			if f.CanSet() {
+				f.SetString(contact)
+			} else {
+				return fmt.Errorf("can't set ContactString of create params")
+			}
+		} else {
+			return fmt.Errorf("createParams has no ContactString value of kind string")
+		}
+	} else {
+		return fmt.Errorf("ContactString is not a valid field in createParams")
+	}
+
+	// copy all back
+	createStructInterface.Set(tmp)
+
 	return nil
 }

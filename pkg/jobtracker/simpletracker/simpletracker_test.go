@@ -228,9 +228,6 @@ var _ = Describe("Simpletracker", func() {
 
 			err = tracker.DeleteJob(jobid)
 			Ω(err).ShouldNot(BeNil())
-
-			_, err = tracker.JobInfo(jobid)
-			Ω(err).ShouldNot(BeNil())
 		})
 
 		It("must return an undetermined state for a non-existing job", func() {

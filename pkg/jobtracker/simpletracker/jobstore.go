@@ -3,9 +3,10 @@ package simpletracker
 import (
 	"errors"
 	"fmt"
-	"github.com/dgruber/drmaa2interface"
 	"strconv"
 	"strings"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
 // JobStore is an internal storage for jobs and job templates
