@@ -3,7 +3,7 @@ module github.com/dgruber/drmaa2os
 go 1.15
 
 replace (
-	github.com/containerd/containerd => github.com/containerd/containerd v1.5.6
+	github.com/containerd/containerd => github.com/containerd/containerd v1.5.7
 	github.com/containers/podman/v3 => github.com/containers/podman/v3 v3.4.0
 	github.com/docker/docker => github.com/docker/docker v20.10.3+incompatible
 	github.com/docker/go-connections => github.com/docker/go-connections v0.4.0

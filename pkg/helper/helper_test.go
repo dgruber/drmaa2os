@@ -6,10 +6,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"time"
+
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletrackerfakes"
-	"time"
 )
 
 var _ = Describe("Helper", func() {
@@ -131,7 +132,7 @@ var _ = Describe("Helper", func() {
 			Ω(err).Should(BeNil())
 			// duration of the blocking call should be slightly above
 			// the 20 milliseconds when we change the job state
-			Ω(milliseconds).Should(BeNumerically("<=", 30))
+			Ω(milliseconds).Should(BeNumerically("<=", 35))
 		})
 
 	})
