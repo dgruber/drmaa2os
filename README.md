@@ -49,6 +49,9 @@ check out [drmaa2](https://github.com/dgruber/drmaa2).
 ## Basic Usage
 
 Following example demonstrates how a job running as OS process can be executed. More examples can be found in the _examples_ subdirectory.
+Per default jobs are managed in main memory hence after restarting your app all processes are not visible to your app even they
+are running. If persistency between restarts is required, please use _NewDefaultSessionManagerWithParams()_ with a
+_simpletracker.SimpleTrackerInitParams_ as argument.
 
 Note that at this point in time only _JobSessions_ are implemented.
 
