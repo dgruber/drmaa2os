@@ -6,9 +6,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/dgruber/drmaa2interface"
 	"os/exec"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
 var _ = Describe("OsProcessSupervisor", func() {
@@ -19,7 +20,7 @@ var _ = Describe("OsProcessSupervisor", func() {
 		cmd := exec.Command("true")
 		err := cmd.Start()
 		Ω(err).Should(BeNil())
-		TrackProcess(cmd, jobid, time.Now(), ch, 0, nil)
+		TrackProcess(cmd.Process, jobid, time.Now(), ch, 0, nil)
 
 		var je JobEvent
 		Ω(ch).Should(Receive(&je))
@@ -38,7 +39,7 @@ var _ = Describe("OsProcessSupervisor", func() {
 		cmd := exec.Command("false")
 		err := cmd.Start()
 		Ω(err).Should(BeNil())
-		TrackProcess(cmd, jobid, time.Now(), ch, 0, nil)
+		TrackProcess(cmd.Process, jobid, time.Now(), ch, 0, nil)
 
 		var je JobEvent
 		Ω(ch).Should(Receive(&je))

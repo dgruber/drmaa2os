@@ -83,6 +83,20 @@ func NewDefaultSessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, DefaultSession)
 }
 
+// NewDefaultSessionManagerWithParams creates a SessionManager which
+// starts jobs as processes. By providing a simpletracker.(SimpleTrackerInitParams)
+// data structure some specific behaviour of the JobSesion can be
+// triggered. Currently it provides additional support for keeping
+// job IDs during DRMAA2 applications persistent in a file based DB.
+func NewDefaultSessionManagerWithParams(ds interface{}, dbpath string) (*SessionManager, error) {
+	sm, err := makeSessionManager(dbpath, DefaultSession)
+	if err != nil {
+		return sm, err
+	}
+	sm.jobTrackerCreateParams = ds
+	return sm, nil
+}
+
 // NewSingularitySessionManager creates a new session manager creating and
 // maintaining jobs as Singularity containers.
 func NewSingularitySessionManager(dbpath string) (*SessionManager, error) {

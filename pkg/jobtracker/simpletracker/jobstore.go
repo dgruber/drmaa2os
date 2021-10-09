@@ -57,6 +57,13 @@ func (js *JobStore) HasJob(jobid string) bool {
 	return exists
 }
 
+func (js *JobStore) IsArrayJob(jobid string) bool {
+	if isArray, ok := js.isArrayJob[jobid]; ok && isArray {
+		return true
+	}
+	return false
+}
+
 // RemoveJob deletes all occurrences of a job within the job storage.
 // The jobid can be the identifier of a job or a job array. In case
 // of a job array it removes all tasks which belong to the array job.
@@ -167,4 +174,8 @@ func (js *JobStore) GetArrayJobTaskIDs(arrayjobID string) []string {
 		jobids = append(jobids, fmt.Sprintf("%s.%d", arrayjobID, job.TaskID))
 	}
 	return jobids
+}
+
+func (js *JobStore) NewJobID() string {
+	return GetNextJobID()
 }

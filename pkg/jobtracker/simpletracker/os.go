@@ -98,7 +98,7 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 		},
 	}
 
-	go TrackProcess(cmd, jobid, startTime, finishedJobChannel, waitForFiles, waitCh)
+	go TrackProcess(cmd.Process, jobid, startTime, finishedJobChannel, waitForFiles, waitCh)
 
 	restoreEnv(env)
 	mtx.Unlock()
@@ -154,4 +154,23 @@ func SuspendPid(pid int) error {
 // ResumePid contiues to run a previously suspended process group.
 func ResumePid(pid int) error {
 	return syscall.Kill(-pid, syscall.SIGCONT)
+}
+
+// IsPidRunning returns true if the process is still alive.
+func IsPidRunning(pid int) (bool, error) {
+	process, err := os.FindProcess(int(pid))
+	if err != nil {
+		return false, err
+	}
+	err = process.Signal(syscall.Signal(0))
+	if err == nil {
+		return true, nil
+	}
+	if errno, ok := err.(syscall.Errno); ok {
+		switch errno {
+		case syscall.EPERM:
+			return true, nil
+		}
+	}
+	return false, nil
 }

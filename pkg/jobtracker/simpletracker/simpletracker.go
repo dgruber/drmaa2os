@@ -3,6 +3,7 @@ package simpletracker
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -23,8 +24,30 @@ func NewAllocator() *allocator {
 	return &allocator{}
 }
 
+type SimpleTrackerInitParams struct {
+	PersistentStorage   bool
+	PersistentStorageDB string
+}
+
 // New is called by the SessionManager when a new JobSession is allocated.
 func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{}) (jobtracker.JobTracker, error) {
+	if jobTrackerInitParams == nil {
+		return New(jobSessionName), nil
+	}
+	simpleTrackerInitParams, ok := jobTrackerInitParams.(SimpleTrackerInitParams)
+	if ok == false {
+		return nil, fmt.Errorf("job tracker params for simple tracker is not of type SimpleTrackerInitParams")
+	}
+	if simpleTrackerInitParams.PersistentStorage {
+		if simpleTrackerInitParams.PersistentStorageDB == "" {
+			return nil, fmt.Errorf("simple tracker requires DB path when persistent storage is requested")
+		}
+		storage, err := NewPersistentJobStore(simpleTrackerInitParams.PersistentStorageDB)
+		if err != nil {
+			return nil, err
+		}
+		return NewWithJobStore(jobSessionName, storage, true)
+	}
 	return New(jobSessionName), nil
 }
 
@@ -38,20 +61,75 @@ type JobTracker struct {
 	// ps stores information about state and job info of jobs
 	ps *PubSub
 	// stores jobs and resource usage
-	js *JobStore
+	js JobStorer
+	// isPersistent flags if the job storer provide persistent storage
+	isPersistent bool
 }
 
 // New creates and initializes a JobTracker.
 func New(jobsession string) *JobTracker {
-	ps, _ := NewPubSub()
+	js, _ := NewWithJobStore(jobsession, NewJobStore(), false)
+	return js
+}
+
+func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*JobTracker, error) {
+	if jobstore == nil {
+		return nil, fmt.Errorf("require job storage")
+	}
+
+	// here jobs from the DB are looked up and stored
+	// with state undetermined
+	ps, _ := NewPubSub(jobstore)
+
+	// start to accept job change requests
+	ps.StartBookKeeper()
+
+	//  check job states, send change request to pubsub and
+	// start to track the jobs again
+	if persistent {
+
+		for _, jobid := range jobstore.GetJobIDs() {
+			pid, err := jobstore.GetPID(jobid)
+			if err != nil {
+				fmt.Printf("failed to get pid for job %s: %v\n", jobid, err)
+				continue
+			}
+
+			// need to catch the process for tracker
+			process, err := os.FindProcess(int(pid))
+			if err != nil {
+				continue
+			}
+			// is pid running
+			if running, _ := IsPidRunning(pid); running {
+				// send job state change to PubSub
+				ps.NotifyAndWait(JobEvent{
+					JobID:    jobid,
+					JobState: drmaa2interface.Running,
+					JobInfo: drmaa2interface.JobInfo{
+						State: drmaa2interface.Running,
+						ID:    jobid,
+						Slots: 1,
+					},
+				})
+				// TODO: shows process only be active from now - we can
+				// get the start date from the DB
+				go TrackProcess(process, jobid, time.Now(),
+					ps.jobch, 0, nil)
+			}
+		}
+
+	}
+
 	tracker := JobTracker{
-		jobsession: jobsession,
-		js:         NewJobStore(),
-		shutdown:   false,
-		ps:         ps,
+		jobsession:   jobsession,
+		js:           jobstore,
+		shutdown:     false,
+		ps:           ps,
+		isPersistent: persistent,
 	}
 	tracker.ps.StartBookKeeper()
-	return &tracker
+	return &tracker, nil
 }
 
 // Destroy signals the JobTracker to shutdown.
@@ -68,9 +146,8 @@ func (jt *JobTracker) Destroy() error {
 func (jt *JobTracker) ListJobs() ([]string, error) {
 	jt.Lock()
 	defer jt.Unlock()
-	tmp := make([]string, len(jt.js.jobids), len(jt.js.jobids))
-	copy(tmp, jt.js.jobids)
-	return tmp, nil
+	ids := jt.js.GetJobIDs()
+	return ids, nil
 }
 
 // AddJob creates a process, fills in the internal job state and saves the
@@ -79,7 +156,7 @@ func (jt *JobTracker) AddJob(t drmaa2interface.JobTemplate) (string, error) {
 	jt.Lock()
 	defer jt.Unlock()
 
-	jobid := GetNextJobID()
+	jobid := jt.js.NewJobID()
 	jt.ps.NotifyAndWait(JobEvent{
 		JobState: drmaa2interface.Queued,
 		JobID:    jobid,
@@ -166,19 +243,13 @@ func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin, end, ste
 // ListArrayJobs returns all job IDs the job array ID is associated with.
 func (jt *JobTracker) ListArrayJobs(id string) ([]string, error) {
 	jt.Lock()
-	isArray, exists := jt.js.isArrayJob[id]
+	isArray := jt.js.IsArrayJob(id)
 	jt.Unlock()
-	if !exists {
-		return nil, errors.New("Array job not found")
-	}
 	if isArray == false {
 		return nil, errors.New("Job is not an array job")
 	}
 	jt.Lock()
-	jobids := make([]string, 0, len(jt.js.jobs[id]))
-	for _, job := range jt.js.jobs[id] {
-		jobids = append(jobids, fmt.Sprintf("%s.%d", id, job.TaskID))
-	}
+	jobids := jt.js.GetArrayJobTaskIDs(id)
 	jt.Unlock()
 	return jobids, nil
 }
@@ -215,6 +286,9 @@ func (jt *JobTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
 	jt.Lock()
 	defer jt.Unlock()
 	jt.ps.Lock()
+
+	// after app restart jt.ps.jobInfo is not populated
+
 	ji, exists := jt.ps.jobInfo[jobid]
 	jt.ps.Unlock()
 	if exists == true {
@@ -301,7 +375,7 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 
 	// check if job exists and if it is in an end state already which does not change
 	jt.Lock()
-	_, exists := jt.js.jobs[jobparts[0]]
+	exists := jt.js.HasJob(jobparts[0])
 	if exists == false {
 		jt.Unlock()
 		return errors.New("job does not exist")

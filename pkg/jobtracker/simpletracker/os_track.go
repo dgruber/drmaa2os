@@ -2,18 +2,18 @@ package simpletracker
 
 import (
 	"fmt"
-	"github.com/dgruber/drmaa2interface"
 	"os"
-	"os/exec"
 	"syscall"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
 // TrackProcess supervises a running process and sends a notification when
 // the process is finished.
-func TrackProcess(cmd *exec.Cmd, jobid string, startTime time.Time,
+func TrackProcess(proc *os.Process, jobid string, startTime time.Time,
 	finishedJobChannel chan JobEvent, waitForFiles int, waitCh chan bool) {
-	state, err := cmd.Process.Wait()
+	state, err := proc.Wait()
 
 	// wait until all filedescriptors (stdout, stderr) of the
 	// process are closed

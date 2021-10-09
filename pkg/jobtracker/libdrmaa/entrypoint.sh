@@ -13,6 +13,7 @@ export CGO_CFLAGS="-DSOG -I$SGE_ROOT/include"
 
 # run tests
 cd /go/src/github.com/dgruber/drmaa2os/pkg/jobtracker/libdrmaa
+go get github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker
 go mod download
 go build
 go test -v

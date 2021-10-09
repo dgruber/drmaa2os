@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/containers/podman/v3/libpod/network/types"
 	"github.com/containers/podman/v3/pkg/bindings/containers"
 	"github.com/containers/podman/v3/pkg/specgen"
 	"github.com/dgruber/drmaa2interface"
@@ -137,7 +138,7 @@ func CreateContainerSpec(jt drmaa2interface.JobTemplate) (*specgen.SpecGenerator
 	}
 
 	if value, exists := hasExtension(jt, "exposedPorts"); exists {
-		mappings := make([]specgen.PortMapping, 0, len(strings.Split(value, ",")))
+		mappings := make([]types.PortMapping, 0, len(strings.Split(value, ",")))
 		for _, portspair := range strings.Split(value, ",") {
 			// portspair is format [hostip:]hostport:containerport
 			// when hostip is missing we add a -:
@@ -160,7 +161,7 @@ func CreateContainerSpec(jt drmaa2interface.JobTemplate) (*specgen.SpecGenerator
 			if ports[0] != "-" {
 				hostIP = ports[0]
 			}
-			mappings = append(mappings, specgen.PortMapping{
+			mappings = append(mappings, types.PortMapping{
 				HostIP:        hostIP,
 				ContainerPort: uint16(containerPort),
 				HostPort:      uint16(hostPort),
