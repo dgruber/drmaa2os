@@ -20,6 +20,7 @@ const JobIDsStorageKey string = "JobIDsStorageKey"
 const JobTemplatesStorageKey string = "JobTemplatesStorageKey"
 const JobStorageKey string = "JobStorageKey"
 const IsArrayJobStorageKey string = "IsArrayJobStorageKey"
+const HighestJobIDStorageKey string = "HighestJobIDStorageKey"
 
 // PersistentJobStorage is an internal storage for jobs and job templates
 // processed by the job tracker. Jobs are stored until Reap().
@@ -44,8 +45,7 @@ func NewPersistentJobStore(path string) (*PersistentJobStorage, error) {
 	var err error
 	jobstore.db, err = bolt.Open(path, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		log.Fatalf("failed to initialized boltdb for job storage: %v\n", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to initialized boltdb for job storage: %v\n", err)
 	}
 
 	// ensure all buckets do exist
@@ -63,6 +63,10 @@ func NewPersistentJobStore(path string) (*PersistentJobStorage, error) {
 			return err
 		}
 		_, err = tx.CreateBucketIfNotExists([]byte(IsArrayJobStorageKey))
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(HighestJobIDStorageKey))
 		if err != nil {
 			return err
 		}
@@ -159,6 +163,25 @@ func (js *PersistentJobStorage) HasJob(jobid string) bool {
 	return true
 }
 
+func (js *PersistentJobStorage) IsArrayJob(jobid string) bool {
+	err := js.db.View(func(tx *bolt.Tx) error {
+		db := tx.Bucket([]byte(IsArrayJobStorageKey))
+		if db == nil {
+			return fmt.Errorf("bucket with name %s not found", IsArrayJobStorageKey)
+		}
+		isArrayJobDBEntry := db.Get([]byte(jobid))
+		if isArrayJobDBEntry == nil {
+			return fmt.Errorf("job %s is no array job", jobid)
+		}
+		// is array job
+		return nil
+	})
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 // RemoveJob deletes all occurrences of a job within the job storage.
 // The jobid can be the identifier of a job or a job array. In case
 // of a job array it removes all tasks which belong to the array job.
@@ -190,7 +213,7 @@ func (js *PersistentJobStorage) RemoveJob(jobid string) {
 					// delete jobid
 					err = jobidsdb.Delete([]byte(somejobid))
 					if err != nil {
-						return fmt.Errorf("failed to delete job %s: %v", somejobid, err)
+						return fmt.Errorf("failed to delete array job task %s: %v", somejobid, err)
 					}
 				}
 			}
@@ -409,12 +432,8 @@ func (js *PersistentJobStorage) GetPID(jobid string) (int, error) {
 
 // GetJobIDs returns the IDs of all jobs.
 func (js *PersistentJobStorage) GetJobIDs() []string {
-	/*
-		tmp := make([]string, len(js.jobids), len(js.jobids))
-		copy(tmp, js.jobids)
-		return tmp
-	*/
 	var jobs sync.Map
+
 	err := js.db.View(func(tx *bolt.Tx) error {
 		db := tx.Bucket([]byte(JobIDsStorageKey))
 		if db == nil {
@@ -441,13 +460,6 @@ func (js *PersistentJobStorage) GetJobIDs() []string {
 
 // GetArrayJobTaskIDs returns the IDs of all tasks of a job array.
 func (js *PersistentJobStorage) GetArrayJobTaskIDs(arrayjobID string) []string {
-	/*
-		jobids := make([]string, 0, len(js.jobs[arrayjobID]))
-		for _, job := range js.jobs[arrayjobID] {
-			jobids = append(jobids, fmt.Sprintf("%s.%d", arrayjobID, job.TaskID))
-		}
-		return jobids
-	*/
 	jobids := make([]string, 0)
 	err := js.db.View(func(tx *bolt.Tx) error {
 		internalJobs, err := js.getInternalJobs(tx, arrayjobID)
@@ -462,7 +474,48 @@ func (js *PersistentJobStorage) GetArrayJobTaskIDs(arrayjobID string) []string {
 	if err != nil {
 		return nil
 	}
-	// sort array jobs to have the same order as in memore store
+	// sort array jobs to have the same order as in-memory store
 	sort.Strings(jobids)
 	return jobids
+}
+
+func (js *PersistentJobStorage) NewJobID() string {
+	highestjobid := ""
+	err := js.db.Update(func(tx *bolt.Tx) error {
+		db, err := tx.CreateBucketIfNotExists([]byte(HighestJobIDStorageKey))
+		if err != nil {
+			return err
+		}
+		// store highest job id - used for processes
+		id := db.Get([]byte("highestjobid"))
+		if id == nil {
+			err := db.Put([]byte("highestjobid"), []byte("1"))
+			if err != nil {
+				return fmt.Errorf("failed to save job id as highest job id: %v", err)
+			}
+			highestjobid = "1"
+		} else {
+			// assume it is numerical like 1.1 or 1 -> +1
+			jobid := strings.Split(string(id), ".")
+			id, err := strconv.ParseInt(jobid[0], 10, 64)
+			if err != nil {
+				return fmt.Errorf("jobid not numerical: %v", err)
+			}
+			id++
+			highestjobid = fmt.Sprintf("%d", id)
+			err = db.Put([]byte("highestjobid"), []byte(highestjobid))
+			if err != nil {
+				return fmt.Errorf("failed to save job id as highest job id: %v", err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		log.Printf("failed to store highest job id: %v\n", err)
+	}
+	return highestjobid
+}
+
+func (js *PersistentJobStorage) Close() error {
+	return js.db.Close()
 }

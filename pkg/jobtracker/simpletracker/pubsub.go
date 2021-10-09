@@ -36,14 +36,29 @@ type PubSub struct {
 // NewPubSub returns an initialized PubSub structure and
 // the JobEvent channel which is used by the caller to publish
 // job events (i.e. job state transitions).
-func NewPubSub() (*PubSub, chan JobEvent) {
+func NewPubSub(jobstore JobStorer) (*PubSub, chan JobEvent) {
+
 	jeCh := make(chan JobEvent, 1)
-	return &PubSub{
+
+	pubSub := &PubSub{
 		jobch:         jeCh,
 		waitFunctions: make(map[string][]waitRequest),
 		jobState:      make(map[string]drmaa2interface.JobState),
 		jobInfo:       make(map[string]drmaa2interface.JobInfo),
-	}, jeCh
+	}
+
+	if jobstore != nil {
+		// get all information
+		for _, existingJobID := range jobstore.GetJobIDs() {
+			pubSub.jobState[existingJobID] = drmaa2interface.Undetermined
+			pubSub.jobInfo[existingJobID] = drmaa2interface.JobInfo{
+				ID:    existingJobID,
+				State: drmaa2interface.Undetermined,
+			}
+		}
+	}
+
+	return pubSub, jeCh
 }
 
 // Register returns a channel which emits a job state once the given

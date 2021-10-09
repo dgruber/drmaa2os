@@ -31,7 +31,6 @@ var _ = Describe("Jobstore", func() {
 		})
 
 		It("should be possible to create a JobStore, save a job, and get the PID", func() {
-
 			for _, store := range []JobStorer{persistent, inmemory} {
 				Ω(store).ShouldNot(BeNil())
 				store.SaveJob("13", drmaa2interface.JobTemplate{RemoteCommand: "rc"}, 77)
@@ -188,6 +187,17 @@ var _ = Describe("Jobstore", func() {
 				Ω(tasks).To(ContainElement("112.2"))
 				Ω(tasks).To(ContainElement("112.3"))
 			}
+		})
+
+	})
+
+	Context("Persistent JobStore operations", func() {
+
+		It("should fail to create a persistent job storage when DB file is not set", func() {
+			var err error
+			persistent, err := NewPersistentJobStore("")
+			Expect(err).NotTo(BeNil())
+			Expect(persistent).To(BeNil())
 		})
 
 	})

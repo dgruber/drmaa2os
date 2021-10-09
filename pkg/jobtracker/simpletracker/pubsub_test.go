@@ -4,8 +4,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/dgruber/drmaa2interface"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
 var _ = Describe("Pubsub", func() {
@@ -13,7 +14,7 @@ var _ = Describe("Pubsub", func() {
 	Context("Basic operations", func() {
 
 		It("should be possible to register and unregister", func() {
-			ps, jeCh := NewPubSub()
+			ps, jeCh := NewPubSub(NewJobStore())
 			ps.StartBookKeeper()
 			waitCh, err := ps.Register("13", drmaa2interface.Running)
 			Ω(err).Should(BeNil())
@@ -28,7 +29,7 @@ var _ = Describe("Pubsub", func() {
 
 		It("should return the running state of the job", func() {
 			// producer
-			ps, jeCh := NewPubSub()
+			ps, jeCh := NewPubSub(NewJobStore())
 
 			ps.StartBookKeeper()
 
@@ -51,7 +52,7 @@ var _ = Describe("Pubsub", func() {
 
 		It("should detect all running states from the jobs", func() {
 			// producer
-			ps, jeCh := NewPubSub()
+			ps, jeCh := NewPubSub(NewJobStore())
 			ps.StartBookKeeper()
 
 			// consumer
@@ -73,7 +74,7 @@ var _ = Describe("Pubsub", func() {
 
 		It("should send to all consumers the running state of the job", func() {
 			// producer
-			ps, jeCh := NewPubSub()
+			ps, jeCh := NewPubSub(NewJobStore())
 
 			ps.StartBookKeeper()
 
@@ -110,7 +111,7 @@ var _ = Describe("Pubsub", func() {
 
 		It("should send to all consumers the running state of the job", func() {
 			// producer
-			ps, jeCh := NewPubSub()
+			ps, jeCh := NewPubSub(NewJobStore())
 
 			ps.StartBookKeeper()
 
@@ -159,7 +160,7 @@ var _ = Describe("Pubsub", func() {
 		var jeCh chan JobEvent
 
 		BeforeEach(func() {
-			ps, jeCh = NewPubSub()
+			ps, jeCh = NewPubSub(NewJobStore())
 			ps.StartBookKeeper()
 		})
 

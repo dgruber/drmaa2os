@@ -1,8 +1,11 @@
 package simpletracker_test
 
 import (
+	"os"
+
 	"github.com/dgruber/drmaa2interface"
 
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 
 	. "github.com/onsi/ginkgo"
@@ -16,12 +19,26 @@ import (
 var _ = Describe("Simpletracker", func() {
 
 	Context("Basic tracker add job operations", func() {
-		var tracker *JobTracker
+		var inmemorytracker *JobTracker
+		var persistentTracker *JobTracker
+
 		var t drmaa2interface.JobTemplate
 
 		BeforeEach(func() {
-			tracker = New("testsession")
-			Ω(tracker).NotTo(BeNil())
+			inmemorytracker = New("testsession")
+			Ω(inmemorytracker).NotTo(BeNil())
+
+			osfile, _ := ioutil.TempFile("", "*db*")
+			dbpath := osfile.Name()
+			osfile.Close()
+
+			persitentStorage, err := NewPersistentJobStore(dbpath)
+			Ω(err).To(BeNil())
+
+			persistentTracker, err = NewWithJobStore("persistenttestsession",
+				persitentStorage, true)
+			Ω(err).To(BeNil())
+
 			t = drmaa2interface.JobTemplate{
 				RemoteCommand: "/bin/sleep",
 				Args:          []string{"1"},
@@ -29,85 +46,98 @@ var _ = Describe("Simpletracker", func() {
 		})
 
 		It("must be possible to create and destroy a tracker", func() {
-			err := tracker.Destroy()
-			Ω(err).Should(BeNil())
+			for _, tracker := range []*JobTracker{inmemorytracker, persistentTracker} {
+				err := tracker.Destroy()
+				Ω(err).Should(BeNil())
+			}
 		})
 
 		It("must be possible to add a job", func() {
-			jobid, err := tracker.AddJob(t)
-			Ω(err).Should(BeNil())
-			Ω(jobid).Should(Equal("1"))
+			for _, tracker := range []*JobTracker{inmemorytracker, persistentTracker} {
+				jobid, err := tracker.AddJob(t)
+				Ω(err).Should(BeNil())
+				Ω(jobid).Should(Equal("1"))
 
-			jobs, errList := tracker.ListJobs()
-			Ω(errList).Should(BeNil())
-			Ω(len(jobs)).Should(Equal(1))
+				jobs, errList := tracker.ListJobs()
+				Ω(errList).Should(BeNil())
+				Ω(len(jobs)).Should(Equal(1))
 
-			err = tracker.Destroy()
-			Ω(err).Should(BeNil())
+				err = tracker.Destroy()
+				Ω(err).Should(BeNil())
+			}
 		})
 
 		It("must be possible to add an job array", func() {
-			jobid, err := tracker.AddArrayJob(t, 1, 10, 1, 0)
-			Ω(err).To(BeNil())
-			Ω(jobid).ShouldNot(Equal(""))
+			for _, tracker := range []*JobTracker{inmemorytracker, persistentTracker} {
+				jobid, err := tracker.AddArrayJob(t, 1, 10, 1, 0)
+				Ω(err).To(BeNil())
+				Ω(jobid).ShouldNot(Equal(""))
 
-			jobs, errList := tracker.ListJobs()
-			Ω(errList).To(BeNil())
-			Ω(len(jobs)).To(Equal(10))
+				jobs, errList := tracker.ListJobs()
+				Ω(errList).To(BeNil())
+				Ω(len(jobs)).To(Equal(10))
 
-			err = tracker.Destroy()
-			Ω(err).To(BeNil())
+				err = tracker.Destroy()
+				Ω(err).To(BeNil())
+			}
 		})
 
 		It("must be possible to get all job ids from an array job", func() {
-			jobid, err := tracker.AddArrayJob(t, 1, 10, 1, 0)
-			Ω(err).To(BeNil())
-			Ω(jobid).ShouldNot(Equal(""))
+			for _, tracker := range []*JobTracker{inmemorytracker, persistentTracker} {
+				jobid, err := tracker.AddArrayJob(t, 1, 10, 1, 0)
+				Ω(err).To(BeNil())
+				Ω(jobid).ShouldNot(Equal(""))
 
-			jobids, err := tracker.ListArrayJobs(jobid)
-			Ω(err).To(BeNil())
-			Ω(len(jobids)).To(Equal(10))
-
-			Ω(jobids).Should(ContainElement(fmt.Sprintf("%s.1", jobid)))
+				jobids, err := tracker.ListArrayJobs(jobid)
+				Ω(err).To(BeNil())
+				Ω(len(jobids)).To(Equal(10))
+				Ω(jobids).Should(ContainElement(fmt.Sprintf("%s.1", jobid)))
+			}
 		})
 
 		It("must be possible to get a job info for a running job", func() {
-			jobid, err := tracker.AddArrayJob(t, 1, 10, 1, 0)
-			Ω(err).To(BeNil())
-			Ω(jobid).ShouldNot(Equal(""))
+			for _, tracker := range []*JobTracker{inmemorytracker, persistentTracker} {
+				jobid, err := tracker.AddArrayJob(t, 1, 10, 1, 0)
+				Ω(err).To(BeNil())
+				Ω(jobid).ShouldNot(Equal(""))
 
-			jobs, errList := tracker.ListJobs()
-			Ω(errList).To(BeNil())
-			Ω(len(jobs)).To(Equal(10))
+				jobs, errList := tracker.ListJobs()
+				Ω(errList).To(BeNil())
+				Ω(len(jobs)).To(Equal(10))
 
-			err = tracker.Destroy()
-			Ω(err).To(BeNil())
+				err = tracker.Destroy()
+				Ω(err).To(BeNil())
+			}
 		})
 
 		It("should be possible to wait until a job array task is finished", func() {
-			t.Args = []string{"0.2"}
-			jobid, err := tracker.AddArrayJob(t, 1, 10, 1, 0)
-			Ω(err).To(BeNil())
-			Ω(jobid).ShouldNot(Equal(""))
+			for _, tracker := range []*JobTracker{inmemorytracker, persistentTracker} {
+				t.Args = []string{"0.2"}
+				jobid, err := tracker.AddArrayJob(t, 1, 10, 1, 0)
+				Ω(err).To(BeNil())
+				Ω(jobid).ShouldNot(Equal(""))
 
-			jobs, errList := tracker.ListJobs()
-			Ω(errList).To(BeNil())
-			Ω(len(jobs)).To(Equal(10))
+				jobs, errList := tracker.ListJobs()
+				Ω(errList).To(BeNil())
+				Ω(len(jobs)).To(Equal(10))
 
-			err = tracker.Wait(jobs[2], time.Second*5, drmaa2interface.Done, drmaa2interface.Failed)
-			Ω(err).To(BeNil())
+				err = tracker.Wait(jobs[2], time.Second*5, drmaa2interface.Done, drmaa2interface.Failed)
+				Ω(err).To(BeNil())
 
-			err = tracker.Wait(jobs[3], 0.0, drmaa2interface.Done, drmaa2interface.Failed)
-			Ω(err).To(BeNil())
+				err = tracker.Wait(jobs[3], 0.0, drmaa2interface.Done, drmaa2interface.Failed)
+				Ω(err).To(BeNil())
 
-			err = tracker.Destroy()
-			Ω(err).To(BeNil())
+				err = tracker.Destroy()
+				Ω(err).To(BeNil())
+			}
 		})
 
 		It("should be possible to list all job categories", func() {
-			list, err := tracker.ListJobCategories()
-			Ω(list).ShouldNot(BeNil())
-			Ω(err).Should(BeNil())
+			for _, tracker := range []*JobTracker{inmemorytracker, persistentTracker} {
+				list, err := tracker.ListJobCategories()
+				Ω(list).ShouldNot(BeNil())
+				Ω(err).Should(BeNil())
+			}
 		})
 
 		Context("JobControl error cases", func() {
@@ -646,6 +676,67 @@ var _ = Describe("Simpletracker", func() {
 			Ω(err).ShouldNot(BeNil())
 			err = tracker.JobControl(fmt.Sprintf("%s.4", jobid), "resume")
 			Ω(err).ShouldNot(BeNil())
+		})
+
+	})
+
+	Context("Job persistency", func() {
+
+		var newDBPath string
+
+		BeforeEach(func() {
+			file, err := os.CreateTemp("", "jobstoretest")
+			Expect(err).To(BeNil())
+			newDBPath = file.Name()
+			file.Close()
+		})
+
+		It("should find and attach to jobs after restart", func() {
+			persistentJobStore, err := NewPersistentJobStore(newDBPath)
+			Expect(err).To(BeNil())
+
+			tracker, err := NewWithJobStore("testsession", persistentJobStore, true)
+			Expect(err).To(BeNil())
+
+			jobid, err := tracker.AddJob(drmaa2interface.JobTemplate{
+				RemoteCommand: "sleep",
+				Args:          []string{"1"},
+			})
+			Expect(err).To(BeNil())
+			Expect(jobid).NotTo(Equal(""))
+
+			//err = tracker.Destroy()
+			//Expect(err).To(BeNil())
+
+			// allocate new tracker with same DB
+			err = persistentJobStore.Close()
+			Expect(err).To(BeNil())
+
+			persistentJobStore, err = NewPersistentJobStore(newDBPath)
+			Expect(err).To(BeNil())
+
+			tracker, err = NewWithJobStore("testsession", persistentJobStore, true)
+			Expect(err).To(BeNil())
+
+			// expect to find old job
+			jobs, err := tracker.ListJobs()
+			Expect(err).To(BeNil())
+			Expect(len(jobs)).To(BeNumerically("==", 1))
+			Expect(jobs[0]).To(Equal(jobid))
+
+			// needs still be in running state
+			state, _, err := tracker.JobState(jobs[0])
+			Expect(err).To(BeNil())
+			Expect(state).To(Equal(drmaa2interface.Running))
+
+			// should be able to control the job
+			err = tracker.JobControl(jobs[0], jobtracker.JobControlSuspend)
+			Expect(err).To(BeNil())
+			err = tracker.JobControl(jobs[0], jobtracker.JobControlResume)
+			Expect(err).To(BeNil())
+
+			err = tracker.Wait(jobs[0], drmaa2interface.InfiniteTime, drmaa2interface.Done, drmaa2interface.Failed)
+			Expect(err).To(BeNil())
 		})
 
 	})

@@ -4,12 +4,22 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
 
-	// need to register process tracker
-	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
+	// need to register process tracker either by importing it with _
+	// or when parameters are used just importing the package
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 )
 
 func main() {
-	sm, err := drmaa2os.NewDefaultSessionManager("testdb.db")
+	params := simpletracker.SimpleTrackerInitParams{
+		// note that enabling persistent storage for
+		// job IDs reduces performance at least
+		// by a factor of 10 (100ms per job vs 8ms)
+		// as each job causes DB interaction.
+		PersistentStorage:   false,
+		PersistentStorageDB: "job.db",
+	}
+	sm, err := drmaa2os.NewDefaultSessionManagerWithParams(
+		params, "testdb.db")
 	if err != nil {
 		panic(err)
 	}
