@@ -30,7 +30,7 @@ var _ = Describe("Jobstore", func() {
 			Expect(err).To(BeNil())
 		})
 
-		It("should be possible to create a JobStore, save a job, and get the PID", func() {
+		It("should be possible to create a JobStore, save a job, and get the PID and jobTemplate", func() {
 			for _, store := range []JobStorer{persistent, inmemory} {
 				Ω(store).ShouldNot(BeNil())
 				store.SaveJob("13", drmaa2interface.JobTemplate{RemoteCommand: "rc"}, 77)
@@ -45,6 +45,15 @@ var _ = Describe("Jobstore", func() {
 				pid, err = store.GetPID("13")
 				Ω(err).Should(BeNil())
 				Ω(pid).Should(BeNumerically("==", 77))
+				jt, err := store.GetJobTemplate("12")
+				Ω(err).Should(BeNil())
+				Ω(jt.RemoteCommand).Should(Equal("rc3"))
+				jt, err = store.GetJobTemplate("1")
+				Ω(err).Should(BeNil())
+				Ω(jt.RemoteCommand).Should(Equal("rc2"))
+				jt, err = store.GetJobTemplate("13")
+				Ω(err).Should(BeNil())
+				Ω(jt.RemoteCommand).Should(Equal("rc"))
 			}
 		})
 

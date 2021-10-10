@@ -29,8 +29,7 @@ type PersistentJobStorage struct {
 	//jobsession string
 	// path to the DB file
 	path string
-	//
-	db *bolt.DB
+	db   *bolt.DB
 }
 
 // NewPersistentJobStore returns a new job store which uses a file based DB
@@ -518,4 +517,27 @@ func (js *PersistentJobStorage) NewJobID() string {
 
 func (js *PersistentJobStorage) Close() error {
 	return js.db.Close()
+}
+
+func (js *PersistentJobStorage) GetJobTemplate(jobid string) (drmaa2interface.JobTemplate, error) {
+
+	var jobTemplate drmaa2interface.JobTemplate
+
+	err := js.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(JobTemplatesStorageKey))
+		if b == nil {
+			return fmt.Errorf("bucket with job templates not found")
+		}
+
+		template := b.Get([]byte(jobid))
+		if template == nil {
+			return fmt.Errorf("template for job %s not found", jobid)
+		}
+
+		buffer := bytes.NewBuffer(template)
+		dec := gob.NewDecoder(buffer)
+		return dec.Decode(&jobTemplate)
+	})
+
+	return jobTemplate, err
 }

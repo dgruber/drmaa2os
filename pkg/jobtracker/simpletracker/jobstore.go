@@ -179,3 +179,11 @@ func (js *JobStore) GetArrayJobTaskIDs(arrayjobID string) []string {
 func (js *JobStore) NewJobID() string {
 	return GetNextJobID()
 }
+
+func (js *JobStore) GetJobTemplate(jobID string) (drmaa2interface.JobTemplate, error) {
+	jt, found := js.templates[jobID]
+	if found == false {
+		return jt, fmt.Errorf("job template for job %s not found", jobID)
+	}
+	return jt, nil
+}

@@ -287,3 +287,9 @@ func (t *DRMAATracker) ListJobCategories() ([]string, error) {
 func (t *DRMAATracker) Contact() (string, error) {
 	return drmaa.GetContact()
 }
+
+// JobTemplate returns the stored job template of the job. This job tracker
+// implements the JobTemplater interface additional to the JobTracker interface.
+func (jt *DRMAATracker) JobTemplate(jobID string) (drmaa2interface.JobTemplate, error) {
+	return jt.store.GetJobTemplate(jobID)
+}

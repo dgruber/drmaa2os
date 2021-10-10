@@ -40,3 +40,8 @@ type JobTracker interface {
 type ContactStringer interface {
 	Contact() (string, error)
 }
+
+// JobTemplater is a JobTracker which can retrieve the JobTemplate of a job.
+type JobTemplater interface {
+	JobTemplate(jobid string) (drmaa2interface.JobTemplate, error)
+}

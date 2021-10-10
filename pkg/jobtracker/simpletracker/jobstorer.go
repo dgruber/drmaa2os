@@ -17,4 +17,6 @@ type JobStorer interface {
 	GetArrayJobTaskIDs(arrayjobID string) []string
 	// NewJobID returns a new unique job ID
 	NewJobID() string
+	// Require job template
+	GetJobTemplate(jobid string) (drmaa2interface.JobTemplate, error)
 }

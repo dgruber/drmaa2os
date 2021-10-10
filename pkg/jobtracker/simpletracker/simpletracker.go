@@ -113,9 +113,24 @@ func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*J
 					},
 				})
 				// TODO: shows process only be active from now - we can
-				// get the start date from the DB
-				go TrackProcess(process, jobid, time.Now(),
-					ps.jobch, 0, nil)
+				// get the start date from the DB. We also need job template
+				// to know about depending files.
+				jobTemplate, err := jobstore.GetJobTemplate(jobid)
+				if err != nil {
+					// job template not found, can not reliably track job process
+				}
+				openFiles := 0
+				if jobTemplate.InputPath != "" {
+					openFiles++
+				}
+				if jobTemplate.OutputPath != "" {
+					openFiles++
+				}
+				if jobTemplate.ErrorPath != "" {
+					openFiles++
+				}
+				go TrackProcess(process, jobid, jobTemplate.StartTime,
+					ps.jobch, openFiles, nil)
 			}
 		}
 
@@ -410,4 +425,10 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 // currently not defined for OS processes.
 func (jt *JobTracker) ListJobCategories() ([]string, error) {
 	return []string{}, nil
+}
+
+// JobTemplate returns the stored job template of the job. This job tracker
+// implements the JobTemplater interface additional to the JobTracker interface.
+func (jt *JobTracker) JobTemplate(jobID string) (drmaa2interface.JobTemplate, error) {
+	return jt.js.GetJobTemplate(jobID)
 }

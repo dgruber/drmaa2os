@@ -74,6 +74,11 @@ var _ = Describe("JobSession", func() {
 			Ω(errTempl).Should(BeNil())
 			Ω(template).Should(Equal(jt))
 
+			// check if job template is filled out
+			Ω(template.RemoteCommand).Should(Equal(jt.RemoteCommand))
+			Ω(template.JobCategory).Should(Equal(jt.JobCategory))
+			Ω(template.Args[0]).Should(Equal(jt.Args[0]))
+
 			filter := drmaa2interface.CreateJobInfo()
 			filter.ID = job.GetID()
 

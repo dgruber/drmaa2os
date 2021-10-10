@@ -705,6 +705,11 @@ var _ = Describe("Simpletracker", func() {
 			Expect(err).To(BeNil())
 			Expect(jobid).NotTo(Equal(""))
 
+			// it should also return the job template
+			submitTemplate, err := tracker.JobTemplate(jobid)
+			Expect(err).To(BeNil())
+			Expect(submitTemplate.RemoteCommand).To(Equal("sleep"))
+
 			//err = tracker.Destroy()
 			//Expect(err).To(BeNil())
 
@@ -734,6 +739,11 @@ var _ = Describe("Simpletracker", func() {
 			Expect(err).To(BeNil())
 			err = tracker.JobControl(jobs[0], jobtracker.JobControlResume)
 			Expect(err).To(BeNil())
+
+			// it should also return the job template
+			template, err := tracker.JobTemplate(jobs[0])
+			Expect(err).To(BeNil())
+			Expect(template.RemoteCommand).To(Equal("sleep"))
 
 			err = tracker.Wait(jobs[0], drmaa2interface.InfiniteTime, drmaa2interface.Done, drmaa2interface.Failed)
 			Expect(err).To(BeNil())

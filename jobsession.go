@@ -101,9 +101,11 @@ func (js *JobSession) GetJobs(filter drmaa2interface.JobInfo) ([]drmaa2interface
 				continue
 			} else {
 				if d2hlp.JobInfoMatches(jinfo, filter) {
-					// TODO get template from DB
+					// get job template from tracker if it supports it
 					jobtemplate := drmaa2interface.JobTemplate{}
-
+					if jobTemplater, ok := tracker.(jobtracker.JobTemplater); ok {
+						jobtemplate, _ = jobTemplater.JobTemplate(jobid)
+					}
 					job := newJob(jobid, js.name, jobtemplate, tracker)
 					joblist = append(joblist, drmaa2interface.Job(job))
 				}
@@ -119,20 +121,31 @@ func (js *JobSession) GetJobs(filter drmaa2interface.JobInfo) ([]drmaa2interface
 // InvalidArgumentException SHALL be thrown.
 func (js *JobSession) GetJobArray(id string) (drmaa2interface.ArrayJob, error) {
 	var joblist []drmaa2interface.Job
+	arrayJobTemplate := drmaa2interface.JobTemplate{}
+
 	for _, tracker := range js.tracker {
 		jobids, err := tracker.ListArrayJobs(id)
 		if err != nil {
 			return nil, err
 		}
 		for _, id := range jobids {
-			// TODO get template from DB
+			// get job template from tracker if it supports it
 			jobtemplate := drmaa2interface.JobTemplate{}
-
+			if jobTemplater, ok := tracker.(jobtracker.JobTemplater); ok {
+				jobtemplate, _ = jobTemplater.JobTemplate(id)
+			}
 			job := newJob(id, js.name, jobtemplate, tracker)
 			joblist = append(joblist, drmaa2interface.Job(job))
 		}
+
+		if arrayJobTemplate.RemoteCommand == "" {
+			if jobTemplater, ok := tracker.(jobtracker.JobTemplater); ok {
+				arrayJobTemplate, _ = jobTemplater.JobTemplate(id)
+			}
+		}
 	}
-	return newArrayJob(id, js.name, drmaa2interface.JobTemplate{}, joblist), nil
+
+	return newArrayJob(id, js.name, arrayJobTemplate, joblist), nil
 }
 
 // RunJob method submits a job with the attributes defined in the given job template
