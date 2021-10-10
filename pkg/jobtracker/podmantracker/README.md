@@ -1,5 +1,7 @@
 # Podman Tracker (experimental)
 
+_Please consider to use the process based backend (default tracker) as it can spawn any process, i.e. also podman_
+
 ## Introduction
 
 Podman Tracker implements the JobTracker interface used by the Go DRMAA2 implementation
