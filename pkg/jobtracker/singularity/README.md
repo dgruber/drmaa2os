@@ -1,5 +1,7 @@
 # Tracker for Singularity Containers
 
+_Please consider to use the process based backend (default tracker) as it can spawn any process, i.e. also singularity_
+
 This is work in progress...ideas welcome!
 
 ## Introduction
