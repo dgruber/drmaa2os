@@ -293,3 +293,10 @@ func (t *DRMAATracker) Contact() (string, error) {
 func (jt *DRMAATracker) JobTemplate(jobID string) (drmaa2interface.JobTemplate, error) {
 	return jt.store.GetJobTemplate(jobID)
 }
+
+func (jt *DRMAATracker) Close() error {
+	if closer, ok := jt.store.(simpletracker.StoreCloser); ok {
+		return closer.Close()
+	}
+	return nil
+}

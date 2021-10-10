@@ -45,3 +45,10 @@ type ContactStringer interface {
 type JobTemplater interface {
 	JobTemplate(jobid string) (drmaa2interface.JobTemplate, error)
 }
+
+// Closer is a JobTracker which needs to disengage from the backend when the
+// session is closed so that a new JobTracker with using the same session name
+// can be created again.
+type Closer interface {
+	Close() error
+}

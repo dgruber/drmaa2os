@@ -33,9 +33,19 @@ func (js *JobSession) Close() error {
 	if js.name == "" && js.tracker == nil {
 		return ErrorInvalidSession
 	}
+
+	var err error
+
+	// TODO close persistent storage
+	if closer, ok := js.tracker[0].(jobtracker.Closer); ok {
+		// disengage from storage and DRM system
+		err = closer.Close()
+	}
+
 	js.name = ""
 	js.tracker = nil
-	return nil
+
+	return err
 }
 
 // GetContact method reports the contact value that was used in the

@@ -280,6 +280,18 @@ func (sm *SessionManager) OpenReservationSession(name string) (drmaa2interface.R
 
 // DestroyJobSession destroys a job session by name.
 func (sm *SessionManager) DestroyJobSession(name string) error {
+	// A job session must be closed before destroying it. The only
+	// way to test if it closed without having a handle is trying
+	// to open it (and close it again). If opening fails an error
+	// should be returned to prevent consumer issues later on...
+	js, err := sm.OpenJobSession(name)
+	if err != nil {
+		return fmt.Errorf("job session must be closed before destroying it. cloud not open job session during destruction: %v", err)
+	}
+	err = js.Close()
+	if err != nil {
+		return fmt.Errorf("cloud not close job session during destruction: %v", err)
+	}
 	return sm.delete(storage.JobSessionType, name)
 }
 

@@ -432,3 +432,12 @@ func (jt *JobTracker) ListJobCategories() ([]string, error) {
 func (jt *JobTracker) JobTemplate(jobID string) (drmaa2interface.JobTemplate, error) {
 	return jt.js.GetJobTemplate(jobID)
 }
+
+// Close implmements the jobtracker.Closer interface to disengage
+// from a DB or the DRM when the job session gets closed.
+func (jt *JobTracker) Close() error {
+	if closer, ok := jt.js.(StoreCloser); ok {
+		return closer.Close()
+	}
+	return nil
+}

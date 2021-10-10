@@ -8,6 +8,7 @@ import (
 
 	// test with process tracker
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
 	. "github.com/onsi/ginkgo"
@@ -40,6 +41,7 @@ var _ = Describe("Sessionmanager", func() {
 		})
 
 		Context("when the Job Session already exists", func() {
+
 			It("should error when creating", func() {
 				sm.CreateJobSession("testsession", "")
 				js, err := sm.CreateJobSession("testsession", "")
@@ -54,6 +56,7 @@ var _ = Describe("Sessionmanager", func() {
 				err = sm.DestroyJobSession("testsession")
 				Ω(err).Should(BeNil())
 			})
+
 		})
 
 	})
@@ -82,6 +85,7 @@ var _ = Describe("Sessionmanager", func() {
 		})
 
 		Context("when the job session is closed", func() {
+
 			It("should not error opening it", func() {
 				js, err := sm.CreateJobSession("testsession2", "")
 				Ω(err).Should(BeNil())
@@ -99,6 +103,7 @@ var _ = Describe("Sessionmanager", func() {
 				err = sm.DestroyJobSession("testsession2")
 				Ω(err).Should(BeNil())
 			})
+
 		})
 
 		Context("when the job session is open", func() {
@@ -111,6 +116,40 @@ var _ = Describe("Sessionmanager", func() {
 
 				err = sm.DestroyJobSession("testsession")
 				Ω(err).Should(BeNil())
+			})
+		})
+
+		Context("when the job session is closed", func() {
+			It("should be able to re-open the persistent job session", func() {
+				os.Remove("drmaa2ostest")
+				os.Remove("drmaa2ostestjobs")
+
+				sm, err = drmaa2os.NewDefaultSessionManagerWithParams(
+					simpletracker.SimpleTrackerInitParams{
+						PersistentStorage:   true,
+						PersistentStorageDB: "drmaa2ostestjobs",
+					}, "drmaa2ostest")
+				Ω(err).Should(BeNil())
+
+				js, err = sm.CreateJobSession("testsession", "")
+				Ω(err).Should(BeNil())
+				Ω(js).ShouldNot(BeNil())
+
+				err = js.Close()
+				Ω(err).Should(BeNil())
+
+				js, err = sm.OpenJobSession("testsession")
+				Ω(err).Should(BeNil())
+
+				err = js.Close()
+				Ω(err).Should(BeNil())
+
+				err := sm.DestroyJobSession("testsession")
+				Ω(err).Should(BeNil())
+
+				js, err = sm.CreateJobSession("testsession", "")
+				Ω(err).Should(BeNil())
+				Ω(js).ShouldNot(BeNil())
 			})
 		})
 
