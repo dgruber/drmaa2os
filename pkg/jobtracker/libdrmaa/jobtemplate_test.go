@@ -16,8 +16,9 @@ var _ = Describe("Jobtemplate", func() {
 
 		It("should convert a JobTemplate back and forth", func() {
 			originalTemplate := drmaa2interface.JobTemplate{
-				RemoteCommand: "/bin/sleep",
-				Args:          []string{"1"},
+				RemoteCommand:       "/bin/sleep",
+				Args:                []string{"1"},
+				NativeSpecification: "-l gpu",
 			}
 			s, err := drmaa.MakeSession()
 			Expect(err).To(BeNil())
@@ -31,6 +32,7 @@ var _ = Describe("Jobtemplate", func() {
 			Expect(convertedJobTemplate.RemoteCommand).To(Equal(originalTemplate.RemoteCommand))
 			Expect(len(convertedJobTemplate.Args)).To(BeNumerically("==", len(originalTemplate.Args)))
 			Expect(convertedJobTemplate.Args[0]).To(Equal(originalTemplate.Args[0]))
+			Expect(convertedJobTemplate.NativeSpecification).To(Equal(originalTemplate.NativeSpecification))
 		})
 
 	})
