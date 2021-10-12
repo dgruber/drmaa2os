@@ -24,6 +24,9 @@ func ConvertDRMAAJobTemplateToDRMAA2JobTemplate(jt *drmaa.JobTemplate) (drmaa2in
 	t.JoinFiles, _ = jt.JoinFiles()
 	t.Email, _ = jt.Email()
 	t.JobName, _ = jt.JobName()
+	t.ExtensionList, _ = map[string]string{
+		"DRMAA1_NATIVE_SPECIFICATION": jt.NativeSpecification(),
+	}
 
 	if submissionState, err := jt.JobSubmissionState(); err == nil && submissionState == drmaa.HoldState {
 		t.SubmitAsHold = true
@@ -86,6 +89,9 @@ func ConvertDRMAA2JobTemplateToDRMAAJobTemplate(jt drmaa2interface.JobTemplate, 
 	if jt.JobName != "" {
 		t.SetJobName(jt.JobName)
 	}
+	if val, ok := jt.ExtensionList["DRMAA1_NATIVE_SPECIFICATION"]; ok {
+		t.SetNativeSpecification(val)
+	}
 
 	if len(jt.JobEnvironment) > 0 {
 		envs := make([]string, 0, len(jt.JobEnvironment))
@@ -95,6 +101,6 @@ func ConvertDRMAA2JobTemplateToDRMAAJobTemplate(jt drmaa2interface.JobTemplate, 
 		t.SetEnv(envs)
 	}
 	// missing:
-	// BlockEmail / DeadlineTime / HardRunDurationLimit / HardWallclockTimeLimit / NativeSpecification
+	// BlockEmail / DeadlineTime / HardRunDurationLimit / HardWallclockTimeLimit
 	return nil
 }

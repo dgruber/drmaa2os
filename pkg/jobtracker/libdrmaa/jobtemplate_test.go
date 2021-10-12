@@ -18,6 +18,9 @@ var _ = Describe("Jobtemplate", func() {
 			originalTemplate := drmaa2interface.JobTemplate{
 				RemoteCommand: "/bin/sleep",
 				Args:          []string{"1"},
+				ExtensionList: map[string]string{
+					"DRMAA1_NATIVE_SPECIFICATION": "-l gpu",
+				},
 			}
 			s, err := drmaa.MakeSession()
 			Expect(err).To(BeNil())
@@ -31,6 +34,7 @@ var _ = Describe("Jobtemplate", func() {
 			Expect(convertedJobTemplate.RemoteCommand).To(Equal(originalTemplate.RemoteCommand))
 			Expect(len(convertedJobTemplate.Args)).To(BeNumerically("==", len(originalTemplate.Args)))
 			Expect(convertedJobTemplate.Args[0]).To(Equal(originalTemplate.Args[0]))
+			Expect(convertedJobTemplate.ExtensionList["DRMAA1_NATIVE_SPECIFICATION"]).To(Equal(originalTemplate.ExtensionList["DRMAA1_NATIVE_SPECIFICATION"]))
 		})
 
 	})
