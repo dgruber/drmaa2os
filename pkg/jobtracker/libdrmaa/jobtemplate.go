@@ -24,7 +24,10 @@ func ConvertDRMAAJobTemplateToDRMAA2JobTemplate(jt *drmaa.JobTemplate) (drmaa2in
 	t.JoinFiles, _ = jt.JoinFiles()
 	t.Email, _ = jt.Email()
 	t.JobName, _ = jt.JobName()
-	t.NativeSpecification, _ = jt.NativeSpecification()
+	nativeSpec := jt.NativeSpecification()
+	t.ExtensionList, _ = map[string]string{
+		"DRMAA1_NATIVE_SPECIFICATION": jt.NativeSpecification(),
+	}
 
 	if submissionState, err := jt.JobSubmissionState(); err == nil && submissionState == drmaa.HoldState {
 		t.SubmitAsHold = true
@@ -87,8 +90,8 @@ func ConvertDRMAA2JobTemplateToDRMAAJobTemplate(jt drmaa2interface.JobTemplate, 
 	if jt.JobName != "" {
 		t.SetJobName(jt.JobName)
 	}
-	if jt.NativeSpecification != "" {
-		t.SetNativeSpecification(jt.NativeSpecification)
+	if val, ok := jt.ExtensionList["DRMAA1_NATIVE_SPECIFICATION"]; ok {
+		t.SetNativeSpecification(val)
 	}
 
 	if len(jt.JobEnvironment) > 0 {
