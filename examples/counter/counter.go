@@ -15,8 +15,8 @@ func main() {
 		// job IDs reduces performance at least
 		// by a factor of 10 (100ms per job vs 8ms)
 		// as each job causes DB interaction.
-		PersistentStorage:   false,
-		PersistentStorageDB: "job.db",
+		UsePersistentJobStorage: false,
+		DBFilePath:              "job.db",
 	}
 	sm, err := drmaa2os.NewDefaultSessionManagerWithParams(
 		params, "testdb.db")
