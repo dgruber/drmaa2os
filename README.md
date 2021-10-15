@@ -34,12 +34,18 @@ An even simpler interface for creating job workflows without dealing with the DR
 For details about the mapping of job operations please consult the platform specific READMEs:
 
   * [OS Processes](pkg/jobtracker/simpletracker/README.md)
-  * [Cloud Foundry](pkg/jobtracker/cftracker/README.md)
   * [Docker / Moby](pkg/jobtracker/dockertracker/README.md)
   * [Kubernetes](pkg/jobtracker/kubernetestracker/README.md)
-  * [Singularity](pkg/jobtracker/singularity/README.md)
   * [libdrmaa.so](pkg/jobtracker/libdrmaa/README.md)
+
+In a more experimental state are:
+
+  * [Singularity](pkg/jobtracker/singularity/README.md)
   * [Podman](pkg/jobtracker/podmantracker/README.md)
+  * [Cloud Foundry](pkg/jobtracker/cftracker/README.md)
+
+Note, that Singularity (or Podman) can be considered to be handled with the
+regular OS process backend.
 
 [Feedback](mailto:info@gridengine.eu) welcome!
 

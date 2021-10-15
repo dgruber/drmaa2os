@@ -25,8 +25,8 @@ func NewAllocator() *allocator {
 }
 
 type SimpleTrackerInitParams struct {
-	PersistentStorage   bool
-	PersistentStorageDB string
+	UsePersistentJobStorage bool
+	DBFilePath              string
 }
 
 // New is called by the SessionManager when a new JobSession is allocated.
@@ -38,11 +38,11 @@ func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{})
 	if ok == false {
 		return nil, fmt.Errorf("job tracker params for simple tracker is not of type SimpleTrackerInitParams")
 	}
-	if simpleTrackerInitParams.PersistentStorage {
-		if simpleTrackerInitParams.PersistentStorageDB == "" {
+	if simpleTrackerInitParams.UsePersistentJobStorage {
+		if simpleTrackerInitParams.DBFilePath == "" {
 			return nil, fmt.Errorf("simple tracker requires DB path when persistent storage is requested")
 		}
-		storage, err := NewPersistentJobStore(simpleTrackerInitParams.PersistentStorageDB)
+		storage, err := NewPersistentJobStore(simpleTrackerInitParams.DBFilePath)
 		if err != nil {
 			return nil, err
 		}

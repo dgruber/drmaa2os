@@ -24,8 +24,11 @@ func ConvertDRMAAJobTemplateToDRMAA2JobTemplate(jt *drmaa.JobTemplate) (drmaa2in
 	t.JoinFiles, _ = jt.JoinFiles()
 	t.Email, _ = jt.Email()
 	t.JobName, _ = jt.JobName()
-	t.ExtensionList, _ = map[string]string{
-		"DRMAA1_NATIVE_SPECIFICATION": jt.NativeSpecification(),
+
+	if nativeSpec, err := jt.NativeSpecification(); err == nil && nativeSpec != "" {
+		t.ExtensionList = map[string]string{
+			"DRMAA1_NATIVE_SPECIFICATION": nativeSpec,
+		}
 	}
 
 	if submissionState, err := jt.JobSubmissionState(); err == nil && submissionState == drmaa.HoldState {

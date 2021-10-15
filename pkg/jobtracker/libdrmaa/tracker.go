@@ -78,7 +78,7 @@ func NewDRMAATrackerWithParams(params interface{}) (*DRMAATracker, error) {
 
 	drmaaParams, ok := params.(LibDRMAASessionParams)
 	if ok == false {
-		return nil, fmt.Errorf("can not initialized DRMAA job tracker as params is not of type LibDRMAASessionParams")
+		return nil, fmt.Errorf("can not initialize DRMAA job tracker as params is not of type LibDRMAASessionParams")
 	}
 
 	if drmaaParams.ContactString != "" {

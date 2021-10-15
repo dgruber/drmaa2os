@@ -126,8 +126,8 @@ var _ = Describe("Sessionmanager", func() {
 
 				sm, err = drmaa2os.NewDefaultSessionManagerWithParams(
 					simpletracker.SimpleTrackerInitParams{
-						PersistentStorage:   true,
-						PersistentStorageDB: "drmaa2ostestjobs",
+						UsePersistentJobStorage: true,
+						DBFilePath:              "drmaa2ostestjobs",
 					}, "drmaa2ostest")
 				Ω(err).Should(BeNil())
 

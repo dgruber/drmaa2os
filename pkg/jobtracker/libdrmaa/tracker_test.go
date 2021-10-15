@@ -31,7 +31,7 @@ var _ = Describe("Tracker", func() {
 			UsePersistentJobStorage: true,
 			DBFilePath:              getTempFile(),
 		}
-		trackerWithParams, err := NewDRMAATrackerWithParams(&params)
+		trackerWithParams, err := NewDRMAATrackerWithParams(params)
 		Expect(err).To(BeNil())
 		return trackerWithParams
 	}
@@ -254,7 +254,7 @@ var _ = Describe("Tracker", func() {
 			Expect(tracker).To(BeNil())
 
 			// this should fail as it must not be a reference
-			tracker, err := NewDRMAATrackerWithParams(&LibDRMAASessionParams{})
+			tracker, err = NewDRMAATrackerWithParams(&LibDRMAASessionParams{})
 			Expect(err).NotTo(BeNil())
 			Expect(tracker).To(BeNil())
 		})

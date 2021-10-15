@@ -18,9 +18,9 @@ var _ = Describe("Jobtemplate", func() {
 			originalTemplate := drmaa2interface.JobTemplate{
 				RemoteCommand: "/bin/sleep",
 				Args:          []string{"1"},
-				ExtensionList: map[string]string{
-					"DRMAA1_NATIVE_SPECIFICATION": "-l gpu",
-				},
+			}
+			originalTemplate.ExtensionList = map[string]string{
+				"DRMAA1_NATIVE_SPECIFICATION": "-l gpu",
 			}
 			s, err := drmaa.MakeSession()
 			Expect(err).To(BeNil())
@@ -35,6 +35,26 @@ var _ = Describe("Jobtemplate", func() {
 			Expect(len(convertedJobTemplate.Args)).To(BeNumerically("==", len(originalTemplate.Args)))
 			Expect(convertedJobTemplate.Args[0]).To(Equal(originalTemplate.Args[0]))
 			Expect(convertedJobTemplate.ExtensionList["DRMAA1_NATIVE_SPECIFICATION"]).To(Equal(originalTemplate.ExtensionList["DRMAA1_NATIVE_SPECIFICATION"]))
+		})
+
+		It("should convert a JobTemplate back and forth", func() {
+			originalTemplate := drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sleep",
+				Args:          []string{"1"},
+			}
+			s, err := drmaa.MakeSession()
+			Expect(err).To(BeNil())
+			defer s.Exit()
+			jt, err := s.AllocateJobTemplate()
+			Expect(err).To(BeNil())
+			err = ConvertDRMAA2JobTemplateToDRMAAJobTemplate(originalTemplate, &jt)
+			Expect(err).To(BeNil())
+			convertedJobTemplate, err := ConvertDRMAAJobTemplateToDRMAA2JobTemplate(&jt)
+			Expect(err).To(BeNil())
+			Expect(convertedJobTemplate.RemoteCommand).To(Equal(originalTemplate.RemoteCommand))
+			Expect(len(convertedJobTemplate.Args)).To(BeNumerically("==", len(originalTemplate.Args)))
+			Expect(convertedJobTemplate.Args[0]).To(Equal(originalTemplate.Args[0]))
+			Expect(convertedJobTemplate.ExtensionList).To(BeNil())
 		})
 
 	})
