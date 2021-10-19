@@ -35,8 +35,18 @@ jobs:
       - run:
           name: Code coverage
           command: bash <(curl -s https://codecov.io/bash)
+  libdrmaa:
+    docker:
+      - image: drmaa/drmaajobtrackertest:latest
+    working_directory: /go/src/github.com/dgruber/drmaa2os
+    steps:
+      - checkout
+      - run: go get github.com/dgruber/drmaa2interface
+      - run: GO111MODULE=on; go build -v -p 1
+      - run: go test -v ./pkg/jobtracker/libdrmaa
 workflows:
   version: 2
   build_and_test:
     jobs:
       - build
+      - libdrmaa
