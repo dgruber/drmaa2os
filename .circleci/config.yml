@@ -41,14 +41,15 @@ jobs:
     working_directory: /go/src/github.com/dgruber/drmaa2os
     steps:
       - checkout
-      - run: yum install -y wget tar git gcc
-      - run: export VERSION=1.16 OS=linux ARCH=amd64 && wget https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz && tar -C /usr/local -xzvf go$VERSION.$OS-$ARCH.tar.gz && rm go$VERSION.$OS-$ARCH.tar.gz
-      - run: export GOPATH=/go
-      - run: export PATH=/usr/local/go/bin:${PATH}:${GOPATH}/bin
-      - run: export PATH=${PATH}:/opt/sge/include
-      - run: go get github.com/dgruber/drmaa2interface
-      - run: GO111MODULE=on; go build -v -p 1
-      - run: go test -v ./pkg/jobtracker/libdrmaa
+      - command: |
+          yum install -y wget tar git gcc
+          export VERSION=1.16 OS=linux ARCH=amd64 && wget https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz && tar -C /usr/local -xzvf go$VERSION.$OS-$ARCH.tar.gz && rm go$VERSION.$OS-$ARCH.tar.gz
+          export GOPATH=/go
+          export PATH=/usr/local/go/bin:${PATH}:${GOPATH}/bin
+          export PATH=${PATH}:/opt/sge/include
+          go get github.com/dgruber/drmaa2interface
+          GO111MODULE=on; go build -v -p 1
+          go test -v ./pkg/jobtracker/libdrmaa
 workflows:
   version: 2
   build_and_test:
