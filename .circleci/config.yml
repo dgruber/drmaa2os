@@ -51,6 +51,7 @@ jobs:
             go get github.com/dgruber/drmaa2interface
             GO111MODULE=on; go build -v -p 1
             cd ./pkg/jobtracker/libdrmaa
+            go mod download
             go test -v .
 workflows:
   version: 2
