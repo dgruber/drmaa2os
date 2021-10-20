@@ -50,7 +50,8 @@ jobs:
             export PATH=${PATH}:/opt/sge/include
             go get github.com/dgruber/drmaa2interface
             GO111MODULE=on; go build -v -p 1
-            go test -v ./pkg/jobtracker/libdrmaa
+            cd ./pkg/jobtracker/libdrmaa
+            go test -v .
 workflows:
   version: 2
   build_and_test:
