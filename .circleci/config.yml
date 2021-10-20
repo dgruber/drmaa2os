@@ -43,6 +43,16 @@ jobs:
       - checkout
       - run:
           command: |
+            echo "Install Grid Engine"
+            pushd /opt/sge
+            ./install.sh
+            source /opt/sge/default/common/settings.sh
+            export LD_LIBRARY_PATH=$SGE_ROOT/lib/lx-amd64
+            export PATH=$PATH:/opt/sge/include
+            export CGO_LDFLAGS="-L$SGE_ROOT/lib/lx-amd64/"
+            export CGO_CFLAGS="-DSOG -I$SGE_ROOT/include"
+            popd
+            echo "Install Go"
             yum install -y wget tar git gcc
             export VERSION=1.16 OS=linux ARCH=amd64 && wget https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz && tar -C /usr/local -xzvf go$VERSION.$OS-$ARCH.tar.gz && rm go$VERSION.$OS-$ARCH.tar.gz
             export GOPATH=/go
