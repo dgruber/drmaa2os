@@ -95,7 +95,6 @@ func ConvertDRMAA2JobTemplateToDRMAAJobTemplate(jt drmaa2interface.JobTemplate, 
 	if val, ok := jt.ExtensionList["DRMAA1_NATIVE_SPECIFICATION"]; ok {
 		t.SetNativeSpecification(val)
 	}
-
 	if len(jt.JobEnvironment) > 0 {
 		envs := make([]string, 0, len(jt.JobEnvironment))
 		for k, v := range jt.JobEnvironment {

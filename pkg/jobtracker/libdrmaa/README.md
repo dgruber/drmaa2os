@@ -1,11 +1,45 @@
-# JobTracker implementation on top of libdrmaa.so
+# JobTracker Implementation on Top of _libdrmaa.so_ (Grid Engine, SLURM, ...)
+
+_For testing using a container please call, libdrmaatest.sh in drmaa2os root directory_
 
 Basic implementation of a _JobTracker_ wrapper for _libdrmaa.so_. This is the DRMAA version 1
-c library which is shipped with many workload managers. The JobTracker implementation can
-be used by DRMAA2OS to provide a Go DRMAA2 interface for drmaa version 1. 
+c library which is shipped by many workload managers. The _JobTracker_ implementation can
+be used by drmaa2os to provide a Go DRMAA2 interface for drmaa version 1. 
 
-It is currently tested with Grid Engine using the Docker image in this directory.
-The _Jobtracker_ uses github.com/dgruber/drmaa Go wrapper for job submission.
+The _Jobtracker_ uses github.com/dgruber/drmaa Go wrapper for job submission. It supports
+Grid Engine (Univa Grid Engine, SGE, Son of Grid Engine, SLURM, and more).
+
+## Usage in drmaa2os
+
+### Default Usage
+
+The default usage is creating a session manager which calls the _NewDRMAATracker()_
+The DB is for the session manager only to store job session names etc.
+
+    sm, err := drmaa2os.NewLibDRMAASessionManager("testdb.db")
+    if err != nil {
+        panic(err)
+    }
+
+### Job Persistency
+
+If job persistency is required (like for having the jobs available after restart),
+then, following initialization can be use:
+
+    params := libdrmaa.LibDRMAASessionParams{
+        ContactString:           "",
+        UsePersistentJobStorage: true,
+        DBFilePath:              "testdbjobs.db",
+    }
+    sm, err := drmaa2os.NewLibDRMAASessionManagerWithParams(params, "testdb.db")
+
+This calls the underlying _NewDRMAATrackerWithParams()_. Contact string should be
+empty unless you know what you are doing. If _UsePersistentJobStorage_ is turned
+on the _DBFilePath_ must be specified in which job related information is written.
+If the DB file does not exist it will be created. The contact string of the underlying
+drmaa1 session is written in the session manager DB, and when re-connecting to the
+same session name it transparently uses it. Hence still running jobs can be still
+available after application restart.
 
 ## JobTemplate Mapping
 
@@ -20,6 +54,7 @@ The _Jobtracker_ uses github.com/dgruber/drmaa Go wrapper for job submission.
 | JoinFiles | SetJoinFiles |
 | Email | SetEmail |
 | JobEnviornment map[key]value | SetJobEnviornment("key=value", ...)|
+| ExtensionList map["DRMAA1_NATIVE_SPECIFICATION"]value | SetNativeSpecification("value")|
 
 ## JobState Mapping
 
@@ -39,7 +74,6 @@ job states.
 | drmaa2interface.Suspended | drmaa.PsUserSystemSuspended |
 | drmaa2interface.Done | drmaa.PsDone |
 | drmaa2interface.Failed | drmaa.PsFailed |
-
 
 ## JobInfo Mapping
 

@@ -131,8 +131,9 @@ var _ = Describe("Helper", func() {
 			milliseconds := int64(duration) / 1e6
 			Ω(err).Should(BeNil())
 			// duration of the blocking call should be slightly above
-			// the 20 milliseconds when we change the job state
-			Ω(milliseconds).Should(BeNumerically("<=", 35))
+			// the 20 milliseconds when we change the job state - circleci
+			// is sometimes really slow hence this was increased multiple times
+			Ω(milliseconds).Should(BeNumerically("<=", 55))
 		})
 
 	})

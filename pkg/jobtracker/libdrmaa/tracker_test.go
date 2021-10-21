@@ -1,6 +1,7 @@
 package libdrmaa
 
 import (
+	"log"
 	"os"
 	"time"
 
@@ -22,10 +23,12 @@ var _ = Describe("Tracker", func() {
 
 	createTracker := func(standard bool) *DRMAATracker {
 		if standard {
+			log.Println("using standard tracker")
 			standardTracker, err := NewDRMAATracker()
 			Expect(err).To(BeNil())
 			return standardTracker
 		}
+		log.Println("using tracker with persistent job storage")
 		params := LibDRMAASessionParams{
 			ContactString:           "",
 			UsePersistentJobStorage: true,
@@ -57,7 +60,7 @@ var _ = Describe("Tracker", func() {
 				Expect(err).To(BeNil())
 				Expect(jobID).NotTo(Equal(""))
 
-				err = d.Wait(jobID, time.Second*31, drmaa2interface.Done, drmaa2interface.Failed)
+				err = d.Wait(jobID, time.Second*61, drmaa2interface.Done, drmaa2interface.Failed)
 				Expect(err).To(BeNil())
 
 				state, substate, err := d.JobState(jobID)
