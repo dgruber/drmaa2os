@@ -51,6 +51,8 @@ jobs:
             export PATH=$PATH:/opt/sge/include
             export CGO_LDFLAGS="-L$SGE_ROOT/lib/lx-amd64/"
             export CGO_CFLAGS="-DSOG -I$SGE_ROOT/include"
+            echo "Cicrle test server is under extreme load -> alarm state in SGE"
+            qconf -mattr queue load_thresholds "np_load_avg=1000" all.q
             popd
             echo "Install Go"
             yum install -y wget tar git gcc
