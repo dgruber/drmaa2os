@@ -1,6 +1,6 @@
 module github.com/dgruber/drmaa2os
 
-go 1.15
+go 1.16
 
 replace (
 	github.com/containerd/containerd => github.com/containerd/containerd v1.5.7
@@ -20,8 +20,8 @@ require (
 	github.com/cloudfoundry/gosigar v1.1.0
 	github.com/containers/podman/v3 v3.2.0
 	github.com/deepmap/oapi-codegen v1.8.1
+	github.com/dgruber/drmaa v1.0.0
 	github.com/dgruber/drmaa2interface v1.0.2
-	github.com/dgruber/drmaa2os/pkg/jobtracker/libdrmaa v0.0.0-20210226091710-ceb83e9b4fff
 	github.com/docker/docker v20.10.8+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/getkin/kin-openapi v0.61.0
