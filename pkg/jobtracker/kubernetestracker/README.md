@@ -62,8 +62,13 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 | DeadlineTime         | AbsoluteTime converted to relative time (v1.Container.ActiveDeadlineSeconds) |
 | JobEnvironment       | v1.EnvVar                       |
 
+Using _ExtensionList_  key "env-from-secrets" will map the ":" separated secrets as
+enviornment variables in the job container. The secrets must exist.
 
-### Filestaging using the Job Template
+Using _ExtensionList_  key "env-from-configmaps" will map the ":" separated configmaps as
+enviornment variables in the job container. The configmaps must exist.
+
+### File staging using the Job Template
 
 Data movement is not on core focus of the DRMAA2 standard, but it nevertheless defines two string based maps for file staging. In HPC systems data movement is usually done through parallel or network
 filesystems. Cloud based systems are often using services like S3, GCS etc.
@@ -80,6 +85,11 @@ using ConfigMaps which has storage limits itself).
 _StageInFiles_ and _StageOutFiles_  have following scheme:
 - Map key specifies the target, as the target is unique.
 - Map value specifies the data source.
+
+If _StageOutFiles_ is set a sidecar (source in this project) is attached to the job
+which takes care about storing the data in a persistent data structure (configmap).
+This data is then downloaded the host of the DRMAA2 application.
+
 
 Following source definition of _StageInFiles_ are currently implemented:
 - "configmap-data:base64encodedstring" can be used to pass a byte array from the workflow process to the job. Internally a ConfigMap with the data is created in the target cluster. The ConfigMap is deleted

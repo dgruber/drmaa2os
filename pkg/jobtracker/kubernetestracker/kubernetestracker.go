@@ -156,6 +156,7 @@ func (kt *KubernetesTracker) AddJob(jt drmaa2interface.JobTemplate) (string, err
 		removeArtifacts(kt.clientSet, jt, kt.namespace)
 		return "", fmt.Errorf("converting job template into a k8s job: %s", err.Error())
 	}
+
 	jc, err := getJobsClient(kt.clientSet, kt.namespace)
 	if err != nil {
 		removeArtifacts(kt.clientSet, jt, kt.namespace)

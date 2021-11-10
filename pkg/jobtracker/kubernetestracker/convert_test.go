@@ -109,6 +109,21 @@ var _ = Describe("Convert", func() {
 			Ω(job.Spec.Template.Spec.Containers[0].SecurityContext).To(BeNil())
 		})
 
+		It("should add env variables from configmaps and secrets", func() {
+			jt.ExtensionList = map[string]string{
+				"env-from-secrets":   "secretname1:secretname2",
+				"env-from-configmap": "configmap1:configmap2",
+			}
+			job, err := convertJob("jobsession", "default", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.Spec.Template.Spec.Containers[0].EnvFrom).NotTo(BeNil())
+			Ω(job.Spec.Template.Spec.Containers[0].EnvFrom[0].SecretRef.Name).To(Equal("secretname1"))
+			Ω(job.Spec.Template.Spec.Containers[0].EnvFrom[1].SecretRef.Name).To(Equal("secretname2"))
+			Ω(job.Spec.Template.Spec.Containers[0].EnvFrom[2].ConfigMapRef.Name).To(Equal("configmap1"))
+			Ω(job.Spec.Template.Spec.Containers[0].EnvFrom[3].ConfigMapRef.Name).To(Equal("configmap2"))
+		})
+
 		Context("error cases", func() {
 			It("should error when the RemoteCommand is not set in the JobTemplate", func() {
 				jt.RemoteCommand = ""

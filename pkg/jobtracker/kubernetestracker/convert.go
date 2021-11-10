@@ -344,6 +344,46 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 	}
 	podSpec := newPodSpec(volumes, containers, nodeSelector, dl)
 
+	// add enviornment variables from pre-existing secrets and config maps
+	envFrom := []v1.EnvFromSource{}
+
+	for k, v := range jt.ExtensionList {
+		if strings.HasPrefix(k, "env-from-secrets") {
+			for _, secret := range strings.Split(v, ":") {
+				if secret == "" {
+					continue
+				}
+				envFrom = append(envFrom,
+					v1.EnvFromSource{
+						SecretRef: &v1.SecretEnvSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: secret,
+							},
+						},
+					})
+			}
+		}
+		if strings.HasPrefix(k, "env-from-configmap") {
+			for _, configmap := range strings.Split(v, ":") {
+				if configmap == "" {
+					continue
+				}
+				envFrom = append(envFrom,
+					v1.EnvFromSource{
+						ConfigMapRef: &v1.ConfigMapEnvSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: configmap,
+							},
+						},
+					})
+			}
+		}
+	}
+
+	if envFrom != nil {
+		podSpec.Containers[0].EnvFrom = envFrom
+	}
+
 	// Add sidecar which stores the output of the job in a configmap.
 	if jt.ExtensionList != nil {
 		jo, exists := jt.ExtensionList["DRMAA2_JOB_OUTPUT_IN_JOBINFO"]
