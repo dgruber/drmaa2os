@@ -111,8 +111,8 @@ var _ = Describe("Convert", func() {
 
 		It("should add env variables from configmaps and secrets", func() {
 			jt.ExtensionList = map[string]string{
-				"env-from-secrets":   "secretname1:secretname2",
-				"env-from-configmap": "configmap1:configmap2",
+				"env-from-secrets":    "secretname1:secretname2",
+				"env-from-configmaps": "configmap1:configmap2",
 			}
 			job, err := convertJob("jobsession", "default", jt)
 			Ω(err).Should(BeNil())

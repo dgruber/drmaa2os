@@ -348,7 +348,8 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 	envFrom := []v1.EnvFromSource{}
 
 	for k, v := range jt.ExtensionList {
-		if strings.HasPrefix(k, "env-from-secrets") {
+		// both should work "env-from-secret" and "env-from-secrets"
+		if strings.HasPrefix(k, "env-from-secret") {
 			for _, secret := range strings.Split(v, ":") {
 				if secret == "" {
 					continue

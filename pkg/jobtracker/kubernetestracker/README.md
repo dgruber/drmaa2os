@@ -62,11 +62,21 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 | DeadlineTime         | AbsoluteTime converted to relative time (v1.Container.ActiveDeadlineSeconds) |
 | JobEnvironment       | v1.EnvVar                       |
 
-Using _ExtensionList_  key "env-from-secrets" will map the ":" separated secrets as
-enviornment variables in the job container. The secrets must exist.
+Using _ExtensionList_  key "env-from-secrets" (or "env-from-secret") will map the ":" separated secrets listed in the map's values as enviornment variables in the job container. The secrets must exist.
 
-Using _ExtensionList_  key "env-from-configmaps" will map the ":" separated configmaps as
-enviornment variables in the job container. The configmaps must exist.
+Using _ExtensionList_  key "env-from-configmaps" (or "env-from-configmap") will map the ":" separated configmaps listed in the map's values as enviornment variables in the job container. The configmaps must exist.
+
+The job's terminal output is available when the job is in a finished state (failed or done) by
+the JobInfo extension key "output".
+
+```
+	if jobInfo.ExtensionList != nil {
+		jobOutput, exists := jobInfo.ExtensionList["output"]
+		if exists {
+			fmt.Printf("Output of the job: %s\n", jobOutput)
+		}
+	}
+```
 
 ### File staging using the Job Template
 
@@ -89,6 +99,7 @@ _StageInFiles_ and _StageOutFiles_  have following scheme:
 If _StageOutFiles_ is set a sidecar (source in this project) is attached to the job
 which takes care about storing the data in a persistent data structure (configmap).
 This data is then downloaded the host of the DRMAA2 application.
+
 
 
 Following source definition of _StageInFiles_ are currently implemented:
