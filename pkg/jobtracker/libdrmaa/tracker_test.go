@@ -286,7 +286,8 @@ var _ = Describe("Tracker", func() {
 				jobids = append(jobids, jobid)
 			})
 
-			Expect(submissiontime.Seconds()).To(BeNumerically("<", 0.050), "Submitting a job shouldn't take longer than 3 ms in avg.")
+			Expect(submissiontime.Seconds()).To(BeNumerically("<", 0.10),
+				"Submitting a job shouldn't take longer than 10 ms in avg.")
 
 			// clean up
 			for _, jobID := range jobids {

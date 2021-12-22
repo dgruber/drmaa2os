@@ -198,6 +198,28 @@ var _ = Describe("Jobstore", func() {
 			}
 		})
 
+		It("should store the job info and return it", func() {
+			for _, store := range []JobStorer{persistent, inmemory} {
+				ji := drmaa2interface.JobInfo{
+					ID:         "id",
+					ExitStatus: 1,
+					JobOwner:   "owner",
+				}
+				ji.ExtensionList = map[string]string{
+					"extension": "value",
+				}
+				err := store.SaveJobInfo("id", ji)
+				Expect(err).Should(BeNil())
+				jiBack, err := store.GetJobInfo("id")
+				Expect(err).Should(BeNil())
+				Expect(jiBack.ID).Should(Equal("id"))
+				Expect(jiBack.JobOwner).Should(Equal("owner"))
+				Expect(jiBack.ExitStatus).Should(BeNumerically("==", 1))
+				Expect(jiBack.ExtensionList).ShouldNot(BeNil())
+				Expect(jiBack.ExtensionList["extension"]).Should(Equal("value"))
+			}
+		})
+
 	})
 
 	Context("Persistent JobStore operations", func() {

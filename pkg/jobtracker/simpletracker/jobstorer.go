@@ -19,6 +19,8 @@ type JobStorer interface {
 	NewJobID() string
 	// Require job template
 	GetJobTemplate(jobid string) (drmaa2interface.JobTemplate, error)
+	SaveJobInfo(jobid string, jobInfo drmaa2interface.JobInfo) error
+	GetJobInfo(jobid string) (drmaa2interface.JobInfo, error)
 }
 
 // StoreCloser closes any DB handle when called so that a new
