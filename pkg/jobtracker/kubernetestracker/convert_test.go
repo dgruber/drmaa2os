@@ -118,10 +118,16 @@ var _ = Describe("Convert", func() {
 			Ω(err).Should(BeNil())
 			Ω(job).ShouldNot(BeNil())
 			Ω(job.Spec.Template.Spec.Containers[0].EnvFrom).NotTo(BeNil())
-			Ω(job.Spec.Template.Spec.Containers[0].EnvFrom[0].SecretRef.Name).To(Equal("secretname1"))
-			Ω(job.Spec.Template.Spec.Containers[0].EnvFrom[1].SecretRef.Name).To(Equal("secretname2"))
-			Ω(job.Spec.Template.Spec.Containers[0].EnvFrom[2].ConfigMapRef.Name).To(Equal("configmap1"))
-			Ω(job.Spec.Template.Spec.Containers[0].EnvFrom[3].ConfigMapRef.Name).To(Equal("configmap2"))
+			Ω(len(job.Spec.Template.Spec.Containers[0].EnvFrom)).To(BeNumerically("==", 4))
+			for i := 0; i < 4; i++ {
+				if job.Spec.Template.Spec.Containers[0].EnvFrom[i].SecretRef != nil {
+					Ω(job.Spec.Template.Spec.Containers[0].EnvFrom[i].SecretRef.Name).To(ContainSubstring("secretname"))
+				} else if job.Spec.Template.Spec.Containers[0].EnvFrom[i].ConfigMapRef != nil {
+					Ω(job.Spec.Template.Spec.Containers[0].EnvFrom[i].ConfigMapRef.Name).To(ContainSubstring("configmap"))
+				} else {
+					Fail("unknown environment source")
+				}
+			}
 		})
 
 		Context("error cases", func() {

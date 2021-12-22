@@ -31,6 +31,8 @@ type PubSub struct {
 	// feed by bookKeeper: current state
 	jobState map[string]drmaa2interface.JobState
 	jobInfo  map[string]drmaa2interface.JobInfo
+
+	jobstore JobStorer
 }
 
 // NewPubSub returns an initialized PubSub structure and
@@ -48,12 +50,46 @@ func NewPubSub(jobstore JobStorer) (*PubSub, chan JobEvent) {
 	}
 
 	if jobstore != nil {
+		pubSub.jobstore = jobstore
 		// get all information
 		for _, existingJobID := range jobstore.GetJobIDs() {
-			pubSub.jobState[existingJobID] = drmaa2interface.Undetermined
-			pubSub.jobInfo[existingJobID] = drmaa2interface.JobInfo{
-				ID:    existingJobID,
-				State: drmaa2interface.Undetermined,
+			jobinfo, err := jobstore.GetJobInfo(existingJobID)
+			if err != nil {
+				pubSub.jobState[existingJobID] = drmaa2interface.Undetermined
+				pubSub.jobInfo[existingJobID] = drmaa2interface.JobInfo{
+					ID:    existingJobID,
+					State: drmaa2interface.Undetermined,
+				}
+			} else {
+				// restore state from disk - might be wrong
+				// running processes might not be running anymore
+
+				pubSub.jobInfo[existingJobID] = jobinfo
+				pubSub.jobState[existingJobID] = jobinfo.State
+
+				// check non final states
+				if jobinfo.State == drmaa2interface.Running {
+					pid, err := jobstore.GetPID(existingJobID)
+					if err != nil {
+						continue
+					}
+					running, err := IsPidRunning(pid)
+					if err != nil || running == false {
+						pubSub.jobState[existingJobID] = drmaa2interface.Undetermined
+						jobinfo.State = drmaa2interface.Undetermined
+						jobinfo.SubState = "finished before application started"
+						pubSub.jobInfo[existingJobID] = jobinfo
+					}
+				}
+
+				if jobinfo.State == drmaa2interface.Queued {
+					// for queued jobs we don't even have a pid
+					pubSub.jobState[existingJobID] = drmaa2interface.Undetermined
+					jobinfo.State = drmaa2interface.Undetermined
+					jobinfo.SubState = "queued before application started"
+					pubSub.jobInfo[existingJobID] = jobinfo
+				}
+
 			}
 		}
 	}
@@ -126,7 +162,9 @@ func (ps *PubSub) StartBookKeeper() {
 				// TODO deep copy
 				ps.jobInfo[event.JobID] = event.JobInfo
 			}
-
+			if ps.jobstore != nil {
+				ps.jobstore.SaveJobInfo(event.JobID, ps.jobInfo[event.JobID])
+			}
 			// inform registered functions
 			for _, waiter := range ps.waitFunctions[event.JobID] {
 				// inform when expected state is reached

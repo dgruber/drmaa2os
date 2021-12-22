@@ -21,6 +21,7 @@ type JobStore struct {
 	templates  map[string]drmaa2interface.JobTemplate
 	jobs       map[string][]InternalJob
 	isArrayJob map[string]bool
+	jobinfo    map[string]drmaa2interface.JobInfo
 }
 
 // NewJobStore returns a new in memory job store for jobs.
@@ -30,6 +31,7 @@ func NewJobStore() *JobStore {
 		templates:  make(map[string]drmaa2interface.JobTemplate),
 		jobs:       make(map[string][]InternalJob),
 		isArrayJob: make(map[string]bool),
+		jobinfo:    make(map[string]drmaa2interface.JobInfo),
 	}
 }
 
@@ -186,4 +188,18 @@ func (js *JobStore) GetJobTemplate(jobID string) (drmaa2interface.JobTemplate, e
 		return jt, fmt.Errorf("job template for job %s not found", jobID)
 	}
 	return jt, nil
+}
+
+func (js *JobStore) SaveJobInfo(jobid string, jobInfo drmaa2interface.JobInfo) error {
+	js.jobinfo[jobid] = jobInfo
+	return nil
+}
+
+func (js *JobStore) GetJobInfo(jobid string) (drmaa2interface.JobInfo, error) {
+	jobinfo, exists := js.jobinfo[jobid]
+	if !exists {
+		return drmaa2interface.JobInfo{},
+			fmt.Errorf("job info for job %s not found", jobid)
+	}
+	return jobinfo, nil
 }

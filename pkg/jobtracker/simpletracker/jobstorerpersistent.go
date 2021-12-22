@@ -21,6 +21,7 @@ const JobTemplatesStorageKey string = "JobTemplatesStorageKey"
 const JobStorageKey string = "JobStorageKey"
 const IsArrayJobStorageKey string = "IsArrayJobStorageKey"
 const HighestJobIDStorageKey string = "HighestJobIDStorageKey"
+const JobInfoStorageKey string = "JobInfoStorageKey"
 
 // PersistentJobStorage is an internal storage for jobs and job templates
 // processed by the job tracker. Jobs are stored until Reap().
@@ -66,6 +67,10 @@ func NewPersistentJobStore(path string) (*PersistentJobStorage, error) {
 			return err
 		}
 		_, err = tx.CreateBucketIfNotExists([]byte(HighestJobIDStorageKey))
+		if err != nil {
+			return err
+		}
+		_, err = tx.CreateBucketIfNotExists([]byte(JobInfoStorageKey))
 		if err != nil {
 			return err
 		}
@@ -540,4 +545,41 @@ func (js *PersistentJobStorage) GetJobTemplate(jobid string) (drmaa2interface.Jo
 	})
 
 	return jobTemplate, err
+}
+
+func (js *PersistentJobStorage) GetJobInfo(jobid string) (drmaa2interface.JobInfo, error) {
+	var jobInfo drmaa2interface.JobInfo
+	err := js.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(JobInfoStorageKey))
+		if b == nil {
+			return fmt.Errorf("bucket with job info not found")
+		}
+
+		info := b.Get([]byte(jobid))
+		if info == nil {
+			return fmt.Errorf("jobinfo for job %s not found", jobid)
+		}
+
+		buffer := bytes.NewBuffer(info)
+		dec := gob.NewDecoder(buffer)
+		return dec.Decode(&jobInfo)
+	})
+	return jobInfo, err
+}
+
+func (js *PersistentJobStorage) SaveJobInfo(jobid string, jobinfo drmaa2interface.JobInfo) error {
+	return js.db.Update(func(tx *bolt.Tx) error {
+		db := tx.Bucket([]byte(JobInfoStorageKey))
+		if db == nil {
+			return fmt.Errorf("bucket with job info not found")
+		}
+		var buffer bytes.Buffer
+		enc := gob.NewEncoder(&buffer)
+		enc.Encode(jobinfo)
+		err := db.Put([]byte(jobid), buffer.Bytes())
+		if err != nil {
+			return fmt.Errorf("failed to save job info: %v", err)
+		}
+		return nil
+	})
 }

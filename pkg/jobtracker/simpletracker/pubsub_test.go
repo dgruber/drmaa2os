@@ -187,4 +187,23 @@ var _ = Describe("Pubsub", func() {
 			Ω(ch).Should(BeNil())
 		})
 	})
+
+	Context("Application restart", func() {
+
+		It("should mark jobs which died between restart as undetermined", func() {
+			jobstore := NewJobStore()
+			// TODO: there is a small likelihood that the pid exists / then it would
+			// connect to the wrong process. Check if process correspondents to job-
+			// template.
+			jobstore.SaveJob("test", drmaa2interface.JobTemplate{}, 123412)
+			ji := drmaa2interface.CreateJobInfo()
+			ji.State = drmaa2interface.Running
+			jobstore.SaveJobInfo("test", ji)
+			ps, _ := NewPubSub(jobstore)
+			state, exists := ps.jobState["test"]
+			Expect(exists).To(BeTrue())
+			Expect(state.String()).To(Equal(drmaa2interface.Undetermined.String()))
+		})
+
+	})
 })

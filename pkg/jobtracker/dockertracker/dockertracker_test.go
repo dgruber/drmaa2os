@@ -168,14 +168,14 @@ var _ = Describe("Dockertracker", func() {
 
 			state, _, _ := tracker.JobState(id)
 			Ω(err).Should(BeNil())
-			Ω(state).Should(Equal(drmaa2interface.Running))
+			Ω(state.String()).Should(Equal(drmaa2interface.Running.String()))
 
 			err = tracker.Wait(id, drmaa2interface.InfiniteTime, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 
 			state, _, _ = tracker.JobState(id)
 			Ω(err).Should(BeNil())
-			Ω(state).Should(Equal(drmaa2interface.Done))
+			Ω(state.String()).Should(Equal(drmaa2interface.Done.String()))
 		})
 
 		It("add job and terminate", func() {
@@ -185,20 +185,20 @@ var _ = Describe("Dockertracker", func() {
 
 			state, _, _ := tracker.JobState(id)
 			Ω(err).Should(BeNil())
-			Ω(state).Should(Equal(drmaa2interface.Running))
+			Ω(state.String()).Should(Equal(drmaa2interface.Running.String()))
 
 			err = tracker.JobControl(id, "terminate")
 			Ω(err).Should(BeNil())
 
 			state, _, _ = tracker.JobState(id)
-			Ω(state).Should(Equal(drmaa2interface.Failed))
+			Ω(state.String()).Should(Equal(drmaa2interface.Failed.String()))
 
 			fmt.Println(id)
 			err = tracker.DeleteJob(id)
 			Ω(err).Should(BeNil())
 
 			state, _, _ = tracker.JobState(id)
-			Ω(state).Should(Equal(drmaa2interface.Undetermined))
+			Ω(state.String()).Should(Equal(drmaa2interface.Undetermined.String()))
 		})
 
 	})

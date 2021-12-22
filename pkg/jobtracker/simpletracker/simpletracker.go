@@ -25,8 +25,9 @@ func NewAllocator() *allocator {
 }
 
 type SimpleTrackerInitParams struct {
-	UsePersistentJobStorage bool
-	DBFilePath              string
+	UsePersistentJobStorage          bool
+	DBFilePath                       string
+	CheckPointRestartForSuspendResme bool
 }
 
 // New is called by the SessionManager when a new JobSession is allocated.
@@ -46,9 +47,21 @@ func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{})
 		if err != nil {
 			return nil, err
 		}
-		return NewWithJobStore(jobSessionName, storage, true)
+		jt, err := NewWithJobStore(jobSessionName, storage, true)
+		if err != nil {
+			return jt, err
+		}
+		if simpleTrackerInitParams.CheckPointRestartForSuspendResme {
+			jt = EnableCheckpointRestart(jt)
+		}
+		return jt, nil
+
 	}
-	return New(jobSessionName), nil
+	jt := New(jobSessionName)
+	if simpleTrackerInitParams.CheckPointRestartForSuspendResme {
+		jt = EnableCheckpointRestart(jt)
+	}
+	return jt, nil
 }
 
 // JobTracker implements the JobTracker interface and treats
@@ -64,12 +77,21 @@ type JobTracker struct {
 	js JobStorer
 	// isPersistent flags if the job storer provide persistent storage
 	isPersistent bool
+	// checkpointRestart flags whether SIGTSTP (false) or CRIU (true) is used for suspend
+	checkpointRestart bool
 }
 
 // New creates and initializes a JobTracker.
 func New(jobsession string) *JobTracker {
 	js, _ := NewWithJobStore(jobsession, NewJobStore(), false)
 	return js
+}
+
+// EnableCheckpointRestart turns a job tracker which handles suspend / resume
+// with signals into a job tracker which does suspend and resume with CRIU
+func EnableCheckpointRestart(jobtracker *JobTracker) *JobTracker {
+	jobtracker.checkpointRestart = true
+	return jobtracker
 }
 
 func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*JobTracker, error) {
@@ -300,10 +322,8 @@ func (jt *JobTracker) JobState(jobid string) (drmaa2interface.JobState, string, 
 func (jt *JobTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
 	jt.Lock()
 	defer jt.Unlock()
+
 	jt.ps.Lock()
-
-	// after app restart jt.ps.jobInfo is not populated
-
 	ji, exists := jt.ps.jobInfo[jobid]
 	jt.ps.Unlock()
 	if exists == true {
@@ -327,23 +347,38 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 		if pid == 0 {
 			return errors.New("job is not running")
 		}
-		err := SuspendPid(pid)
-		if err == nil {
-			jt.ps.Lock()
-			jt.ps.jobState[jobid] = drmaa2interface.Suspended
-			jt.ps.Unlock()
+		if jt.checkpointRestart {
+			// TODO use CRIU
+			return fmt.Errorf("checkpoint / restart not implemented (TODO)")
+		} else {
+			err := SuspendPid(pid)
+			if err == nil {
+				jt.ps.Lock()
+				jt.ps.jobState[jobid] = drmaa2interface.Suspended
+				jt.ps.Unlock()
+			}
 		}
+		// TODO: make suspended state persistent
+
 		return err
 	case "resume":
 		if pid == 0 {
 			return errors.New("job is not running")
 		}
-		err := ResumePid(pid)
-		if err == nil {
-			jt.ps.Lock()
-			jt.ps.jobState[jobid] = drmaa2interface.Running
-			jt.ps.Unlock()
+		if jt.checkpointRestart {
+			// TODO use CRIU
+			return fmt.Errorf("checkpoint / restart not implemented (TODO)")
+		} else {
+
+			err := ResumePid(pid)
+			if err == nil {
+				jt.ps.Lock()
+				jt.ps.jobState[jobid] = drmaa2interface.Running
+				jt.ps.Unlock()
+			}
 		}
+		// TODO: make suspended state persistent
+
 		return err
 	case "hold":
 		return errors.New("Unsupported Operation")
