@@ -133,7 +133,7 @@ var _ = Describe("Helper", func() {
 			// duration of the blocking call should be slightly above
 			// the 20 milliseconds when we change the job state - circleci
 			// is sometimes really slow hence this was increased multiple times
-			Ω(milliseconds).Should(BeNumerically("<=", 55))
+			Ω(milliseconds).Should(BeNumerically("<=", 100))
 		})
 
 	})
