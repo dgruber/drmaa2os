@@ -8,7 +8,7 @@ replace (
 	github.com/docker/docker => github.com/docker/docker v20.10.12+incompatible
 	github.com/docker/go-connections => github.com/docker/go-connections v0.4.0
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.4
-	github.com/opencontainers/image-spec => github.com/opencontainers/image-spec v1.0.2
+	github.com/opencontainers/image-spec => github.com/opencontainers/image-spec v1.0.2-0.20211123152302-43a7dee1ec31
 	github.com/opencontainers/runc v1.0.3 => github.com/opencontainers/runc v1.0.3
 	k8s.io/api => k8s.io/api v0.20.14
 	k8s.io/apimachinery => k8s.io/apimachinery v0.20.14
