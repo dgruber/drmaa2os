@@ -51,6 +51,7 @@ func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{})
 		if err != nil {
 			return jt, err
 		}
+
 		if simpleTrackerInitParams.CheckPointRestartForSuspendResume {
 			jt = EnableCheckpointRestart(jt)
 		}
