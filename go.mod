@@ -32,7 +32,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.16.0
-	github.com/opencontainers/image-spec v1.0.2
+	github.com/opencontainers/image-spec v1.0.2-0.20211123152302-43a7dee1ec31
 	github.com/opencontainers/runc v1.0.3 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/shirou/gopsutil v3.21.11+incompatible
