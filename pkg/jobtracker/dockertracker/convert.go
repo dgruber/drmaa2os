@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -220,6 +221,14 @@ func containerToDRMAA2JobInfo(c types.ContainerJSON) (ji drmaa2interface.JobInfo
 	if err == nil {
 		ji.SubmissionTime = submitted
 	}
+	ji.JobOwner = c.Config.User
+
+	// put more details about the job in the extensions
+	ji.ExtensionList = map[string]string{}
+	ji.ExtensionList[jobtracker.DRMAA2_MS_JOBINFO_WORKINGDIR] = c.Config.WorkingDir
+	ji.ExtensionList[jobtracker.DRMAA2_MS_JOBINFO_COMMANDLINE] = strings.Join(c.Config.Cmd, " ")
+	ji.ExtensionList[jobtracker.DRMAA2_MS_JOBINFO_JOBCATEGORY] = c.Config.Image
+
 	return ji, nil
 }
 

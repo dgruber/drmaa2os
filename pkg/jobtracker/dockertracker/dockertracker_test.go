@@ -91,6 +91,8 @@ var _ = Describe("Dockertracker", func() {
 		})
 
 		It("should print output to file", func() {
+			os.Remove("./testfile")
+
 			jt.RemoteCommand = "/bin/sh"
 			jt.Args = []string{"-c", `echo prost`}
 			jt.OutputPath = "./testfile"
@@ -99,7 +101,7 @@ var _ = Describe("Dockertracker", func() {
 
 			Ω(err).Should(BeNil())
 			Ω(id).ShouldNot(Equal(""))
-			err = tracker.Wait(id, 5*time.Second, drmaa2interface.Done)
+			err = tracker.Wait(id, drmaa2interface.InfiniteTime, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 			content, err := ioutil.ReadFile("./testfile")
 			Ω(err).Should(BeNil())

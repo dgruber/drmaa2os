@@ -1,6 +1,6 @@
 # Remote JobTracker
 
-In some cases it is required to submit jobs through the network (like to a sidecar). 
+In some cases it is required to submit jobs through the network (like to a sidecar).
 Not all JobTracker implementations support that functionality. Hence a general
 _JobTracker_ implementation which splits in a server part and a client part can
 be useful. The server part should be implementable on top of any existing _JobTracker_

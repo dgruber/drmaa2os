@@ -155,13 +155,17 @@ var _ = Describe("Sessionmanager", func() {
 
 	})
 
-	Describe("Open Monitoring Session", func() {
+	Describe("Monitoring Session", func() {
 
-		Context("Monitoring Session is currently not implemented", func() {
-			It("should not error", func() {
-				ms, err := sm.OpenMonitoringSession("")
-				Ω(err).ShouldNot(BeNil())
-				Ω(ms).Should(BeNil())
+		Context("Monitoring Session is implemented for process backend", func() {
+
+			It("should create a usable monitoring session", func() {
+				ms, err := sm.OpenMonitoringSession("test")
+				Ω(err).Should(BeNil())
+				Ω(ms).ShouldNot(BeNil())
+
+				err = ms.CloseMonitoringSession()
+				Ω(err).Should(BeNil())
 			})
 		})
 

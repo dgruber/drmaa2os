@@ -104,7 +104,8 @@ func NewSingularitySessionManager(dbpath string) (*SessionManager, error) {
 }
 
 // NewDockerSessionManager creates a SessionManager which maintains jobs as
-// Docker containers.
+// Docker containers. This requires to have following import:
+// import(_ "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker")
 func NewDockerSessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, DockerSession)
 }
@@ -233,7 +234,15 @@ func (sm *SessionManager) CreateReservationSession(name, contact string) (drmaa2
 
 // OpenMonitoringSession opens a session for monitoring jobs.
 func (sm *SessionManager) OpenMonitoringSession(sessionName string) (drmaa2interface.MonitoringSession, error) {
-	return nil, errors.New("(TODO) not implemented")
+	msJobTracker, msMonitorer, err := sm.newRegisteredMonitoringSessionJobTracker(sessionName, sm.jobTrackerCreateParams)
+	if err != nil {
+		return nil, err
+	}
+	return &MonitoringSession{
+		name:       sessionName,
+		jobtracker: msJobTracker,
+		monitorer:  msMonitorer,
+	}, nil
 }
 
 // OpenJobSession creates a new session for managing jobs. The semantic of a job session

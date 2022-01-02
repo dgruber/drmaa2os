@@ -96,6 +96,10 @@ var _ = Describe("JobSession", func() {
 			var jobs []drmaa2interface.Job
 			jobs = append(jobs, job)
 
+			// it should fail to wait for a job when no job is given
+			_, err = js.WaitAnyStarted([]drmaa2interface.Job{}, time.Second*1)
+			Ω(err).ShouldNot(BeNil())
+
 			j, err := js.WaitAnyStarted(jobs, time.Second*2)
 			Ω(err).Should(BeNil())
 			Ω(j.GetID()).Should(Equal(jobid))
