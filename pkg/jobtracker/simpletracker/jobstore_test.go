@@ -220,6 +220,15 @@ var _ = Describe("Jobstore", func() {
 			}
 		})
 
+		It("should error when job is not found", func() {
+			for _, store := range []JobStorer{persistent, inmemory} {
+				_, err := store.GetJobTemplate("NotFound")
+				Expect(err).NotTo(BeNil())
+				_, err = store.GetJobInfo("NotFound")
+				Expect(err).NotTo(BeNil())
+			}
+		})
+
 	})
 
 	Context("Persistent JobStore operations", func() {

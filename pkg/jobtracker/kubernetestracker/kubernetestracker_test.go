@@ -78,7 +78,7 @@ var _ = Describe("KubernetesTracker", func() {
 			cats, err := kt.ListJobCategories()
 			Ω(err).Should(BeNil())
 			Ω(cats).ShouldNot(BeNil())
-			Ω(len(cats)).Should(BeNumerically("==", 0))
+			Ω(len(cats)).Should(BeNumerically(">", 0))
 		})
 
 	})
@@ -323,6 +323,12 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(len(jinfo.ExtensionList)).To(BeNumerically(">=", 1))
 			Ω(jinfo.ExtensionList["output"]).To(Equal("ouTpuT\n"))
+		})
+
+		WhenK8sIsAvailableIt("should be possible to list all images / job categories", func() {
+			images, err := kt.ListJobCategories()
+			Ω(err).Should(BeNil())
+			Ω(images).ShouldNot(BeNil())
 		})
 
 	})

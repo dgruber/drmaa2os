@@ -82,8 +82,23 @@ func New(jobsession string, namespace string, cs *kubernetes.Clientset) (*Kubern
 	}, nil
 }
 
+// ListJobCategories returns all container images which are currently
+// found in the cluster. That does not mean that other container images
+// can not be used.
 func (kt *KubernetesTracker) ListJobCategories() ([]string, error) {
-	return []string{}, nil
+	nodeList, err := kt.clientSet.CoreV1().Nodes().List(context.Background(),
+		k8sapi.ListOptions{})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed get kubernetes node list: %v", err)
+	}
+	images := make([]string, 0, len(nodeList.Items))
+	for i := range nodeList.Items {
+		for j := range nodeList.Items[i].Status.Images {
+			images = append(images, nodeList.Items[i].Status.Images[j].Names...)
+		}
+	}
+	return images, nil
 }
 
 // ListJobs returns a list of job IDs associated with the current

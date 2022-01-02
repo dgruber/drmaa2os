@@ -20,9 +20,32 @@ var (
 	atomicTrackers atomic.Value
 )
 
+func (sm *SessionManager) newRegisteredMonitoringSessionJobTracker(monitoringSessionName string, params interface{}) (jobtracker.JobTracker, jobtracker.Monitorer, error) {
+	jtMap := atomicTrackers.Load().(map[SessionType]jobtracker.Allocator)
+	if jtMap == nil {
+		return nil, nil, errors.New("no JobTracker registered")
+	}
+	if _, exists := jtMap[sm.sessionType]; !exists {
+		return nil, nil, fmt.Errorf("JobTracker type %v not registered", sm.sessionType)
+	}
+
+	tracker, err := jtMap[sm.sessionType].New(monitoringSessionName, params)
+	if err != nil {
+		return nil, nil, fmt.Errorf("can't create job tracker for monitoring session %s: %v",
+			monitoringSessionName, err)
+	}
+
+	// check if JobTracker implements the Monitorer interface
+	monitorer, ok := tracker.(jobtracker.Monitorer)
+	if !ok {
+		return nil, nil, fmt.Errorf("JobTracker does not have monitoring session capabilities")
+	}
+	return tracker, monitorer, nil
+}
+
 // newRegisteredJobTracker creates a new JobTracker by calling the
 // JobTracker creator which must be previously registered. Registering
-// is done by importing the JobTracker packager where then the init()
+// is done by importing the JobTracker package in which the init()
 // method is called. That decouples the JobTracker implementation from
 // the rest of the code and only compiles dependencies which are required.
 func (sm *SessionManager) newRegisteredJobTracker(jobSessionName string, params interface{}) (jobtracker.JobTracker, error) {

@@ -338,7 +338,6 @@ spec contains also the DRMAA2 data types which might be useful for other project
 The remote _JobTracker_ server can be used in any Go DRMAA2 application.
 
 ```go
-
     import (
         "github.com/dgruber/drmaa2os
         _ "github.com/dgruber/drmaa2os/pkg/jobtracker/remote/client"
@@ -352,13 +351,16 @@ The remote _JobTracker_ server can be used in any Go DRMAA2 application.
 	}
 ```
 
-The server can be implemented by using any JobTracker implementation as
+The server can be implemented by using any _JobTracker_ implementation as
 argument in the server implementation.
 
 ```go
-
+    import(
+        "github.com/dgruber/drmaa2os/pkg/jobtracker/remote/server"
+        genserver "github.com/dgruber/drmaa2os/pkg/jobtracker/remote/server/generated"
+    )
     func main() {
-	    SetupHandler(simpletracker.New("jobsession"))
+        SetupHandler(simpletracker.New("jobsession"))
     }
 
     func SetupHandler(jobtracker jobtracker.JobTracker) {

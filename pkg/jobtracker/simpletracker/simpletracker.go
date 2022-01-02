@@ -25,9 +25,9 @@ func NewAllocator() *allocator {
 }
 
 type SimpleTrackerInitParams struct {
-	UsePersistentJobStorage          bool
-	DBFilePath                       string
-	CheckPointRestartForSuspendResme bool
+	UsePersistentJobStorage           bool
+	DBFilePath                        string
+	CheckPointRestartForSuspendResume bool
 }
 
 // New is called by the SessionManager when a new JobSession is allocated.
@@ -51,14 +51,14 @@ func (a *allocator) New(jobSessionName string, jobTrackerInitParams interface{})
 		if err != nil {
 			return jt, err
 		}
-		if simpleTrackerInitParams.CheckPointRestartForSuspendResme {
+		if simpleTrackerInitParams.CheckPointRestartForSuspendResume {
 			jt = EnableCheckpointRestart(jt)
 		}
 		return jt, nil
 
 	}
 	jt := New(jobSessionName)
-	if simpleTrackerInitParams.CheckPointRestartForSuspendResme {
+	if simpleTrackerInitParams.CheckPointRestartForSuspendResume {
 		jt = EnableCheckpointRestart(jt)
 	}
 	return jt, nil
@@ -109,7 +109,6 @@ func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*J
 	//  check job states, send change request to pubsub and
 	// start to track the jobs again
 	if persistent {
-
 		for _, jobid := range jobstore.GetJobIDs() {
 			pid, err := jobstore.GetPID(jobid)
 			if err != nil {
@@ -155,7 +154,6 @@ func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*J
 					ps.jobch, openFiles, nil)
 			}
 		}
-
 	}
 
 	tracker := JobTracker{
@@ -185,6 +183,11 @@ func (jt *JobTracker) ListJobs() ([]string, error) {
 	defer jt.Unlock()
 	ids := jt.js.GetJobIDs()
 	return ids, nil
+}
+
+// NEW for monitoring
+func (jt *JobTracker) ListAllJobsWithFilter(filter drmaa2interface.JobInfo) ([]string, error) {
+	return nil, nil
 }
 
 // AddJob creates a process, fills in the internal job state and saves the
