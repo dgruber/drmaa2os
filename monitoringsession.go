@@ -2,8 +2,10 @@ package drmaa2os
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os/pkg/d2hlp"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 )
 
@@ -38,22 +40,38 @@ func (ms *MonitoringSession) GetAllJobs(filter drmaa2interface.JobInfo) ([]drmaa
 	}
 	jobs := make([]drmaa2interface.Job, 0, len(ids))
 	for _, id := range ids {
+		// check if filter is set and if so filter job if neccessary
+		if d2hlp.JobInfoIsUnset(filter) == false {
+			jobinfo, err := ms.monitorer.JobInfoFromMonitor(id)
+			if err != nil {
+				log.Printf("internal error: failed applying job filter: %v", err)
+			} else {
+				if !d2hlp.JobInfoMatches(jobinfo, filter) {
+					continue
+				}
+			}
+		}
 		job := newMonitoringJob(id, ms.name, drmaa2interface.JobTemplate{}, ms.jobtracker, ms.monitorer)
-		// TODO apply filter
 		jobs = append(jobs, job)
 	}
 	return jobs, nil
 }
 
 // GetAllQueues returns all queues. If filter is set to a list of strings,
-// it only returns queue names which are defined in the filter.
+// it only returns queue names which are defined by the filter.
 func (ms *MonitoringSession) GetAllQueues(filter []string) ([]drmaa2interface.Queue, error) {
 	queueNames, err := ms.monitorer.GetAllQueueNames(filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get queue names: %v", err)
 	}
+	// for the case the filter is not implemented by the monitorer, filter again
+	sf := d2hlp.NewStringFilter(filter)
+
 	queues := make([]drmaa2interface.Queue, 0, len(queueNames))
 	for _, queueName := range queueNames {
+		if filter != nil && sf.IsIncluded(queueName) == false {
+			continue
+		}
 		queues = append(queues, drmaa2interface.Queue{
 			Name: queueName,
 		})
@@ -64,7 +82,22 @@ func (ms *MonitoringSession) GetAllQueues(filter []string) ([]drmaa2interface.Qu
 // GetAllMachines returns all machines in the cluster. If the filter is
 // set the result contains only existing machines defined by the filter.
 func (ms *MonitoringSession) GetAllMachines(filter []string) ([]drmaa2interface.Machine, error) {
-	return ms.monitorer.GetAllMachines(filter)
+	sf := d2hlp.NewStringFilter(filter)
+	machines, err := ms.monitorer.GetAllMachines(filter)
+	if err != nil {
+		return machines, err
+	}
+	if filter == nil {
+		return machines, nil
+	}
+	// for the case the monitorer does not filter machines
+	filteredMachineList := make([]drmaa2interface.Machine, 0, len(machines))
+	for i := range machines {
+		if sf.IsIncluded(machines[i].Name) {
+			filteredMachineList = append(filteredMachineList, machines[i])
+		}
+	}
+	return filteredMachineList, nil
 }
 
 // GetAllReservations returns all advance(d) reservations. Currently not
