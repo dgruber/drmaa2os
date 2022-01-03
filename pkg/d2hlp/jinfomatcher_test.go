@@ -6,8 +6,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/dgruber/drmaa2interface"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
 var _ = Describe("Jinfomatcher", func() {
@@ -42,6 +43,11 @@ var _ = Describe("Jinfomatcher", func() {
 			Ω(JobInfoMatches(e, filter)).Should(BeTrue())
 			e.SubmissionMachine = "submission"
 			Ω(JobInfoMatches(e, filter)).Should(BeTrue())
+		})
+
+		It("should display if a jobinfo struct is unset", func() {
+			Ω(JobInfoIsUnset(filter)).Should(BeTrue())
+			Ω(JobInfoIsUnset(e)).Should(BeFalse())
 		})
 	})
 
@@ -305,6 +311,28 @@ var _ = Describe("Jinfomatcher", func() {
 			filter.FinishTime = time.Date(2002, 12, 31, 23, 59, 59, 0, time.Local)
 			e.FinishTime = time.Date(2000, 12, 31, 23, 59, 59, 0, time.Local)
 			Ω(JobInfoMatches(e, filter)).Should(BeFalse())
+		})
+
+	})
+
+	Context("StringFilter", func() {
+
+		It("should filter strings", func() {
+			filter := []string{"1", "3", "5", "7"}
+			f := NewStringFilter(filter)
+			Ω(f.IsIncluded("1")).Should(BeTrue())
+			Ω(f.IsIncluded("2")).Should(BeFalse())
+			Ω(f.IsIncluded("3")).Should(BeTrue())
+			Ω(f.IsIncluded("4")).Should(BeFalse())
+			Ω(f.IsIncluded("5")).Should(BeTrue())
+			Ω(f.IsIncluded("6")).Should(BeFalse())
+		})
+
+		It("should not filter strings", func() {
+			f := NewStringFilter(nil)
+			Ω(f.IsIncluded("1")).Should(BeFalse())
+			Ω(f.IsIncluded("2")).Should(BeFalse())
+			Ω(f.IsIncluded("3")).Should(BeFalse())
 		})
 
 	})

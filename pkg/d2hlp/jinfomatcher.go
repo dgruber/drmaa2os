@@ -1,10 +1,69 @@
 package d2hlp
 
 import (
-	"github.com/dgruber/drmaa2interface"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
+// JobInfoIsUnset returns true when the job info struct does not
+// filter any jobs, i.e. all fields are set to the specified unset
+// value. Un Unset JobInfo struct is returned by drmaa2interface.CreateJobInfo().
+func JobInfoIsUnset(ji drmaa2interface.JobInfo) bool {
+	if ji.ID != "" {
+		return false
+	}
+	if ji.ExitStatus != drmaa2interface.UnsetNum {
+		return false
+	}
+	if ji.TerminatingSignal != "" {
+		return false
+	}
+	if ji.Annotation != "" {
+		return false
+	}
+	if ji.State != drmaa2interface.Unset {
+		return false
+	}
+	if ji.SubState != "" {
+		return false
+	}
+	if ji.AllocatedMachines != nil {
+		return false
+	}
+	if ji.SubmissionMachine != "" {
+		return false
+	}
+	if ji.JobOwner != "" {
+		return false
+	}
+	if ji.Slots != drmaa2interface.UnsetNum {
+		return false
+	}
+	if ji.QueueName != "" {
+		return false
+	}
+	if ji.WallclockTime != 0 {
+		return false
+	}
+	if ji.CPUTime != drmaa2interface.UnsetTime {
+		return false
+	}
+	var nullTime time.Time
+	if ji.SubmissionTime != nullTime {
+		return false
+	}
+	if ji.DispatchTime != nullTime {
+		return false
+	}
+	if ji.FinishTime != nullTime {
+		return false
+	}
+	return true
+}
+
+// JobInfoMatches returns true when the given job info is affected by the
+// given JobInfo filter.
 func JobInfoMatches(ji drmaa2interface.JobInfo, filter drmaa2interface.JobInfo) bool {
 	if filter.ID != "" {
 		if ji.ID != filter.ID {
@@ -102,4 +161,25 @@ func JobInfoMatches(ji drmaa2interface.JobInfo, filter drmaa2interface.JobInfo) 
 		}
 	}
 	return true
+}
+
+// StringFilter implements a lookup method for strings
+type StringFilter struct {
+	filter map[string]interface{}
+}
+
+func NewStringFilter(filter []string) *StringFilter {
+	sf := StringFilter{
+		filter: make(map[string]interface{}, len(filter)),
+	}
+	for i := range filter {
+		sf.filter[filter[i]] = nil
+	}
+	return &sf
+}
+
+// IsIncluded returns true when the item is found in the filter list.
+func (sf *StringFilter) IsIncluded(item string) bool {
+	_, exists := sf.filter[item]
+	return exists
 }
