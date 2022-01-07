@@ -8,6 +8,7 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gmeasure"
 )
 
 var _ = Describe("Tracker", func() {
@@ -180,7 +181,6 @@ var _ = Describe("Tracker", func() {
 				Expect(err).To(BeNil())
 				Expect(jobInfo.ID).To(Equal(jobID))
 				Expect(jobInfo.State.String()).To(Equal(drmaa2interface.Failed.String()))
-				// jobInfo.SubState --
 
 				d.DestroySession()
 			}
@@ -273,31 +273,106 @@ var _ = Describe("Tracker", func() {
 
 	})
 
-	Measure("it should submit jobs in a short time", func(b Benchmarker) {
-		<-time.Tick(time.Second * 5)
+	Context("persistent job tracker", func() {
 
-		for _, standardTracker := range []bool{true, false} {
-			d := createTracker(standardTracker)
-			Expect(d).NotTo(BeNil())
+		It("should return job infos for finished jobs", func() {
+			jobDB := getTempFile()
 
-			jobids := make([]string, 0, 16)
-			submissiontime := b.Time("submissiontime", func() {
-				jobid, _ := d.AddJob(sleeperJob)
-				jobids = append(jobids, jobid)
+			tracker, err := NewDRMAATrackerWithParams(LibDRMAASessionParams{
+				UsePersistentJobStorage: true,
+				DBFilePath:              jobDB,
 			})
+			Expect(err).To(BeNil())
+			Expect(tracker).NotTo(BeNil())
 
-			Expect(submissiontime.Seconds()).To(BeNumerically("<", 0.10),
-				"Submitting a job shouldn't take longer than 10 ms in avg.")
+			jobid, err := tracker.AddJob(drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/bash",
+				Args:          []string{"-c", `exit 0`},
+			})
+			Expect(err).To(BeNil())
 
-			// clean up
-			for _, jobID := range jobids {
-				d.JobControl(jobID, "terminate")
+			err = tracker.Wait(jobid, drmaa2interface.InfiniteTime, drmaa2interface.Done)
+			Expect(err).To(BeNil())
+
+			jobs, err := tracker.ListJobs()
+			Expect(err).To(BeNil())
+			Expect(len(jobs)).To(BeNumerically("==", 1))
+
+			state, _, err := tracker.JobState(jobs[0])
+			Expect(err).To(BeNil())
+			Expect(state.String()).To(Equal(drmaa2interface.Done.String()))
+
+			ji, err := tracker.JobInfo(jobs[0])
+			Expect(err).To(BeNil())
+			Expect(ji.State.String()).To(Equal(drmaa2interface.Done.String()))
+
+			jobs, err = tracker.ListJobs()
+			Expect(err).To(BeNil())
+			Expect(len(jobs)).To(BeNumerically("==", 1))
+
+			state, _, err = tracker.JobState(jobs[0])
+			Expect(err).To(BeNil())
+			Expect(state.String()).To(Equal(drmaa2interface.Done.String()))
+
+			ji, err = tracker.JobInfo(jobs[0])
+			Expect(err).To(BeNil())
+			Expect(ji.State.String()).To(Equal(drmaa2interface.Done.String()))
+
+			err = tracker.DestroySession()
+			Expect(err).To(BeNil())
+
+			tracker, err = NewDRMAATrackerWithParams(LibDRMAASessionParams{
+				UsePersistentJobStorage: true,
+				DBFilePath:              jobDB,
+			})
+			Expect(err).To(BeNil())
+			Expect(tracker).NotTo(BeNil())
+
+			jobs, err = tracker.ListJobs()
+			Expect(err).To(BeNil())
+			Expect(len(jobs)).To(BeNumerically("==", 1))
+
+			state, _, err = tracker.JobState(jobs[0])
+			Expect(err).To(BeNil())
+			Expect(state.String()).To(Equal(drmaa2interface.Done.String()))
+
+			ji, err = tracker.JobInfo(jobs[0])
+			Expect(err).To(BeNil())
+			Expect(ji.State.String()).To(Equal(drmaa2interface.Done.String()))
+
+			tracker.DestroySession()
+		})
+
+	})
+
+	It("should submit jobs in a short time", func() {
+
+		experiment := gmeasure.NewExperiment("Submitting Jobs")
+		experiment.Sample(func(idx int) {
+			<-time.Tick(time.Second * 3)
+			for _, standardTracker := range []bool{true, false} {
+				d := createTracker(standardTracker)
+				Expect(d).NotTo(BeNil())
+				jobids := make([]string, 0, 16)
+
+				experiment.MeasureDuration("submissionTime", func() {
+					jobid, _ := d.AddJob(sleeperJob)
+					jobids = append(jobids, jobid)
+				})
+
+				// clean up
+				for _, jobID := range jobids {
+					d.JobControl(jobID, "terminate")
+				}
+				<-time.Tick(time.Second * 3)
+				d.DestroySession()
+
 			}
-			<-time.Tick(time.Second * 5)
+		}, gmeasure.SamplingConfig{N: 10, Duration: time.Minute})
 
-			d.DestroySession()
-		}
-
-	}, 20)
+		stats := experiment.GetStats("Submitting Jobs")
+		medianDuration := stats.DurationFor(gmeasure.StatMedian)
+		Expect(medianDuration).To(BeNumerically("~", 10*time.Millisecond, 20*time.Millisecond))
+	})
 
 })
