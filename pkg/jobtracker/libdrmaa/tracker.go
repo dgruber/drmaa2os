@@ -140,7 +140,9 @@ func createTracker(s drmaa.Session) (*DRMAATracker, error) {
 // DestroySession is not part of the interface but neccessary for
 // shutting down the connection to the workload manager.
 func (t *DRMAATracker) DestroySession() error {
-	return t.session.Exit()
+	err := t.session.Exit()
+	t.Close()
+	return err
 }
 
 // ListJobs returns all jobs previously submitted and still locally cached.
@@ -202,14 +204,22 @@ func (t *DRMAATracker) ListArrayJobs(arrayJobID string) ([]string, error) {
 	return helper.ArrayJobID2GUIDs(arrayJobID)
 }
 
-// JobState returns the current state of the given job.
+// JobState returns the current state and substate of the given job.
 func (t *DRMAATracker) JobState(jobID string) (drmaa2interface.JobState, string, error) {
 	if t == nil || t.session == nil {
 		return drmaa2interface.Undetermined, "", fmt.Errorf("no active job session")
 	}
 	ps, err := t.session.JobPs(jobID)
 	if err != nil {
-		return drmaa2interface.Undetermined, "", err
+		// it might be in the job storage
+		if !t.store.HasJob(jobID) {
+			return drmaa2interface.Undetermined, "", err
+		}
+		jobInfo, err := t.store.GetJobInfo(jobID)
+		if err != nil {
+			return drmaa2interface.Undetermined, "", err
+		}
+		return jobInfo.State, jobInfo.SubState, nil
 	}
 	return ConvertDRMAAStateToDRMAA2State(ps), "", nil
 }
@@ -223,12 +233,19 @@ func (t *DRMAATracker) JobInfo(jobID string) (drmaa2interface.JobInfo, error) {
 		return drmaa2interface.JobInfo{}, err
 	}
 	if state == drmaa2interface.Failed || state == drmaa2interface.Done {
-		// job is in end state
+		// job is in end state - we can only wait() one time
+		// this is a great limitation of DRMAAv1
 		jinfo, err := t.session.Wait(jobID, 60)
 		if err != nil {
-			return drmaa2interface.JobInfo{}, err
+			// check if job is in persistent storage
+			return t.store.GetJobInfo(jobID)
 		}
-		return ConvertDRMAAJobInfoToDRMAA2JobInfo(&jinfo), nil
+		jobInfo := ConvertDRMAAJobInfoToDRMAA2JobInfo(&jinfo)
+		t.store.SaveJobInfo(jobID, jobInfo)
+		return jobInfo, nil
+	} else if state == drmaa2interface.Undetermined {
+		// check if job is in persistent storage
+		return t.store.GetJobInfo(jobID)
 	}
 	return drmaa2interface.JobInfo{}, nil
 }
