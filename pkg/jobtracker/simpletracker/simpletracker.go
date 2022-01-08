@@ -186,11 +186,6 @@ func (jt *JobTracker) ListJobs() ([]string, error) {
 	return ids, nil
 }
 
-// NEW for monitoring
-func (jt *JobTracker) ListAllJobsWithFilter(filter drmaa2interface.JobInfo) ([]string, error) {
-	return nil, nil
-}
-
 // AddJob creates a process, fills in the internal job state and saves the
 // job internally.
 func (jt *JobTracker) AddJob(t drmaa2interface.JobTemplate) (string, error) {

@@ -103,7 +103,7 @@ var _ = Describe("MonitoringSession", func() {
 		Context("Filter", func() {
 
 			It("should filter for a job with a specific ID", func() {
-				ms, err := sm.OpenMonitoringSession("test")
+				ms, err := sm.OpenMonitoringSession("testFilter")
 				Ω(err).Should(BeNil())
 				Ω(ms).ShouldNot(BeNil())
 
