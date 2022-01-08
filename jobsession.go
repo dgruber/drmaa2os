@@ -33,18 +33,13 @@ func (js *JobSession) Close() error {
 	if js.name == "" && js.tracker == nil {
 		return ErrorInvalidSession
 	}
-
 	var err error
-
-	// TODO close persistent storage
 	if closer, ok := js.tracker[0].(jobtracker.Closer); ok {
 		// disengage from storage and DRM system
 		err = closer.Close()
 	}
-
 	js.name = ""
 	js.tracker = nil
-
 	return err
 }
 
@@ -98,6 +93,11 @@ func (js *JobSession) GetJobCategories() ([]string, error) {
 func (js *JobSession) GetJobs(filter drmaa2interface.JobInfo) ([]drmaa2interface.Job, error) {
 	var joblist []drmaa2interface.Job
 
+	hasFilter := true
+	if d2hlp.JobInfoIsUnset(filter) {
+		hasFilter = false
+	}
+
 	for _, tracker := range js.tracker {
 		jobs, err := tracker.ListJobs()
 		if err != nil {
@@ -105,28 +105,32 @@ func (js *JobSession) GetJobs(filter drmaa2interface.JobInfo) ([]drmaa2interface
 			return nil, err
 		}
 		for _, jobid := range jobs {
-			if jinfo, err := tracker.JobInfo(jobid); err != nil {
-				// TODO add as exited with info from jobsession DB
-				//fmt.Printf("failed getting job info for job %s: %v\n", jobid, err)
-				continue
-			} else {
-				if d2hlp.JobInfoMatches(jinfo, filter) {
-					// get job template from tracker if it supports it
-					jobtemplate := drmaa2interface.JobTemplate{}
-					if jobTemplater, ok := tracker.(jobtracker.JobTemplater); ok {
-						jobtemplate, _ = jobTemplater.JobTemplate(jobid)
-					}
-					job := newJob(jobid, js.name, jobtemplate, tracker)
-					joblist = append(joblist, drmaa2interface.Job(job))
+			if hasFilter {
+				jinfo, err := tracker.JobInfo(jobid)
+				if err != nil {
+					// TODO add as exited with info from jobsession DB
+					//fmt.Printf("failed getting job info for job %s: %v\n", jobid, err)
+					continue
+				}
+				if d2hlp.JobInfoMatches(jinfo, filter) == false {
+					// this job is not allowed by the filter
+					continue
 				}
 			}
+			// get job template from tracker if it supports it
+			jobtemplate := drmaa2interface.JobTemplate{}
+			if jobTemplater, ok := tracker.(jobtracker.JobTemplater); ok {
+				jobtemplate, _ = jobTemplater.JobTemplate(jobid)
+			}
+			job := newJob(jobid, js.name, jobtemplate, tracker)
+			joblist = append(joblist, drmaa2interface.Job(job))
 		}
 	}
 
 	return joblist, nil
 }
 
-// GetJobArray method returns the JobArray instance with the given ID.
+// GetJobArray method returns the JobArray instance by the given ID.
 // If the session does not / no longer contain the according job array,
 // InvalidArgumentException SHALL be thrown.
 func (js *JobSession) GetJobArray(id string) (drmaa2interface.ArrayJob, error) {

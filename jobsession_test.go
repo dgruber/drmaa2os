@@ -35,7 +35,7 @@ var _ = Describe("JobSession", func() {
 
 		var err error
 		js, err = sm.CreateJobSession("testsession", "")
-		Expect(err).To(BeNil())
+		Ω(err).To(BeNil())
 
 		//js = newJobSession("testsession", []jobtracker.JobTracker{simpletracker.New("testsession")})
 		jt = drmaa2interface.JobTemplate{
@@ -119,6 +119,57 @@ var _ = Describe("JobSession", func() {
 			//Ω(j.GetState()).Should(Equal(drmaa2interface.Done))
 			Ω(js.Close()).Should(BeNil())
 		})
+	})
+
+	Describe("GetJobs operation", func() {
+
+		It("should return ni jobs when no filter is applied and no jobs are submitted", func() {
+			jobs, err := js.GetJobs(drmaa2interface.CreateJobInfo())
+			Ω(err).Should(BeNil())
+			Ω(len(jobs)).Should(BeNumerically("==", 0))
+		})
+
+		It("should return only jobs specified by the filter", func() {
+			job, err := js.RunJob(drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/bash",
+				Args:          []string{"-c", `exit 0`},
+				JobName:       "goodjob",
+				AccountingID:  "account1",
+			})
+			Ω(err).Should(BeNil())
+			Ω(job.WaitTerminated(drmaa2interface.InfiniteTime)).To(BeNil())
+
+			job, err = js.RunJob(drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/bash",
+				Args:          []string{"-c", `exit 1`},
+				JobName:       "badjob",
+				AccountingID:  "account1",
+			})
+			Ω(err).Should(BeNil())
+			Ω(job.WaitTerminated(drmaa2interface.InfiniteTime)).To(BeNil())
+
+			// no filter
+			jobList, err := js.GetJobs(drmaa2interface.CreateJobInfo())
+			Ω(err).Should(BeNil())
+			Ω(len(jobList)).Should(BeNumerically("==", 2))
+
+			filter := drmaa2interface.CreateJobInfo()
+			filter.ExitStatus = 0
+
+			// only goodjob should be returned
+			jobList, err = js.GetJobs(filter)
+			Ω(err).Should(BeNil())
+			Ω(len(jobList)).Should(BeNumerically("==", 1))
+			Ω(jobList[0].GetState().String()).Should(Equal(drmaa2interface.Done.String()))
+
+			// only badjob should be returned
+			filter.ExitStatus = 1
+			jobList, err = js.GetJobs(filter)
+			Ω(err).Should(BeNil())
+			Ω(len(jobList)).Should(BeNumerically("==", 1))
+			Ω(jobList[0].GetState().String()).Should(Equal(drmaa2interface.Failed.String()))
+		})
+
 	})
 
 	Describe("Basic error cases", func() {

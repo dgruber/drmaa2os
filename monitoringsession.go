@@ -2,7 +2,6 @@ package drmaa2os
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/d2hlp"
@@ -44,7 +43,7 @@ func (ms *MonitoringSession) GetAllJobs(filter drmaa2interface.JobInfo) ([]drmaa
 		if d2hlp.JobInfoIsUnset(filter) == false {
 			jobinfo, err := ms.monitorer.JobInfoFromMonitor(id)
 			if err != nil {
-				log.Printf("internal error: failed applying job filter: %v", err)
+				continue
 			} else {
 				if !d2hlp.JobInfoMatches(jobinfo, filter) {
 					continue

@@ -62,8 +62,8 @@ func JobInfoIsUnset(ji drmaa2interface.JobInfo) bool {
 	return true
 }
 
-// JobInfoMatches returns true when the given job info is affected by the
-// given JobInfo filter.
+// JobInfoMatches returns true when the given job info is allowed
+// by the filter.
 func JobInfoMatches(ji drmaa2interface.JobInfo, filter drmaa2interface.JobInfo) bool {
 	if filter.ID != "" {
 		if ji.ID != filter.ID {

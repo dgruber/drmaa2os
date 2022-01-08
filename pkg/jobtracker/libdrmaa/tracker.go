@@ -69,6 +69,7 @@ type DRMAATracker struct {
 	workloadManager WorkloadManagerType
 	session         *drmaa.Session
 	store           simpletracker.JobStorer
+	sessionParams   LibDRMAASessionParams
 }
 
 func NewDRMAATrackerWithParams(params interface{}) (*DRMAATracker, error) {
@@ -97,6 +98,7 @@ func NewDRMAATrackerWithParams(params interface{}) (*DRMAATracker, error) {
 	if err != nil {
 		return tracker, err
 	}
+	tracker.sessionParams = drmaaParams
 	if drmaaParams.UsePersistentJobStorage {
 		tracker.store, err = simpletracker.NewPersistentJobStore(drmaaParams.DBFilePath)
 		if err != nil {
