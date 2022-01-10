@@ -1,9 +1,13 @@
 package client_test
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"time"
 
+	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	chi "github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -11,6 +15,7 @@ import (
 
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/remote/client"
+	genclient "github.com/dgruber/drmaa2os/pkg/jobtracker/remote/client/generated"
 
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/remote/server"
 	genserver "github.com/dgruber/drmaa2os/pkg/jobtracker/remote/server/generated"
@@ -211,6 +216,67 @@ var _ = Describe("Client", func() {
 
 		})
 
+	})
+
+	Context("Client parameters", func() {
+
+		It("should add basic auth", func() {
+			impl, _ := server.NewJobTrackerImpl(simpletracker.New("drmaa2ostestjobsession"))
+
+			router := chi.NewRouter()
+			router.Use(middleware.Logger)
+			router.Use(middleware.BasicAuth("remotetracker", map[string]string{
+				"user": "password",
+			}))
+
+			testServer = httptest.NewServer(genserver.HandlerFromMuxWithBaseURL(
+				impl, router, ""))
+
+			basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth("user", "password")
+			Expect(err).To(BeNil())
+			Expect(basicAuthProvider).NotTo(BeNil())
+
+			client, err = New("clientdrmaa2ostestjobsession", ClientTrackerParams{
+				Server: testServer.URL,
+				Opts: []genclient.ClientOption{
+					genclient.WithRequestEditorFn(basicAuthProvider.Intercept)},
+			})
+			Expect(err).To(BeNil())
+
+			_, err = client.AddJob(drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/bash",
+				Args:          []string{"-c", "exit 0"},
+			})
+			Expect(err).To(BeNil())
+		})
+
+		It("should add a path at server", func() {
+			impl, _ := server.NewJobTrackerImpl(simpletracker.New("drmaa2ostestjobsession"))
+
+			m := http.NewServeMux()
+
+			router := chi.NewRouter()
+			router.Use(middleware.Logger)
+
+			m.Handle("/", genserver.HandlerFromMuxWithBaseURL(
+				impl, router, "/testpath"))
+
+			testServer = httptest.NewServer(m)
+
+			var err error
+			client, err = New("clientdrmaa2ostestjobsession", ClientTrackerParams{
+				Server: testServer.URL,
+				Path:   "/testpath",
+			})
+			Expect(err).To(BeNil())
+
+			_, err = client.AddJob(drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/bash",
+				Args:          []string{"-c", "exit 0"},
+			})
+			Expect(err).To(BeNil())
+
+		})
 	})
 
 })

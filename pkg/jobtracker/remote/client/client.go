@@ -25,10 +25,20 @@ func New(jobSessionName string, params ClientTrackerParams) (*ClientJobTracker, 
 	if params.Server == "" {
 		params.Server = "localhost:32321"
 	}
-	client, err := genclient.NewClientWithResponses(params.Server)
+	opts := make([]genclient.ClientOption, 0)
+	if params.Path != "" {
+		opts = []genclient.ClientOption{genclient.WithBaseURL(params.Server + params.Path)}
+	}
+	for _, v := range params.Opts {
+		opts = append(opts, v)
+	}
+	client, err := genclient.NewClientWithResponses(
+		params.Server,
+		opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create remote client: %v", err)
 	}
+
 	return &ClientJobTracker{
 		client: client,
 	}, nil
