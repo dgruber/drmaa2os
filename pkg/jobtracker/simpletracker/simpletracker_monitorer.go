@@ -53,7 +53,7 @@ func (m *JobTracker) GetAllMachines(names []string) ([]drmaa2interface.Machine, 
 }
 
 func (m *JobTracker) JobInfoFromMonitor(id string) (drmaa2interface.JobInfo, error) {
-	proccessID, err := strconv.Atoi(id)
+	proccessID, err := strconv.ParseInt(id, 10, 32)
 	if err != nil {
 		return drmaa2interface.JobInfo{}, fmt.Errorf("job ID is not a valid process ID: %v", err)
 	}
