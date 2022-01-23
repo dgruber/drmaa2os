@@ -163,23 +163,48 @@ func JobInfoMatches(ji drmaa2interface.JobInfo, filter drmaa2interface.JobInfo) 
 	return true
 }
 
-// StringFilter implements a lookup method for strings
-type StringFilter struct {
-	filter map[string]interface{}
+// ConvertStringsToMachines converts machine names into drmaa2 machines
+// in which only the name is set.
+func ConvertStringsToMachines(names []string) []drmaa2interface.Machine {
+	res := make([]drmaa2interface.Machine, 0, len(names))
+	for i := 0; i < len(names); i++ {
+		res = append(res, drmaa2interface.Machine{
+			Name: names[i],
+		})
+	}
+	return res
 }
 
-func NewStringFilter(filter []string) *StringFilter {
+// StringFilter implements a lookup method for strings
+type StringFilter struct {
+	values map[string]interface{}
+}
+
+// NewStringFilter creates a hashmap for efficiently looking
+// up if a value is included in the map or return a subset
+// of a given filter.
+func NewStringFilter(values []string) *StringFilter {
 	sf := StringFilter{
-		filter: make(map[string]interface{}, len(filter)),
+		values: make(map[string]interface{}, len(values)),
 	}
-	for i := range filter {
-		sf.filter[filter[i]] = nil
+	for i := range values {
+		sf.values[values[i]] = nil
 	}
 	return &sf
 }
 
 // IsIncluded returns true when the item is found in the filter list.
-func (sf *StringFilter) IsIncluded(item string) bool {
-	_, exists := sf.filter[item]
+func (sf *StringFilter) IsIncluded(filter string) bool {
+	_, exists := sf.values[filter]
 	return exists
+}
+
+func (sf *StringFilter) GetIncludedSubset(filter []string) []string {
+	result := make([]string, 0, len(filter))
+	for i := 0; i < len(filter); i++ {
+		if sf.IsIncluded(filter[i]) {
+			result = append(result, filter[i])
+		}
+	}
+	return result
 }

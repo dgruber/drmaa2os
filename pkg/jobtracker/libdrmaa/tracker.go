@@ -125,11 +125,14 @@ func createTracker(s drmaa.Session) (*DRMAATracker, error) {
 	if err != nil {
 		return nil, err
 	}
+	drm = strings.Trim(drm, " ")
 	var wlm WorkloadManagerType
-	if strings.HasPrefix(drm, "SGE 8.1.") {
+	// here it gets strange sometimes "8.1.9" and sometimes "SGE 8.1.9" is reported
+	if strings.HasPrefix(drm, "SGE 8.1.") || strings.HasPrefix(drm, "8.1.9") {
 		// Son of Grid Engine returns "SGE 8.1.9"
 		wlm = SonOfGridEngine
 	} else {
+		// expecting good old Univa Grid Engine as default (now Altair)
 		wlm = UnivaGridEngine
 	}
 	return &DRMAATracker{

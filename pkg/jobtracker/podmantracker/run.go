@@ -149,11 +149,11 @@ func CreateContainerSpec(jt drmaa2interface.JobTemplate) (*specgen.SpecGenerator
 			if len(ports) != 3 {
 				return nil, fmt.Errorf("ports extension should be of format [hostIP:]hostPort:containerPort,hostPort:containerPort,... but contains %s", portspair)
 			}
-			containerPort, err := strconv.Atoi(ports[2])
+			containerPort, err := strconv.ParseUint(ports[2], 10, 16)
 			if err != nil {
 				return nil, fmt.Errorf("container port is not a number in ports JobTemplate extension")
 			}
-			hostPort, err := strconv.Atoi(ports[1])
+			hostPort, err := strconv.ParseUint(ports[1], 10, 16)
 			if err != nil {
 				return nil, fmt.Errorf("host port is not a number in ports JobTemplate extension")
 			}

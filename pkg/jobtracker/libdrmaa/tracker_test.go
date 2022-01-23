@@ -11,16 +11,16 @@ import (
 	"github.com/onsi/gomega/gmeasure"
 )
 
+func getTempFile() string {
+	file, _ := os.CreateTemp("", "drmaatracketest")
+	name := file.Name()
+	file.Close()
+	return name
+}
+
 var _ = Describe("Tracker", func() {
 
 	var sleeperJob drmaa2interface.JobTemplate
-
-	getTempFile := func() string {
-		file, _ := os.CreateTemp("", "drmaatracketest")
-		name := file.Name()
-		file.Close()
-		return name
-	}
 
 	createTracker := func(standard bool) *DRMAATracker {
 		if standard {
