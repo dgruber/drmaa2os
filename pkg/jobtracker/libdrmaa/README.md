@@ -11,6 +11,14 @@ Grid Engine (Univa Grid Engine, SGE, Son of Grid Engine, SLURM, and more).
 
 ## Usage in drmaa2os
 
+### Known limitations
+
+The drmaa (v1) implementation (at least in Grid Engine) does not allow to create
+different job sessions in a single process at the same point in time. The currently
+also limits the _MonitoringSession_ so that no _JobSession_ can be created when a
+_MonitoringSession_ is used and vice versa. If this functionality is required a
+_Job_ implementation which works on command line wrappers needs to implemented.
+
 ### Default Usage
 
 The default usage is creating a session manager which calls the _NewDRMAATracker()_

@@ -7,7 +7,7 @@ import (
 )
 
 func QconfSQL() ([]string, error) {
-	out, err := Qconf([]string{"sql"})
+	out, err := Qconf([]string{"-sql"})
 	if err != nil {
 		return nil, err
 	}

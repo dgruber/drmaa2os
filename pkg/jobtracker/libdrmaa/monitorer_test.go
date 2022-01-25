@@ -56,6 +56,12 @@ var _ = Describe("Monitorer", func() {
 			machines, err := tracker.GetAllMachines(nil)
 			Expect(err).To(BeNil())
 			Expect(len(machines)).To(BeNumerically("==", 1))
+
+			// now with filter for all machines
+			filter := []string{"ThisM", "achineDoes", "notExist"}
+			machines, err = tracker.GetAllMachines(filter)
+			Expect(err).To(BeNil())
+			Expect(len(machines)).To(BeNumerically("==", 0))
 		})
 
 		It("should return monitoring jobs", func() {
