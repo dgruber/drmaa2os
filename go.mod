@@ -10,9 +10,9 @@ replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.4
 	github.com/opencontainers/image-spec => github.com/opencontainers/image-spec v1.0.2-0.20211123152302-43a7dee1ec31
 	github.com/opencontainers/runc v1.0.3 => github.com/opencontainers/runc v1.0.3
-	k8s.io/api => k8s.io/api v0.20.14
-	k8s.io/apimachinery => k8s.io/apimachinery v0.20.14
-	k8s.io/client-go => k8s.io/client-go v0.20.14
+	k8s.io/api => k8s.io/api v0.21.9
+	k8s.io/apimachinery => k8s.io/apimachinery v0.21.9
+	k8s.io/client-go => k8s.io/client-go v0.21.9
 )
 
 require (
@@ -38,7 +38,7 @@ require (
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/shirou/gopsutil/v3 v3.21.11
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/net v0.0.0-20211005001312-d4b1ae081e3b
+	golang.org/x/net v0.0.0-20211209124913-491a49abca63
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	k8s.io/api v0.22.5
 	k8s.io/apimachinery v0.22.5
