@@ -15,7 +15,9 @@ import (
 // line utilities (qstat) are used for getting the neccessary information.
 // That has performance and compatibility impacts as different systems
 // use different tooling. First support is implemented for open source
-// Grid Engine.
+// Grid Engine. Note, that in GE only one job session or one monitoring
+// session can be used at one point in time. This is a drmaa (v1)
+// limitation...
 
 func (m *DRMAATracker) OpenMonitoringSession(name string) error {
 	if m.workloadManager != SonOfGridEngine {
@@ -65,6 +67,9 @@ func (m *DRMAATracker) GetAllQueueNames(names []string) ([]string, error) {
 	return filter.GetIncludedSubset(names), nil
 }
 
+// GetAllMachines returns all machines the cluster consists of.
+// If names is != nil, it returns only a subset of machines which
+// names are defined in names and are in the cluster.
 func (m *DRMAATracker) GetAllMachines(names []string) ([]drmaa2interface.Machine, error) {
 	if m.workloadManager != SonOfGridEngine {
 		// TODO implement support for other systems
@@ -75,13 +80,20 @@ func (m *DRMAATracker) GetAllMachines(names []string) ([]drmaa2interface.Machine
 	if err != nil {
 		return nil, err
 	}
-	// no filter
-	if names == nil {
-		return d2hlp.ConvertStringsToMachines(machines), nil
-	}
 	// filter
-	filter := d2hlp.NewStringFilter(machines)
-	return d2hlp.ConvertStringsToMachines(filter.GetIncludedSubset(names)), nil
+	if names != nil {
+		res := make([]drmaa2interface.Machine, 0, len(machines))
+		filter := d2hlp.NewStringFilter(names)
+		for _, m := range machines {
+			if filter.IsIncluded(m.Name) {
+				res = append(res, m)
+			}
+		}
+		machines = res
+
+	}
+	// get machine details
+	return machines, nil
 }
 
 func (m *DRMAATracker) JobInfoFromMonitor(id string) (drmaa2interface.JobInfo, error) {
@@ -91,9 +103,21 @@ func (m *DRMAATracker) JobInfoFromMonitor(id string) (drmaa2interface.JobInfo, e
 	}
 	jobStatus, err := gestatus.GetJob(id)
 	if err != nil {
+		// TODO: job might be finished or not existing?!?
+		// TODO: check lookup table, which needs to be updated
+		// in the background with qacct information
 		return drmaa2interface.JobInfo{}, fmt.Errorf("failed to get job status with qstat -xml: %v", err)
 	}
 	ji := drmaa2interface.JobInfo{}
+	// TODO need job state for everything
+	state, err := QstatJobState(id) // yet another cli call...
+	if err != nil && err.Error() == "does not exist" {
+		// might be in failed state - only qacct knows...
+		ji.State = drmaa2interface.Done
+	} else {
+		ji.State = ConvertQstatJobState(state)
+	}
+	// TODO job may be done or failed and not visible in qstat
 	ji.ID = id
 	ji.JobOwner = jobStatus.JobOwner()
 	ji.AllocatedMachines = jobStatus.DestinationHostList()

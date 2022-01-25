@@ -29,6 +29,10 @@ func (sm *SessionManager) newRegisteredMonitoringSessionJobTracker(monitoringSes
 		return nil, nil, fmt.Errorf("JobTracker type %v not registered", sm.sessionType)
 	}
 
+	// known problem: GE libdrmaa does not allow to have multiple jobsessions
+	// in the same process context open hence either use monitoring session
+	// or a job session...
+
 	tracker, err := jtMap[sm.sessionType].New(monitoringSessionName, params)
 	if err != nil {
 		return nil, nil, fmt.Errorf("can't create job tracker for monitoring session %s: %v",
