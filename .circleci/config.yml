@@ -22,8 +22,6 @@ jobs:
       - run: go get github.com/dgruber/drmaa2interface
       - run: GO111MODULE=off; go build -v -p 1
       - run: GO111MODULE=on; go build -v -p 1
-      - run: export GO111MODULE=off; ls ./examples/ | grep -v libdrmaa | xargs -IXXX go build -v -p 1 ./examples/XXX
-      - run: export GO111MODULE=on; ls ./examples/ | grep -v libdrmaa | xargs -IXXX go build -v -p 1 ./examples/XXX
       - run: go test -v 
       - run: go test -v ./pkg/d2hlp
       - run: go test -v ./pkg/helper
