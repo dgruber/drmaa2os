@@ -10,14 +10,13 @@ replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.4
 	github.com/opencontainers/image-spec => github.com/opencontainers/image-spec v1.0.2-0.20211123152302-43a7dee1ec31
 	github.com/opencontainers/runc v1.0.3 => github.com/opencontainers/runc v1.0.3
-	k8s.io/api => k8s.io/api v0.21.9
-	k8s.io/apimachinery => k8s.io/apimachinery v0.21.9
-	k8s.io/client-go => k8s.io/client-go v0.21.9
+	k8s.io/api => k8s.io/api v0.22.6
+	k8s.io/apimachinery => k8s.io/apimachinery v0.22.6
+	k8s.io/client-go => k8s.io/client-go v0.22.6
 )
 
 require (
 	code.cloudfoundry.org/lager v2.0.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20201123235753-4f46d6348a05
 	github.com/cloudfoundry/gosigar v1.1.0
 	github.com/containers/podman/v3 v3.4.4
@@ -28,7 +27,6 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/getkin/kin-openapi v0.61.0
 	github.com/go-chi/chi/v5 v5.0.7
-	github.com/googleapis/gnostic v0.5.1 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.17.0
@@ -40,7 +38,7 @@ require (
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	k8s.io/api v0.22.5
-	k8s.io/apimachinery v0.22.5
-	k8s.io/client-go v0.20.6
+	k8s.io/api v0.22.6
+	k8s.io/apimachinery v0.22.6
+	k8s.io/client-go v0.22.6
 )
