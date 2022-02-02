@@ -17,10 +17,10 @@ import (
 )
 
 var _ = Describe("Simpletracker", func() {
+	var inmemorytracker *JobTracker
+	var persistentTracker *JobTracker
 
 	Context("Basic tracker add job operations", func() {
-		var inmemorytracker *JobTracker
-		var persistentTracker *JobTracker
 
 		var t drmaa2interface.JobTemplate
 
@@ -382,20 +382,41 @@ var _ = Describe("Simpletracker", func() {
 				RemoteCommand: "/bin/sleep",
 				Args:          []string{"1"},
 			}
+
+			inmemorytracker = New("testsession")
+			Ω(inmemorytracker).NotTo(BeNil())
+
+			osfile, _ := ioutil.TempFile("", "*db*")
+			dbpath := osfile.Name()
+			osfile.Close()
+
+			persitentStorage, err := NewPersistentJobStore(dbpath)
+			Ω(err).To(BeNil())
+
+			persistentTracker, err = NewWithJobStore("persistenttestsession",
+				persitentStorage, true)
+			Ω(err).To(BeNil())
+
 		})
 
 		It("should return the JobInfo object for a finished job", func() {
-			t.Args = []string{"0"}
-			jobid, err := tracker.AddJob(t)
-			Ω(err).Should(BeNil())
-			Ω(jobid).ShouldNot(Equal(""))
 
-			err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
-			Ω(err).Should(BeNil())
+			for _, tracker := range []*JobTracker{inmemorytracker, persistentTracker} {
+				jobid, err := tracker.AddJob(t)
+				Ω(err).Should(BeNil())
+				Ω(jobid).ShouldNot(Equal(""))
 
-			ji, err := tracker.JobInfo(jobid)
-			Ω(err).Should(BeNil())
-			Ω(ji.ID).Should(Equal(jobid))
+				err = tracker.Wait(jobid, 0.0, drmaa2interface.Failed, drmaa2interface.Done)
+				Ω(err).Should(BeNil())
+
+				ji, err := tracker.JobInfo(jobid)
+				Ω(err).Should(BeNil())
+				Ω(ji.ID).Should(Equal(jobid))
+
+				// regression
+				Ω(ji.WallclockTime.Milliseconds()).Should(BeNumerically("~", 1000, 100))
+			}
+
 		})
 
 		It("should return the JobInfo for a queued job array job", func() {

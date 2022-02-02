@@ -2,6 +2,7 @@ package simpletracker
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/dgruber/drmaa2interface"
@@ -159,8 +160,9 @@ func (ps *PubSub) StartBookKeeper() {
 			if info, exists := ps.jobInfo[event.JobID]; exists {
 				ps.jobInfo[event.JobID] = mergeJobInfo(info, event.JobInfo)
 			} else {
-				// TODO deep copy
-				ps.jobInfo[event.JobID] = event.JobInfo
+				// deep copy
+				ps.jobInfo[event.JobID] = mergeJobInfo(drmaa2interface.CreateJobInfo(),
+					event.JobInfo)
 			}
 			if ps.jobstore != nil {
 				ps.jobstore.SaveJobInfo(event.JobID, ps.jobInfo[event.JobID])
@@ -181,12 +183,22 @@ func (ps *PubSub) StartBookKeeper() {
 		}
 	}()
 }
+func (ps *PubSub) GetJobInfo(jobID string) (drmaa2interface.JobInfo, error) {
+	ps.Lock()
+	defer ps.Unlock()
+	jobInfo, exists := ps.jobInfo[jobID]
+	if !exists {
+		return drmaa2interface.JobInfo{}, fmt.Errorf("does not exist")
+	}
+	return mergeJobInfo(drmaa2interface.CreateJobInfo(),
+		jobInfo), nil
+}
 
 func mergeJobInfo(oldJI, newJI drmaa2interface.JobInfo) drmaa2interface.JobInfo {
 	if newJI.ID != "" {
 		oldJI.ID = newJI.ID
 	}
-	if newJI.ExitStatus != 0 {
+	if newJI.ExitStatus != drmaa2interface.UnsetNum {
 		oldJI.ExitStatus = newJI.ExitStatus
 	}
 	if newJI.TerminatingSignal != "" {
@@ -211,16 +223,16 @@ func mergeJobInfo(oldJI, newJI drmaa2interface.JobInfo) drmaa2interface.JobInfo 
 	if newJI.JobOwner != "" {
 		oldJI.JobOwner = newJI.JobOwner
 	}
-	if newJI.Slots != 0 {
+	if newJI.Slots != drmaa2interface.UnsetNum {
 		oldJI.Slots = newJI.Slots
 	}
 	if newJI.QueueName != "" {
 		oldJI.QueueName = newJI.QueueName
 	}
-	if newJI.WallclockTime != 0.0 {
+	if newJI.WallclockTime.Microseconds() > oldJI.WallclockTime.Microseconds() {
 		oldJI.WallclockTime = newJI.WallclockTime
 	}
-	if newJI.CPUTime != 0.0 {
+	if newJI.CPUTime > oldJI.CPUTime {
 		oldJI.CPUTime = newJI.CPUTime
 	}
 	if !newJI.SubmissionTime.IsZero() {
@@ -231,6 +243,14 @@ func mergeJobInfo(oldJI, newJI drmaa2interface.JobInfo) drmaa2interface.JobInfo 
 	}
 	if !newJI.FinishTime.IsZero() {
 		oldJI.FinishTime = newJI.FinishTime
+	}
+	if newJI.ExtensionList != nil {
+		if oldJI.ExtensionList == nil {
+			oldJI.ExtensionList = make(map[string]string, len(newJI.ExtensionList))
+		}
+		for k, v := range newJI.ExtensionList {
+			oldJI.ExtensionList[k] = v
+		}
 	}
 	return oldJI
 }
