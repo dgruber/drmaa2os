@@ -198,7 +198,7 @@ func mergeJobInfo(oldJI, newJI drmaa2interface.JobInfo) drmaa2interface.JobInfo 
 	if newJI.ID != "" {
 		oldJI.ID = newJI.ID
 	}
-	if newJI.ExitStatus != 0 {
+	if newJI.ExitStatus != drmaa2interface.UnsetNum {
 		oldJI.ExitStatus = newJI.ExitStatus
 	}
 	if newJI.TerminatingSignal != "" {
@@ -223,7 +223,7 @@ func mergeJobInfo(oldJI, newJI drmaa2interface.JobInfo) drmaa2interface.JobInfo 
 	if newJI.JobOwner != "" {
 		oldJI.JobOwner = newJI.JobOwner
 	}
-	if newJI.Slots != 0 {
+	if newJI.Slots != drmaa2interface.UnsetNum {
 		oldJI.Slots = newJI.Slots
 	}
 	if newJI.QueueName != "" {
