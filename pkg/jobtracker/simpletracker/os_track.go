@@ -56,10 +56,22 @@ func collectUsage(state *os.ProcessState, jobid string, startTime time.Time) drm
 		ji.TerminatingSignal = status.Signal().String()
 	}
 
+	if ji.ExtensionList == nil {
+		ji.ExtensionList = make(map[string]string)
+	}
+
 	if usage, ok := state.SysUsage().(syscall.Rusage); ok {
 		ji.CPUTime = usage.Utime.Sec + usage.Stime.Sec
-		// TODO extensions
+		// https://man7.org/linux/man-pages/man2/getrusage.2.html
+		ji.ExtensionList["ru_maxrss"] = fmt.Sprintf("%d", usage.Maxrss)
+		ji.ExtensionList["ru_swap"] = fmt.Sprintf("%d", usage.Nswap)
+		ji.ExtensionList["ru_inblock"] = fmt.Sprintf("%d", usage.Inblock)
+		ji.ExtensionList["ru_outblock"] = fmt.Sprintf("%d", usage.Oublock)
 	}
+
+	// TODO keys as consts defined in drmaa2interface
+	ji.ExtensionList["system_time_ms"] = fmt.Sprintf("%d", state.SystemTime().Milliseconds())
+	ji.ExtensionList["user_time_ms"] = fmt.Sprintf("%d", state.UserTime().Milliseconds())
 
 	if state != nil && state.Success() {
 		ji.State = drmaa2interface.Done
@@ -72,7 +84,6 @@ func collectUsage(state *os.ProcessState, jobid string, startTime time.Time) drm
 	}
 
 	ji.WallclockTime = time.Since(startTime)
-	ji.CPUTime = 0
 	ji.ID = jobid
 	ji.QueueName = ""
 

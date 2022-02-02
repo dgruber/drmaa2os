@@ -321,14 +321,7 @@ func (jt *JobTracker) JobState(jobid string) (drmaa2interface.JobState, string, 
 func (jt *JobTracker) JobInfo(jobid string) (drmaa2interface.JobInfo, error) {
 	jt.Lock()
 	defer jt.Unlock()
-
-	jt.ps.Lock()
-	ji, exists := jt.ps.jobInfo[jobid]
-	jt.ps.Unlock()
-	if exists == true {
-		return ji, nil
-	}
-	return ji, errors.New("job does not exist")
+	return jt.ps.GetJobInfo(jobid)
 }
 
 // JobControl suspends, resumes, or terminates a job.

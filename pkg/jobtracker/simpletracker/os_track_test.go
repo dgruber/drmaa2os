@@ -50,6 +50,13 @@ var _ = Describe("OsProcessSupervisor", func() {
 		// check job info
 		Ω(je.JobInfo.ID).Should(Equal("1"))
 		Ω(je.JobInfo.ExitStatus).Should(BeNumerically("==", 1))
+
+		// check for extensions
+		Ω(je.JobInfo.ExtensionList).ShouldNot(BeNil())
+		_, exists := je.JobInfo.ExtensionList["system_time_ms"]
+		Ω(exists).Should(BeTrue())
+		_, exists = je.JobInfo.ExtensionList["user_time_ms"]
+		Ω(exists).Should(BeTrue())
 	})
 
 })
