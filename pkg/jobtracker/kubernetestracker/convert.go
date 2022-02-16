@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os/pkg/extension"
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -44,7 +45,7 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 		// naming scheme of the objects jobname-filename-{secret|cm}-volume
 		volumes := make([]k8sv1.Volume, 0, 2)
 		for path, v := range jt.StageInFiles {
-			if strings.HasPrefix(v, "secret-data:") {
+			if strings.HasPrefix(v, extension.JobTemplateK8sStageInAsSecretB64Prefix) {
 				volumes = append(volumes,
 					k8sv1.Volume{
 						Name: volumeName(jt.JobName, path, "secret"),
@@ -52,7 +53,7 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 							Secret: &k8sv1.SecretVolumeSource{
 								SecretName: secretName(jt.JobName, path),
 							}}})
-			} else if strings.HasPrefix(v, "configmap-data:") {
+			} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInAsConfigMapB64Prefix) {
 				volumes = append(volumes,
 					k8sv1.Volume{
 						Name: volumeName(jt.JobName, path, "cm"),
@@ -60,8 +61,8 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 							ConfigMap: &k8sv1.ConfigMapVolumeSource{
 								LocalObjectReference: v1.LocalObjectReference{Name: configMapName(jt.JobName, path)},
 							}}})
-			} else if strings.HasPrefix(v, "hostpath:") {
-				sourcePath := strings.TrimPrefix(v, "hostpath:")
+			} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromHostPathPrefix) {
+				sourcePath := strings.TrimPrefix(v, extension.JobTemplateK8sStageInFromHostPathPrefix)
 				volumes = append(volumes,
 					k8sv1.Volume{
 						Name: volumeName(jt.JobName, path, "hostpath"),
@@ -71,8 +72,8 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 							},
 						}})
 
-			} else if strings.HasPrefix(v, "configmap:") {
-				existingConfigMapName := strings.TrimPrefix(v, "configmap:")
+			} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromConfigMapPrefix) {
+				existingConfigMapName := strings.TrimPrefix(v, extension.JobTemplateK8sStageInFromConfigMapPrefix)
 				volumes = append(volumes,
 					k8sv1.Volume{
 						Name: volumeName(jt.JobName, path, "cm"),
@@ -80,8 +81,8 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 							ConfigMap: &k8sv1.ConfigMapVolumeSource{
 								LocalObjectReference: v1.LocalObjectReference{Name: existingConfigMapName},
 							}}})
-			} else if strings.HasPrefix(v, "secret:") {
-				existingSecretName := strings.TrimPrefix(v, "secret:")
+			} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromSecretPrefix) {
+				existingSecretName := strings.TrimPrefix(v, extension.JobTemplateK8sStageInFromSecretPrefix)
 				volumes = append(volumes,
 					k8sv1.Volume{
 						Name: volumeName(jt.JobName, path, "secret"),
@@ -89,8 +90,8 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 							Secret: &k8sv1.SecretVolumeSource{
 								SecretName: existingSecretName,
 							}}})
-			} else if strings.HasPrefix(v, "pvc:") {
-				existingPVCName := strings.TrimPrefix(v, "pvc:")
+			} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromPVCPrefix) {
+				existingPVCName := strings.TrimPrefix(v, extension.JobTemplateK8sStageInFromPVCPrefix)
 				volumes = append(volumes,
 					k8sv1.Volume{
 						Name: volumeName(jt.JobName, path, "pvc"),
@@ -98,8 +99,8 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 							PersistentVolumeClaim: &k8sv1.PersistentVolumeClaimVolumeSource{
 								ClaimName: existingPVCName,
 							}}})
-			} else if strings.HasPrefix(v, "gce-disk:") {
-				existingPDName := strings.TrimPrefix(v, "gce-disk:")
+			} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromGCEDiskPrefix) {
+				existingPDName := strings.TrimPrefix(v, extension.JobTemplateK8sStageInFromGCEDiskPrefix)
 				volumes = append(volumes,
 					k8sv1.Volume{
 						Name: volumeName(jt.JobName, path, "gce-disk"),
@@ -109,8 +110,8 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 								FSType:   "ext4",
 								ReadOnly: false,
 							}}})
-			} else if strings.HasPrefix(v, "gce-disk-read:") {
-				existingPDName := strings.TrimPrefix(v, "gce-disk-read:")
+			} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromGCEDiskReadOnlyPrefix) {
+				existingPDName := strings.TrimPrefix(v, extension.JobTemplateK8sStageInFromGCEDiskReadOnlyPrefix)
 				volumes = append(volumes,
 					k8sv1.Volume{
 						Name: volumeName(jt.JobName, path, "gce-disk-read"),
@@ -120,7 +121,7 @@ func newVolumes(jt drmaa2interface.JobTemplate) ([]k8sv1.Volume, error) {
 								FSType:   "ext4",
 								ReadOnly: true,
 							}}})
-			} else if strings.HasPrefix(v, "storageclass:") {
+			} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromStorageClassNamePrefix) {
 				volumes = append(volumes,
 					k8sv1.Volume{
 						Name: volumeName(jt.JobName, path, "storageclass"),
@@ -157,55 +158,55 @@ func getVolumeMounts(jt drmaa2interface.JobTemplate) []v1.VolumeMount {
 	vmounts := make([]v1.VolumeMount, 0, len(jt.StageInFiles))
 	for k, v := range jt.StageInFiles {
 		_, file := filepath.Split(k)
-		if strings.HasPrefix(v, "secret-data:") {
+		if strings.HasPrefix(v, extension.JobTemplateK8sStageInAsSecretB64Prefix) {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "secret"),
 				MountPath: k,
 				SubPath:   file,
 			})
-		} else if strings.HasPrefix(v, "configmap-data:") {
+		} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInAsConfigMapB64Prefix) {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "cm"),
 				MountPath: k,
 				SubPath:   file,
 			})
-		} else if strings.HasPrefix(v, "hostpath:") {
+		} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromHostPathPrefix) {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "hostpath"),
 				MountPath: k,
 			})
-		} else if strings.HasPrefix(v, "configmap:") {
+		} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromConfigMapPrefix) {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "cm"),
 				MountPath: k,
 			})
-		} else if strings.HasPrefix(v, "secret:") {
+		} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromSecretPrefix) {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "secret"),
 				MountPath: k,
 			})
-		} else if strings.HasPrefix(v, "pvc:") {
+		} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromPVCPrefix) {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "pvc"),
 				MountPath: k,
 			})
-		} else if strings.HasPrefix(v, "gce-disk:") {
+		} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromGCEDiskPrefix) {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "pd"),
 				MountPath: k,
 			})
-		} else if strings.HasPrefix(v, "gce-disk-read:") {
+		} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromGCEDiskReadOnlyPrefix) {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "pd"),
 				MountPath: k,
 				ReadOnly:  true,
 			})
-		} else if strings.HasPrefix(v, "storageclass:") {
+		} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromStorageClassNamePrefix) {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "storageclass"),
 				MountPath: k,
 			})
-		} else if strings.HasPrefix(v, "nfs:") {
+		} else if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromNFSVolumePrefix) {
 			vmounts = append(vmounts, v1.VolumeMount{
 				Name:      volumeName(jt.JobName, k, "nfs"),
 				MountPath: k,
@@ -292,7 +293,7 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 	if jt.ExtensionList == nil {
 		return job
 	}
-	if labels, set := jt.ExtensionList["labels"]; set && labels != "" {
+	if labels, set := jt.ExtensionList[extension.JobTemplateK8sLabels]; set && labels != "" {
 		// "key=value,key=value,..."
 		for _, label := range strings.Split(labels, ",") {
 			l := strings.Split(label, "=")
@@ -305,16 +306,17 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 		}
 	}
 
-	if scheduler, set := jt.ExtensionList["scheduler"]; set && scheduler != "" {
+	if scheduler, set := jt.ExtensionList[extension.JobTemplateK8sScheduler]; set && scheduler != "" {
 		job.Spec.Template.Spec.SchedulerName = scheduler
 	}
 
-	if privileged, set := jt.ExtensionList["privileged"]; set && privileged != "" {
+	if privileged, set := jt.ExtensionList[extension.JobTemplateK8sPrivileged]; set && privileged != "" {
 		if strings.ToUpper(privileged) == "TRUE" {
 			for i := range job.Spec.Template.Spec.Containers {
-				privileged := true
+				p := true
+				fmt.Printf("add extension privileged=%s\n", privileged)
 				job.Spec.Template.Spec.Containers[i].SecurityContext = &v1.SecurityContext{
-					Privileged: &privileged,
+					Privileged: &p,
 				}
 			}
 		}
@@ -349,7 +351,7 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 
 	for k, v := range jt.ExtensionList {
 		// both should work "env-from-secret" and "env-from-secrets"
-		if strings.HasPrefix(k, "env-from-secret") {
+		if strings.HasPrefix(k, extension.JobTemplateK8sEnvFromSecret) {
 			for _, secret := range strings.Split(v, ":") {
 				if secret == "" {
 					continue
@@ -364,7 +366,7 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 					})
 			}
 		}
-		if strings.HasPrefix(k, "env-from-configmap") {
+		if strings.HasPrefix(k, extension.JobTemplateK8sEnvFromConfigMap) {
 			for _, configmap := range strings.Split(v, ":") {
 				if configmap == "" {
 					continue
@@ -386,8 +388,13 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 	}
 
 	// Add sidecar which stores the output of the job in a configmap.
+	// This is not needed as the job output is read from the logs of
+	// the pod object. But it is useful for storing the output in a
+	// configmap which can be consumed by another job.
+	// DRMAA2_JOB_OUTPUT_IN_JOBINFO is deprecated and will be renamed
+	// in future versions. Please use the constant for drmaa2-basic-sidecar.
 	if jt.ExtensionList != nil {
-		jo, exists := jt.ExtensionList["DRMAA2_JOB_OUTPUT_IN_JOBINFO"]
+		jo, exists := jt.ExtensionList[extension.JobTemplateK8sBasicSideCar]
 		if exists && strings.ToUpper(jo) == "TRUE" {
 			podSpec.Containers = append(podSpec.Containers, v1.Container{
 				Name:    jt.JobName + "-drmaa2os-sidecar",

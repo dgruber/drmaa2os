@@ -79,15 +79,28 @@ func GetJobOutput(cs kubernetes.Interface, namespace string, jobID string) ([]by
 	podList, err := cs.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: "job-name=" + jobID,
 	})
-	if err != nil {
+	if err != nil || len(podList.Items) <= 0 {
 		return nil, fmt.Errorf("could not get pods of job %s in namespace %s: %v",
 			jobID, namespace, err)
 	}
+
+	podName := podList.Items[0].Name
+
 	if len(podList.Items) != 1 {
-		return nil, fmt.Errorf("expected to find 1 pod for job %s in namespace %s but found %d",
-			jobID, namespace, len(podList.Items))
+		// might be a problem with the container pod and there are restarts
+		// find the last pod which has been created
+		last := time.Unix(0, 0)
+		var lastPod *corev1.Pod
+		for _, pod := range podList.Items {
+			if pod.CreationTimestamp.Time.After(last) {
+				last = pod.CreationTimestamp.Time
+				lastPod = &pod
+			}
+		}
+		podName = lastPod.Name
 	}
-	req := cs.CoreV1().Pods(namespace).GetLogs(podList.Items[0].Name, &corev1.PodLogOptions{
+
+	req := cs.CoreV1().Pods(namespace).GetLogs(podName, &corev1.PodLogOptions{
 		Container: jobID,
 		Follow:    false,
 	})

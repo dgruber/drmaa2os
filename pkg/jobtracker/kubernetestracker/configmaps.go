@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os/pkg/extension"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	k8sapi "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,8 +24,8 @@ func getJobStageInSecrets(jt drmaa2interface.JobTemplate) ([]*v1.Secret, error) 
 	secrets := make([]*v1.Secret, 0, 2)
 	for k, v := range jt.StageInFiles {
 		// secret-data creates a new secret with the base64 decoded content
-		if strings.HasPrefix(v, "secret-data:") {
-			content := strings.TrimPrefix(v, "secret-data:")
+		if strings.HasPrefix(v, extension.JobTemplateK8sStageInAsSecretB64Prefix) {
+			content := strings.TrimPrefix(v, extension.JobTemplateK8sStageInAsSecretB64Prefix)
 			decoded, err := base64.StdEncoding.DecodeString(content)
 			if err != nil {
 				return nil, fmt.Errorf("failed to base64 decode the secret: %v", err)
@@ -53,8 +54,8 @@ func getJobStageInConfigMaps(jt drmaa2interface.JobTemplate) ([]*v1.ConfigMap, e
 	}
 	configmaps := make([]*v1.ConfigMap, 0, 2)
 	for k, v := range jt.StageInFiles {
-		if strings.HasPrefix(v, "configmap-data:") {
-			content := strings.TrimPrefix(v, "configmap-data:")
+		if strings.HasPrefix(v, extension.JobTemplateK8sStageInAsConfigMapB64Prefix) {
+			content := strings.TrimPrefix(v, extension.JobTemplateK8sStageInAsConfigMapB64Prefix)
 			decoded, err := base64.StdEncoding.DecodeString(content)
 			if err != nil {
 				return nil, fmt.Errorf("failed to base64-decode the configmap: %v", err)
@@ -84,8 +85,8 @@ func getJobStageInConfigMaps(jt drmaa2interface.JobTemplate) ([]*v1.ConfigMap, e
 func getJobStageInPVCs(jt drmaa2interface.JobTemplate) ([]*v1.PersistentVolumeClaim, error) {
 	pvcs := make([]*v1.PersistentVolumeClaim, 0, 2)
 	for k, v := range jt.StageInFiles {
-		if strings.HasPrefix(v, "storageclass:") {
-			storageClassName := strings.TrimPrefix(v, "storageclass:")
+		if strings.HasPrefix(v, extension.JobTemplateK8sStageInFromStorageClassNamePrefix) {
+			storageClassName := strings.TrimPrefix(v, extension.JobTemplateK8sStageInFromStorageClassNamePrefix)
 			quantity := resource.NewQuantity(100, resource.DecimalSI)
 
 			pvcs = append(pvcs, &v1.PersistentVolumeClaim{

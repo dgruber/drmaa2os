@@ -8,6 +8,7 @@ import (
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
+	"github.com/dgruber/drmaa2os/pkg/extension"
 	"github.com/dgruber/drmaa2os/pkg/helper"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	k8sapi "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -216,29 +217,29 @@ func (kt *KubernetesTracker) JobInfo(jobID string) (drmaa2interface.JobInfo, err
 		return drmaa2interface.JobInfo{}, err
 	}
 	if ji.State == drmaa2interface.Done || ji.State == drmaa2interface.Failed {
-		// read job output
+		// read job output through logs
 		output, err := GetJobOutput(kt.clientSet, kt.namespace, jobID)
 		if err == nil {
 			if ji.ExtensionList == nil {
 				ji.ExtensionList = make(map[string]string)
 			}
-			ji.ExtensionList["output"] = string(output)
+			ji.ExtensionList[extension.JobInfoK8sJSessionJobOutput] = string(output)
 		} else {
-			fmt.Printf("error: %v\n", err)
+			fmt.Printf("error reading job output: %v\n", err)
 		}
 		// when job is finished the sidecar of the job
 		// triggers an "epilog" job / or stores data in a
 		// config map - this data needs to be read and
-		// put into the JobInfo object.
+		// put into the JobInfo object
 		/*
-			output, err := getConfigMapData(kt.clientSet, kt.namespace, jobID+"-output-configmap", "output")
+			bytesOutput, err := getConfigMapData(kt.clientSet, kt.namespace, jobID+"-output-configmap", "output")
 			if err != nil {
 				return ji, nil
 			}
 			if ji.ExtensionList == nil {
 				ji.ExtensionList = make(map[string]string)
 			}
-			ji.ExtensionList["output"] = output
+			ji.ExtensionList["sidecar-output"] = string(bytesOutput)
 		*/
 	}
 	return ji, nil

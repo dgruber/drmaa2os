@@ -63,15 +63,16 @@ Based on [JobStatus](https://kubernetes.io/docs/api-reference/batch/v1/definitio
 | JobEnvironment       | v1.EnvVar                       |
 
 Using _ExtensionList_  key "env-from-secrets" (or "env-from-secret") will map the ":" separated secrets listed in the map's values as enviornment variables in the job container. The secrets must exist.
+(use _extension.JobTemplateK8sEnvFromSecret as key)
 
-Using _ExtensionList_  key "env-from-configmaps" (or "env-from-configmap") will map the ":" separated configmaps listed in the map's values as enviornment variables in the job container. The configmaps must exist.
+Using _ExtensionList_  key "env-from-configmaps" (or "env-from-configmap") will map the ":" separated configmaps listed in the map's values as enviornment variables in the job container. The configmaps must exist. (use _extension.JobTemplateK8sEnvFromConfigMap_ as key)
 
 The job's terminal output is available when the job is in a finished state (failed or done) by
-the JobInfo extension key "output".
+the JobInfo extension key "output" (extension.JobInfoK8sJSessionJobOutput)
 
 ```
 	if jobInfo.ExtensionList != nil {
-		jobOutput, exists := jobInfo.ExtensionList["output"]
+		jobOutput, exists := jobInfo.ExtensionList[extension.JobInfoK8sJSessionJobOutput]
 		if exists {
 			fmt.Printf("Output of the job: %s\n", jobOutput)
 		}
@@ -172,4 +173,3 @@ Other implicit settings:
 | FinishTime           | job.Status.CompletionTime.Time       |
 | State                | see above                            |
 | JobID                | v1.Job.UID |
-

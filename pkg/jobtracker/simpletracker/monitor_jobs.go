@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os/pkg/extension"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/shirou/gopsutil/v3/process"
 )
@@ -56,6 +57,22 @@ func ProcessToJobInfo(proc *process.Process) drmaa2interface.JobInfo {
 	hostname, _ := os.Hostname()
 	ji.AllocatedMachines = []string{hostname}
 
+	// a few extensions
+	extensions := map[string]string{}
+
+	extensions[extension.JobInfoDefaultSessionProcessName], _ = proc.Name()
+
+	if cli, err := proc.Cmdline(); err == nil && cli != "" {
+		extensions[extension.JobInfoDefaultSessionCommandLine] = cli
+	}
+
+	if workdir, err := proc.Cwd(); err == nil && workdir != "" {
+		extensions[jobtracker.DRMAA2_MS_JOBINFO_WORKINGDIR] = workdir
+	}
+
+	usage, _ := proc.CPUPercent()
+	extensions[extension.JobInfoDefaultSessionCPUUsage] = fmt.Sprintf("%f", usage)
+
 	var affinity string
 	cpuaffinity, err := proc.CPUAffinity()
 	if err == nil {
@@ -64,31 +81,15 @@ func ProcessToJobInfo(proc *process.Process) drmaa2interface.JobInfo {
 		}
 	}
 
-	// a few extensions
-	extensions := map[string]string{}
-
-	extensions["name"], _ = proc.Name()
-
-	if cli, err := proc.Cmdline(); err == nil && cli != "" {
-		extensions[jobtracker.DRMAA2_MS_JOBINFO_COMMANDLINE] = cli
-	}
-
-	if workdir, err := proc.Cwd(); err == nil && workdir != "" {
-		extensions[jobtracker.DRMAA2_MS_JOBINFO_WORKINGDIR] = workdir
-	}
-
-	usage, _ := proc.CPUPercent()
-	extensions["cpu_usage"] = fmt.Sprintf("%f", usage)
-
 	if affinity != "" {
-		extensions["cpu_affinity"] = affinity
+		extensions[extension.JobInfoDefaultSessionCPUAffinity] = affinity
 	}
 
 	mem, err := proc.MemoryInfo()
 	if err == nil {
-		extensions["memory_usage"] = mem.String()
-		extensions["memory_usage_rss"] = fmt.Sprintf("%d", mem.RSS)
-		extensions["memory_usage_vms"] = fmt.Sprintf("%d", mem.VMS)
+		extensions[extension.JobInfoDefaultSessionMemoryUsage] = mem.String()
+		extensions[extension.JobInfoDefaultSessionMemoryUsageRSS] = fmt.Sprintf("%d", mem.RSS)
+		extensions[extension.JobInfoDefaultSessionMemoryUsageVMS] = fmt.Sprintf("%d", mem.VMS)
 	}
 
 	ji.ExtensionList = extensions

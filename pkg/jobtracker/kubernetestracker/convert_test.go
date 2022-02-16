@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os/pkg/extension"
 )
 
 var _ = Describe("Convert", func() {
@@ -184,7 +185,7 @@ var _ = Describe("Convert", func() {
 					"/usr/local/nvidia": "hostpath:/home/kubernetes/bin/nvidia",
 				}
 				jt.ExtensionList = map[string]string{
-					"privileged": "true",
+					extension.JobTemplateK8sPrivileged: "true",
 				}
 			})
 
