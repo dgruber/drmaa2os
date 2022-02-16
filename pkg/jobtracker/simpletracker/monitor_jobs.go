@@ -60,10 +60,10 @@ func ProcessToJobInfo(proc *process.Process) drmaa2interface.JobInfo {
 	// a few extensions
 	extensions := map[string]string{}
 
-	extensions[extension.JobInfoDefaultSessionProcessName], _ = proc.Name()
+	extensions[extension.JobInfoDefaultMSessionProcessName], _ = proc.Name()
 
 	if cli, err := proc.Cmdline(); err == nil && cli != "" {
-		extensions[extension.JobInfoDefaultSessionCommandLine] = cli
+		extensions[extension.JobInfoDefaultMSessionCommandLine] = cli
 	}
 
 	if workdir, err := proc.Cwd(); err == nil && workdir != "" {
@@ -71,7 +71,7 @@ func ProcessToJobInfo(proc *process.Process) drmaa2interface.JobInfo {
 	}
 
 	usage, _ := proc.CPUPercent()
-	extensions[extension.JobInfoDefaultSessionCPUUsage] = fmt.Sprintf("%f", usage)
+	extensions[extension.JobInfoDefaultMSessionCPUUsage] = fmt.Sprintf("%f", usage)
 
 	var affinity string
 	cpuaffinity, err := proc.CPUAffinity()
@@ -82,14 +82,14 @@ func ProcessToJobInfo(proc *process.Process) drmaa2interface.JobInfo {
 	}
 
 	if affinity != "" {
-		extensions[extension.JobInfoDefaultSessionCPUAffinity] = affinity
+		extensions[extension.JobInfoDefaultMSessionCPUAffinity] = affinity
 	}
 
 	mem, err := proc.MemoryInfo()
 	if err == nil {
-		extensions[extension.JobInfoDefaultSessionMemoryUsage] = mem.String()
-		extensions[extension.JobInfoDefaultSessionMemoryUsageRSS] = fmt.Sprintf("%d", mem.RSS)
-		extensions[extension.JobInfoDefaultSessionMemoryUsageVMS] = fmt.Sprintf("%d", mem.VMS)
+		extensions[extension.JobInfoDefaultMSessionMemoryUsage] = mem.String()
+		extensions[extension.JobInfoDefaultMSessionMemoryUsageRSS] = fmt.Sprintf("%d", mem.RSS)
+		extensions[extension.JobInfoDefaultMSessionMemoryUsageVMS] = fmt.Sprintf("%d", mem.VMS)
 	}
 
 	ji.ExtensionList = extensions

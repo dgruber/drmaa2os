@@ -64,14 +64,14 @@ func collectUsage(state *os.ProcessState, jobid string, startTime time.Time) drm
 	if usage, ok := state.SysUsage().(syscall.Rusage); ok {
 		ji.CPUTime = usage.Utime.Sec + usage.Stime.Sec
 		// https://man7.org/linux/man-pages/man2/getrusage.2.html
-		ji.ExtensionList[extension.JobInfoDefaultSessionMaxRSS] = fmt.Sprintf("%d", usage.Maxrss)
-		ji.ExtensionList[extension.JobInfoDefaultSessionSwap] = fmt.Sprintf("%d", usage.Nswap)
-		ji.ExtensionList[extension.JobInfoDefaultSessionInBlock] = fmt.Sprintf("%d", usage.Inblock)
-		ji.ExtensionList[extension.JobInfoDefaultSessionOutBlock] = fmt.Sprintf("%d", usage.Oublock)
+		ji.ExtensionList[extension.JobInfoDefaultJSessionMaxRSS] = fmt.Sprintf("%d", usage.Maxrss)
+		ji.ExtensionList[extension.JobInfoDefaultJSessionSwap] = fmt.Sprintf("%d", usage.Nswap)
+		ji.ExtensionList[extension.JobInfoDefaultJSessionInBlock] = fmt.Sprintf("%d", usage.Inblock)
+		ji.ExtensionList[extension.JobInfoDefaultJSessionOutBlock] = fmt.Sprintf("%d", usage.Oublock)
 	}
 
-	ji.ExtensionList[extension.JobInfoDefaultSessionSystemTime] = fmt.Sprintf("%d", state.SystemTime().Milliseconds())
-	ji.ExtensionList[extension.JobInfoDefaultSessionUserTime] = fmt.Sprintf("%d", state.UserTime().Milliseconds())
+	ji.ExtensionList[extension.JobInfoDefaultJSessionSystemTime] = fmt.Sprintf("%d", state.SystemTime().Milliseconds())
+	ji.ExtensionList[extension.JobInfoDefaultJSessionUserTime] = fmt.Sprintf("%d", state.UserTime().Milliseconds())
 
 	if state != nil && state.Success() {
 		ji.State = drmaa2interface.Done
