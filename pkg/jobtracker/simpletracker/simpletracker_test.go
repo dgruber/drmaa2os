@@ -361,10 +361,10 @@ var _ = Describe("Simpletracker", func() {
 
 		It("should be possible to wait for all job states", func() {
 			// wait for end state when end state is already reached
-			t.Args = []string{"0.0"}
+			t.Args = []string{"0.3"} // needs to have some runtime as wait running could fail
 			jobid, err := tracker.AddJob(t)
 			Ω(err).Should(BeNil())
-			err = tracker.Wait(jobid, time.Millisecond*500, drmaa2interface.Running)
+			err = tracker.Wait(jobid, time.Millisecond*800, drmaa2interface.Running)
 			Ω(err).Should(BeNil())
 			err = tracker.Wait(jobid, time.Millisecond*500, drmaa2interface.Done)
 			Ω(err).Should(BeNil())

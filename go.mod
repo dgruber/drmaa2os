@@ -17,27 +17,26 @@ replace (
 
 require (
 	code.cloudfoundry.org/lager v2.0.0+incompatible
-	github.com/cloudfoundry-community/go-cfclient v0.0.0-20201123235753-4f46d6348a05
-	github.com/cloudfoundry/gosigar v1.1.0
+	github.com/cloudfoundry-community/go-cfclient v0.0.0-20220207220839-752842e14060
+	github.com/cloudfoundry/gosigar v1.3.3
 	github.com/containers/podman/v3 v3.4.4
-	github.com/deepmap/oapi-codegen v1.8.1
+	github.com/deepmap/oapi-codegen v1.9.1
 	github.com/dgruber/drmaa v1.0.0
 	github.com/dgruber/drmaa2interface v1.0.2
 	github.com/docker/docker v20.10.11+incompatible
 	github.com/docker/go-connections v0.4.0
-	github.com/getkin/kin-openapi v0.61.0
+	github.com/getkin/kin-openapi v0.89.0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/gorilla/mux v1.8.0
-	github.com/onsi/ginkgo v1.16.4
-	github.com/onsi/gomega v1.17.0
+	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/gomega v1.18.1
 	github.com/opencontainers/image-spec v1.0.2
 	github.com/opencontainers/runc v1.0.3 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/shirou/gopsutil/v3 v3.21.11
+	github.com/shirou/gopsutil/v3 v3.22.1
 	go.etcd.io/bbolt v1.3.6
-	golang.org/x/net v0.0.0-20211209124913-491a49abca63
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	k8s.io/api v0.22.6
 	k8s.io/apimachinery v0.22.6
 	k8s.io/client-go v0.22.6
