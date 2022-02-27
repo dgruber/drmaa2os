@@ -3,7 +3,7 @@ package dockertracker_test
 import (
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"fmt"

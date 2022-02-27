@@ -8,7 +8,7 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	chi "github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/dgruber/drmaa2interface"

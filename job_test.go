@@ -1,13 +1,14 @@
 package drmaa2os
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"time"
 
 	"github.com/dgruber/drmaa2interface"
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletrackerfakes"
-	"time"
 )
 
 var _ = Describe("Job", func() {
