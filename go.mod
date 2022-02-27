@@ -29,6 +29,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/gorilla/mux v1.8.0
 	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/ginkgo/v2 v2.0.0
 	github.com/onsi/gomega v1.18.1
 	github.com/opencontainers/image-spec v1.0.2
 	github.com/opencontainers/runc v1.0.3 // indirect

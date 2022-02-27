@@ -4,7 +4,7 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/remote/client"
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/remote/server"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

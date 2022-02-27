@@ -1,7 +1,7 @@
 package kubernetestracker
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"time"
@@ -102,11 +102,12 @@ var _ = Describe("K8sState", func() {
 					},
 				},
 			)
-
-			output, err := GetJobOutput(cs, "default", "job")
+			podList, err := GetPodsForJob(cs, "default", "job")
+			Ω(err).Should(BeNil())
+			podName := GetLastStartedPod(podList).Name
+			output, err := GetJobOutput(cs, "default", "job", podName)
 			Ω(err).Should(BeNil())
 			Ω(string(output)).Should(Equal("fake logs"))
-
 		})
 
 	})

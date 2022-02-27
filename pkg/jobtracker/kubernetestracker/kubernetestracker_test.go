@@ -9,7 +9,7 @@ import (
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/dgruber/drmaa2interface"
@@ -280,10 +280,14 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(ji.ID).Should(Equal(jobid))
 			Ω(ji.State.String()).Should(Equal(drmaa2interface.Done.String()))
 			Ω(ji.ExitStatus).Should(BeNumerically("==", 0))
+			Ω(ji.AllocatedMachines).ShouldNot(BeNil())
+			Ω(ji.AllocatedMachines).Should(HaveLen(1))
+			Ω(ji.AllocatedMachines[0]).ShouldNot(Equal(""))
+			Ω(ji.TerminatingSignal).Should(Equal("0"))
 		})
 
 		WhenK8sIsAvailableIt("should return JobInfo after the job failed", func() {
-			jt.Args = []string{"-c", `exit 1`}
+			jt.Args = []string{"-c", `exit 7`}
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
@@ -295,19 +299,25 @@ var _ = Describe("KubernetesTracker", func() {
 			Ω(err).Should(BeNil())
 			Ω(ji.ID).Should(Equal(jobid))
 			Ω(ji.State).Should(Equal(drmaa2interface.Failed))
-			Ω(ji.ExitStatus).Should(BeNumerically("==", 1))
+			Ω(ji.ExitStatus).Should(BeNumerically("==", 7))
 		})
 
 		WhenK8sIsAvailableIt("should finish the job when deadline is reached", func() {
 			jt.Args = []string{"-c", "sleep 60"}
-			jt.DeadlineTime = time.Now().Add(time.Second * 2)
+			jt.DeadlineTime = time.Now().Add(time.Second * 10)
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
-			defer kt.DeleteJob(jobid)
+			//defer kt.DeleteJob(jobid)
 			err = kt.Wait(jobid, time.Second*30, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Failed))
+			// there should be a termination signal and reason
+			ji, err := kt.JobInfo(jobid)
+			Ω(err).Should(BeNil())
+			Ω(ji.ExitStatus).Should(Equal(138))
+			Ω(ji.TerminatingSignal).Should(Or(Equal("9"), Equal("")))
+			Ω(ji.SubState).Should(Equal("DeadlineExceeded"))
 		})
 
 		WhenK8sIsAvailableIt("should be possible to get the jobs output", func() {

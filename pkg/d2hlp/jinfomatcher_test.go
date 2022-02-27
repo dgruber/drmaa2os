@@ -3,7 +3,7 @@ package d2hlp_test
 import (
 	. "github.com/dgruber/drmaa2os/pkg/d2hlp"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"time"

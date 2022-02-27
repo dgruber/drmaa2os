@@ -11,7 +11,7 @@ import (
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

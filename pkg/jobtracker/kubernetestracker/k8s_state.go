@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
@@ -18,19 +19,38 @@ func convertJobStatus2JobState(status *v1.JobStatus) drmaa2interface.JobState {
 	if status == nil {
 		return drmaa2interface.Undetermined
 	}
-	// https://kubernetes.io/docs/api-reference/batch/v1/definitions/#_v1_jobstatus
+	for _, condition := range status.Conditions {
+		if condition.Type == v1.JobFailed && condition.Status == corev1.ConditionTrue {
+			return drmaa2interface.Failed
+		}
+		if condition.Type == v1.JobComplete && condition.Status == corev1.ConditionTrue {
+			return drmaa2interface.Done
+		}
+	}
+	// TODO: check for suspended state
+	// From Kubernetes code base:
+	// "The latest available observations of an object's current state. When a Job
+	// fails, one of the conditions will have type "Failed" and status true. When
+	// a Job is suspended, one of the conditions will have type "Suspended" and
+	// status true; when the Job is resumed, the status of this condition will
+	// become false. When a Job is completed, one of the conditions will have
+	// type "Complete" and status true."
 	if status.Succeeded >= 1 {
 		return drmaa2interface.Done
 	}
+
 	if status.Failed >= 1 {
 		return drmaa2interface.Failed
 	}
+
 	if status.Active >= 1 {
 		return drmaa2interface.Running
 	}
+	// completed already
 	if status.CompletionTime != nil && status.CompletionTime.Time.Before(time.Now()) {
 		return drmaa2interface.Failed
 	}
+
 	return drmaa2interface.Undetermined
 }
 
@@ -71,35 +91,12 @@ func JobToJobInfo(jc batchv1.JobInterface, jobid string) (drmaa2interface.JobInf
 	ji.State = convertJobStatus2JobState(&job.Status)
 	ji.ID = jobid
 	ji.ExitStatus = exitStatusFromJobState(ji.State)
+	ji.AllocatedMachines = []string{job.Spec.Template.Spec.NodeName}
 	return ji, nil
 }
 
 // GetJobOutput returns the output of a job pod after after it has been finished.
-func GetJobOutput(cs kubernetes.Interface, namespace string, jobID string) ([]byte, error) {
-	podList, err := cs.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: "job-name=" + jobID,
-	})
-	if err != nil || len(podList.Items) <= 0 {
-		return nil, fmt.Errorf("could not get pods of job %s in namespace %s: %v",
-			jobID, namespace, err)
-	}
-
-	podName := podList.Items[0].Name
-
-	if len(podList.Items) != 1 {
-		// might be a problem with the container pod and there are restarts
-		// find the last pod which has been created
-		last := time.Unix(0, 0)
-		var lastPod *corev1.Pod
-		for _, pod := range podList.Items {
-			if pod.CreationTimestamp.Time.After(last) {
-				last = pod.CreationTimestamp.Time
-				lastPod = &pod
-			}
-		}
-		podName = lastPod.Name
-	}
-
+func GetJobOutput(cs kubernetes.Interface, namespace string, jobID, podName string) ([]byte, error) {
 	req := cs.CoreV1().Pods(namespace).GetLogs(podName, &corev1.PodLogOptions{
 		Container: jobID,
 		Follow:    false,
@@ -107,7 +104,69 @@ func GetJobOutput(cs kubernetes.Interface, namespace string, jobID string) ([]by
 	output, err := req.Stream(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get output stream of pod %s from job %s in namespace %s: %v",
-			podList.Items[0].Name, jobID, namespace, err)
+			podName, jobID, namespace, err)
 	}
 	return ioutil.ReadAll(output)
+}
+
+func GetMachineNameForPod(cs kubernetes.Interface, namespace, podName string) (string, error) {
+	pod, err := cs.CoreV1().Pods(namespace).Get(context.Background(), podName, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get pod %s in namespace %s: %v", podName, namespace, err)
+	}
+
+	return pod.Spec.NodeName, nil
+}
+
+// GetExitStatusOfJobContainer returns the exit status of a job container.
+// When a job is deleted by deadline time, there is sometimes no terminated
+// state found, but a "DeadlineExceeded" Reason is set. But also this is
+// missing sometimes when request comes immeadiately after the job has been
+// terminated.
+func GetExitStatusOfJobContainer(cs kubernetes.Interface, namespace, podName string) (int32, int32, string, error) {
+	pod, err := cs.CoreV1().Pods(namespace).Get(context.Background(), podName, metav1.GetOptions{})
+	if err != nil {
+		return 0, 0, "", fmt.Errorf("failed to get pod %s in namespace %s: %v", podName, namespace, err)
+	}
+	message := pod.Status.Reason
+	// assume: container 0 is the job container (this depends on the pod spec in the job spec)
+	if len(pod.Status.ContainerStatuses) >= 1 && pod.Status.ContainerStatuses[0].State.Terminated != nil {
+		exitCode := pod.Status.ContainerStatuses[0].State.Terminated.ExitCode
+		terminationSignal := pod.Status.ContainerStatuses[0].State.Terminated.Signal
+		//message := pod.Status.ContainerStatuses[0].State.Terminated.Message
+		return exitCode, terminationSignal, message, nil
+	}
+	return 0, 0, message, fmt.Errorf("no container terminated status found for pod %s in namespace %s", podName, namespace)
+}
+
+func GetPodsForJob(cs kubernetes.Interface, namespace, jobID string) ([]corev1.Pod, error) {
+	podList, err := cs.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "job-name=" + jobID,
+	})
+	if err != nil || len(podList.Items) <= 0 {
+		return nil, fmt.Errorf("could not get pods of job %s in namespace %s: %v",
+			jobID, namespace, err)
+	}
+	return podList.Items, nil
+}
+
+func GetLastStartedPod(pods []corev1.Pod) corev1.Pod {
+	last := time.Unix(0, 0)
+	var lastPod corev1.Pod
+	for _, pod := range pods {
+		log.Printf("found pod %v\n", pod.Name)
+		if pod.CreationTimestamp.Time.After(last) {
+			last = pod.CreationTimestamp.Time
+			lastPod = pod
+		}
+	}
+	return lastPod
+}
+
+// GetFirstPod is required when a job is deleted by deadline time.
+// Here we have no control about restarts (seeing 3) as deadling takes
+// precedence over backoff limits in Kubernetes. So, when deadline time
+// is used there is no guarantee that we only have one pod.
+func GetFirstPod(pods []corev1.Pod) corev1.Pod {
+	return pods[0]
 }

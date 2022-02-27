@@ -217,8 +217,16 @@ func (kt *KubernetesTracker) JobInfo(jobID string) (drmaa2interface.JobInfo, err
 		return drmaa2interface.JobInfo{}, err
 	}
 	if ji.State == drmaa2interface.Done || ji.State == drmaa2interface.Failed {
+		podList, err := GetPodsForJob(kt.clientSet, kt.namespace, jobID)
+		if err != nil {
+			return ji, fmt.Errorf("could not get pods of job %s in namespace %s: %v",
+				jobID, kt.namespace, err)
+		}
+		//podName := GetLastStartedPod(podList).Name
+		podName := GetFirstPod(podList).Name
+
 		// read job output through logs
-		output, err := GetJobOutput(kt.clientSet, kt.namespace, jobID)
+		output, err := GetJobOutput(kt.clientSet, kt.namespace, jobID, podName)
 		if err == nil {
 			if ji.ExtensionList == nil {
 				ji.ExtensionList = make(map[string]string)
@@ -226,6 +234,30 @@ func (kt *KubernetesTracker) JobInfo(jobID string) (drmaa2interface.JobInfo, err
 			ji.ExtensionList[extension.JobInfoK8sJSessionJobOutput] = string(output)
 		} else {
 			fmt.Printf("error reading job output: %v\n", err)
+		}
+
+		machine, err := GetMachineNameForPod(kt.clientSet, kt.namespace, podName)
+		if err != nil {
+			ji.AllocatedMachines = []string{}
+		} else {
+			ji.AllocatedMachines = []string{machine}
+		}
+
+		// When a job has a deadline, then the job / pod will mark as failed
+		// but does not have the termination status "terminated" struct set.
+		// Hence we need to retry here...
+		exitCode, terminationSignal, message, err := GetExitStatusOfJobContainer(kt.clientSet, kt.namespace, podName)
+		if err != nil {
+			// deadline - no terminated struct
+			if message == "DeadlineExceeded" {
+				ji.ExitStatus = int(138)
+				ji.TerminatingSignal = fmt.Sprintf("%d", 9)
+				ji.SubState = message
+			}
+		} else {
+			ji.ExitStatus = int(exitCode)
+			ji.TerminatingSignal = fmt.Sprintf("%d", terminationSignal)
+			ji.SubState = message
 		}
 		// when job is finished the sidecar of the job
 		// triggers an "epilog" job / or stores data in a

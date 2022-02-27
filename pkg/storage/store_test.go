@@ -4,7 +4,7 @@ import (
 	. "github.com/dgruber/drmaa2os/pkg/storage"
 	. "github.com/dgruber/drmaa2os/pkg/storage/boltstore"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"os"

@@ -3,7 +3,7 @@ package kubernetestracker_test
 import (
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"testing"
@@ -41,6 +41,10 @@ func WhenK8sIsAvailableIt(description string, f interface{}) {
 	} else {
 		PIt(description, f)
 	}
+}
+
+func FWhenK8sIsAvailableIt(description string, f interface{}) {
+	WhenK8sIsAvailableFIt(description, f)
 }
 
 func WhenK8sIsAvailableFIt(description string, f interface{}) {
