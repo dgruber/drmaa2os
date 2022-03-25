@@ -68,20 +68,27 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 	}
 
 	var mtx sync.Mutex
-
 	mtx.Lock()
-	env := currentEnv()
+	defer mtx.Unlock()
 
+	cmd.Env = os.Environ()
 	for key, value := range t.JobEnvironment {
-		os.Setenv(key, value)
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
-	os.Setenv("JOB_ID", jobid)
+	cmd.Env = append(cmd.Env, fmt.Sprintf("JOB_ID=%s", jobid))
 	if task != 0 {
-		os.Setenv("TASK_ID", fmt.Sprintf("%d", task))
+		cmd.Env = append(cmd.Env, fmt.Sprintf("TASK_ID=%d", task))
+	}
+
+	cmd.Dir = t.WorkingDirectory
+
+	if t.ExtensionList != nil {
+		if _, exists := t.ExtensionList["chroot"]; exists {
+			cmd.SysProcAttr.Chroot = t.ExtensionList["chroot"]
+		}
 	}
 
 	if err := cmd.Start(); err != nil {
-		mtx.Unlock()
 		return 0, err
 	}
 
@@ -99,9 +106,6 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 	}
 
 	go TrackProcess(cmd.Process, jobid, startTime, finishedJobChannel, waitForFiles, waitCh)
-
-	restoreEnv(env)
-	mtx.Unlock()
 
 	if cmd.Process == nil {
 		return 0, errors.New("process is nil")

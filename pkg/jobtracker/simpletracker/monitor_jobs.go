@@ -7,7 +7,6 @@ import (
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/extension"
-	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/shirou/gopsutil/v3/process"
 )
 
@@ -67,7 +66,7 @@ func ProcessToJobInfo(proc *process.Process) drmaa2interface.JobInfo {
 	}
 
 	if workdir, err := proc.Cwd(); err == nil && workdir != "" {
-		extensions[jobtracker.DRMAA2_MS_JOBINFO_WORKINGDIR] = workdir
+		extensions[extension.JobInfoDefaultMSessionWorkingDir] = workdir
 	}
 
 	usage, _ := proc.CPUPercent()

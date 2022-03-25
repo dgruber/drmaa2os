@@ -112,6 +112,7 @@ type Monitorer interface {
 
 // constants for Monitorer struct extensions
 
+// deprecated - use extension package
 const DRMAA2_MS_JOBINFO_WORKINGDIR = "workingdir"
 const DRMAA2_MS_JOBINFO_COMMANDLINE = "commandline"
 const DRMAA2_MS_JOBINFO_JOBCATEGORY = "category"
