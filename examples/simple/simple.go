@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/dgruber/drmaa2interface"
@@ -64,6 +65,24 @@ func main() {
 			fmt.Printf("Job %s finished successfully\n", j.GetID())
 		} else {
 			fmt.Printf("Job %s finished with failure\n", j.GetID())
+		}
+		ji, err := j.GetJobInfo()
+		if err != nil {
+			fmt.Printf("Error while getting job info for job %s: %v\n", j.GetID(), err)
+		} else {
+			jobInfo, err := json.Marshal(ji)
+			if err != nil {
+				fmt.Printf("Error while marshalling job info for job %s: %v\n", j.GetID(), err)
+			} else {
+				var ext []byte
+				if ji.ExtensionList != nil {
+					ext, _ = json.Marshal(ji.ExtensionList)
+				}
+				fmt.Printf("Job info for job %s: %s\n", j.GetID(), jobInfo)
+				if ext != nil {
+					fmt.Printf("Extensions for job %s: %s\n", j.GetID(), ext)
+				}
+			}
 		}
 	}
 
