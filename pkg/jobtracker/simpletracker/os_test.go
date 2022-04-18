@@ -1,6 +1,8 @@
 package simpletracker_test
 
 import (
+	"fmt"
+
 	sigar "github.com/cloudfoundry/gosigar"
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 
@@ -199,6 +201,45 @@ var _ = Describe("OS specific functionality", func() {
 
 			Ω(err).ShouldNot(BeNil())
 		})
+
+	})
+
+	Context("Potential race conditions", func() {
+
+		It("should not block", func() {
+
+			outCh = make(chan JobEvent, 3000)
+
+			jt.RemoteCommand = "echo"
+			jt.Args = []string{"x"}
+			jt.OutputPath = "/dev/stdout"
+			jt.ErrorPath = "/dev/stderr"
+
+			for i := 0; i < 100; i++ {
+				_, err := StartProcess(fmt.Sprintf("%d", i), 0, jt, outCh)
+				Ω(err).Should(BeNil())
+			}
+
+			done := 0
+			other := 0
+			for jobEvent := range outCh {
+				if jobEvent.JobInfo.State == drmaa2interface.Done {
+					done++
+					if done >= 100 {
+						break
+					}
+				} else {
+					other++
+				}
+				if other > 100 {
+					break
+				}
+			}
+
+			Expect(done).To(BeNumerically("==", 100))
+
+		})
+
 	})
 
 })
