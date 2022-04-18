@@ -48,6 +48,10 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 	waitForFiles := 0
 	waitCh := make(chan bool, 3)
 
+	var mtx sync.Mutex
+	mtx.Lock()
+	defer mtx.Unlock()
+
 	if t.InputPath != "" {
 		if stdin, err := cmd.StdinPipe(); err == nil {
 			waitForFiles++
@@ -56,20 +60,20 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 	}
 	if t.OutputPath != "" {
 		if stdout, err := cmd.StdoutPipe(); err == nil {
-			waitForFiles++
-			redirectOut(stdout, t.OutputPath, waitCh)
+			err = redirectOut(stdout, t.OutputPath, waitCh)
+			if err == nil {
+				waitForFiles++
+			}
 		}
 	}
 	if t.ErrorPath != "" {
 		if stderr, err := cmd.StderrPipe(); err == nil {
-			waitForFiles++
-			redirectOut(stderr, t.ErrorPath, waitCh)
+			err = redirectOut(stderr, t.ErrorPath, waitCh)
+			if err == nil {
+				waitForFiles++
+			}
 		}
 	}
-
-	var mtx sync.Mutex
-	mtx.Lock()
-	defer mtx.Unlock()
 
 	cmd.Env = os.Environ()
 	for key, value := range t.JobEnvironment {
@@ -113,29 +117,35 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 	return cmd.Process.Pid, nil
 }
 
-func redirectOut(src io.ReadCloser, outfilename string, waitCh chan bool) {
+func redirectOut(src io.ReadCloser, outfilename string, waitCh chan bool) error {
+	buf := make([]byte, 1024)
+	outfile, err := os.Create(outfilename)
+	if err != nil {
+		return err
+	}
 	go func() {
-		buf := make([]byte, 1024)
-		outfile, _ := os.Create(outfilename)
 		io.CopyBuffer(outfile, src, buf)
+		src.Close()
 		outfile.Close()
 		waitCh <- true
 	}()
+	return nil
 }
 
-func redirectIn(out io.WriteCloser, infilename string, waitCh chan bool) {
+func redirectIn(out io.WriteCloser, infilename string, waitCh chan bool) error {
+	buf := make([]byte, 1024)
+	file, err := os.Open(infilename)
+	if err != nil {
+		return err
+	}
 	go func() {
-		buf := make([]byte, 1024)
-		file, err := os.Open(infilename)
-		if err != nil {
-			panic(err)
-		}
 		io.CopyBuffer(out, file, buf)
 		file.Close()
 		// need to close stdin otherwise cmd might wait infinitely
 		out.Close()
 		waitCh <- true
 	}()
+	return nil
 }
 
 // KillPid terminates a process and all processes belonging
