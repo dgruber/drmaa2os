@@ -107,7 +107,7 @@ func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*J
 	// start to accept job change requests
 	ps.StartBookKeeper()
 
-	//  check job states, send change request to pubsub and
+	// check job states, send change request to pubsub and
 	// start to track the jobs again
 	if persistent {
 		for _, jobid := range jobstore.GetJobIDs() {
@@ -151,7 +151,8 @@ func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*J
 				if jobTemplate.ErrorPath != "" {
 					openFiles++
 				}
-				go TrackProcess(process, jobid, jobTemplate.StartTime,
+
+				go TrackProcess(nil, process, jobid, jobTemplate.StartTime,
 					ps.jobch, openFiles, nil)
 			}
 		}

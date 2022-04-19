@@ -459,7 +459,7 @@ var _ = Describe("Simpletracker", func() {
 			fileOut2.Close()
 
 			t.OutputPath = fileOutName
-			jobid, err := tracker.AddJob(t)
+			_, err = tracker.AddJob(t)
 			Ω(err).Should(BeNil())
 
 			t.InputPath = fileOutName
@@ -470,7 +470,7 @@ var _ = Describe("Simpletracker", func() {
 			err = tracker.Wait(jobid2, time.Second*5, drmaa2interface.Done)
 			Expect(err).To(BeNil())
 
-			state, _, _ := tracker.JobState(jobid)
+			state, _, _ := tracker.JobState(jobid2)
 			Ω(state.String()).Should(Equal(drmaa2interface.Done.String()))
 		})
 
