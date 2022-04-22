@@ -20,7 +20,7 @@ var _ = Describe("OsProcessSupervisor", func() {
 		cmd := exec.Command("true")
 		err := cmd.Start()
 		Ω(err).Should(BeNil())
-		TrackProcess(cmd.Process, jobid, time.Now(), ch, 0, nil)
+		TrackProcess(cmd, nil, jobid, time.Now(), ch, 0, nil)
 
 		var je JobEvent
 		Ω(ch).Should(Receive(&je))
@@ -39,7 +39,7 @@ var _ = Describe("OsProcessSupervisor", func() {
 		cmd := exec.Command("false")
 		err := cmd.Start()
 		Ω(err).Should(BeNil())
-		TrackProcess(cmd.Process, jobid, time.Now(), ch, 0, nil)
+		TrackProcess(cmd, nil, jobid, time.Now(), ch, 0, nil)
 
 		var je JobEvent
 		Ω(ch).Should(Receive(&je))

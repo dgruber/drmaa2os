@@ -53,13 +53,17 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 	defer mtx.Unlock()
 
 	if t.InputPath != "" {
-		if stdin, err := cmd.StdinPipe(); err == nil {
-			waitForFiles++
-			redirectIn(stdin, t.InputPath, waitCh)
+		stdin, err := cmd.StdinPipe()
+		if err == nil {
+			err = redirectIn(stdin, t.InputPath, waitCh)
+			if err == nil {
+				waitForFiles++
+			}
 		}
 	}
 	if t.OutputPath != "" {
-		if stdout, err := cmd.StdoutPipe(); err == nil {
+		stdout, err := cmd.StdoutPipe()
+		if err == nil {
 			err = redirectOut(stdout, t.OutputPath, waitCh)
 			if err == nil {
 				waitForFiles++
@@ -67,7 +71,8 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 		}
 	}
 	if t.ErrorPath != "" {
-		if stderr, err := cmd.StderrPipe(); err == nil {
+		stderr, err := cmd.StderrPipe()
+		if err == nil {
 			err = redirectOut(stderr, t.ErrorPath, waitCh)
 			if err == nil {
 				waitForFiles++
@@ -109,7 +114,7 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 		},
 	}
 
-	go TrackProcess(cmd.Process, jobid, startTime, finishedJobChannel, waitForFiles, waitCh)
+	go TrackProcess(cmd, nil, jobid, startTime, finishedJobChannel, waitForFiles, waitCh)
 
 	if cmd.Process == nil {
 		return 0, errors.New("process is nil")

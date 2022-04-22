@@ -3,6 +3,7 @@ package simpletracker
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"syscall"
 	"time"
 
@@ -11,16 +12,31 @@ import (
 )
 
 // TrackProcess supervises a running process and sends a notification when
-// the process is finished.
-func TrackProcess(proc *os.Process, jobid string, startTime time.Time,
+// the process is finished. If the process was started from this process
+// cmd is given otherwise when when re-attaching to an already existing
+// process proc is given.
+func TrackProcess(cmd *exec.Cmd, proc *os.Process, jobID string, startTime time.Time,
 	finishedJobChannel chan JobEvent, waitForFiles int, waitCh chan bool) {
-	state, err := proc.Wait()
+
+	var state *os.ProcessState
+	var err error
+
+	if cmd != nil {
+		// wait for process and get state
+		state, err = cmd.Process.Wait()
+		// additionally wait for file descriptors to prevent blocking
+		cmd.Wait()
+	} else {
+		state, err = proc.Wait()
+	}
 
 	// wait until all filedescriptors (stdout, stderr) of the
 	// process are closed
-	for waitForFiles > 0 {
-		<-waitCh
-		waitForFiles--
+	if cmd != nil {
+		for waitForFiles > 0 {
+			<-waitCh
+			waitForFiles--
+		}
 	}
 
 	if err != nil {
@@ -28,14 +44,14 @@ func TrackProcess(proc *os.Process, jobid string, startTime time.Time,
 		ji.State = drmaa2interface.Failed
 		finishedJobChannel <- JobEvent{
 			JobState: drmaa2interface.Failed,
-			JobID:    jobid,
+			JobID:    jobID,
 			JobInfo:  ji,
 		}
 		return
 	}
 
-	ji := collectUsage(state, jobid, startTime)
-	finishedJobChannel <- JobEvent{JobState: ji.State, JobID: jobid, JobInfo: ji}
+	ji := collectUsage(state, jobID, startTime)
+	finishedJobChannel <- JobEvent{JobState: ji.State, JobID: jobID, JobInfo: ji}
 }
 
 func makeLocalJobInfo() drmaa2interface.JobInfo {
