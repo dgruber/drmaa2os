@@ -270,11 +270,31 @@ func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin, end, ste
 	}
 	jt.js.SaveArrayJob(arrayjobid, pids, t, begin, end, step)
 	jt.Unlock()
+
+	// ensure that all tasks are in the job state map
+	for areAllJobsInJobStateMap(jt, arrayjobid, begin, end, step) == false {
+		time.Sleep(time.Millisecond * 10)
+	}
+
 	errCh := arrayJobSubmissionController(jt, arrayjobid, t, begin, end, step, maxParallel)
 	if err := <-errCh; err != nil {
 		return "", err
 	}
 	return arrayjobid, nil
+}
+
+func areAllJobsInJobStateMap(jt *JobTracker, arrayjobid string, begin, end, step int) bool {
+	jt.ps.Lock()
+	for i := begin; i <= end; i += step {
+		jobid := fmt.Sprintf("%s.%d", arrayjobid, i)
+		_, exists := jt.ps.jobState[jobid]
+		if !exists {
+			jt.ps.Unlock()
+			return false
+		}
+	}
+	jt.ps.Unlock()
+	return true
 }
 
 // ListArrayJobs returns all job IDs the job array ID is associated with.
