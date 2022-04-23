@@ -7,6 +7,7 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/d2hlp"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
+	"github.com/mitchellh/copystructure"
 )
 
 // JobSession instance acts as container for job instances controlled
