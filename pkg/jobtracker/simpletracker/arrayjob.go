@@ -2,6 +2,7 @@ package simpletracker
 
 import (
 	"fmt"
+
 	"github.com/dgruber/drmaa2interface"
 )
 
@@ -26,8 +27,8 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 				<-waitCh
 				continue
 			}
-			jt.ps.Unlock()
 			pid, err := StartProcess(jobid, i, t, jt.ps.jobch)
+			jt.ps.Unlock()
 			if err != nil {
 				// job failed
 				jt.ps.Lock()
