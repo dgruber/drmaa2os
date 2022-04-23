@@ -266,7 +266,7 @@ var _ = Describe("JobSession", func() {
 			Ω(js.Close()).Should(BeNil())
 		})
 
-		FIt("should be possible to terminate a job array (bulk job)", func() {
+		It("should be possible to terminate a job array (bulk job)", func() {
 			jt := drmaa2interface.JobTemplate{
 				RemoteCommand: "/bin/sleep",
 				Args:          []string{"100"},
