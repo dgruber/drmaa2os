@@ -719,6 +719,18 @@ var _ = Describe("Simpletracker", func() {
 			tracker, err := NewWithJobStore("testsession", persistentJobStore, true)
 			Expect(err).To(BeNil())
 
+			// finished job
+			finishedJobID, err := tracker.AddJob(drmaa2interface.JobTemplate{
+				RemoteCommand: "sleep",
+				Args:          []string{"0"},
+			})
+			Expect(err).To(BeNil())
+			Expect(finishedJobID).NotTo(Equal(""))
+
+			err = tracker.Wait(finishedJobID, 0.0, drmaa2interface.Done)
+			Expect(err).To(BeNil())
+
+			// running job
 			jobid, err := tracker.AddJob(drmaa2interface.JobTemplate{
 				RemoteCommand: "sleep",
 				Args:          []string{"1"},
@@ -747,26 +759,32 @@ var _ = Describe("Simpletracker", func() {
 			// expect to find old job
 			jobs, err := tracker.ListJobs()
 			Expect(err).To(BeNil())
-			Expect(len(jobs)).To(BeNumerically("==", 1))
-			Expect(jobs[0]).To(Equal(jobid))
+			Expect(len(jobs)).To(BeNumerically("==", 2))
+			Expect(jobs[0]).To(Equal(finishedJobID))
+			Expect(jobs[1]).To(Or(Equal(jobid)))
+
+			// needs still be in done state
+			state, _, err := tracker.JobState(jobs[0])
+			Expect(err).To(BeNil())
+			Expect(state).To(Equal(drmaa2interface.Done))
 
 			// needs still be in running state
-			state, _, err := tracker.JobState(jobs[0])
+			state, _, err = tracker.JobState(jobs[1])
 			Expect(err).To(BeNil())
 			Expect(state).To(Equal(drmaa2interface.Running))
 
 			// should be able to control the job
-			err = tracker.JobControl(jobs[0], jobtracker.JobControlSuspend)
+			err = tracker.JobControl(jobs[1], jobtracker.JobControlSuspend)
 			Expect(err).To(BeNil())
-			err = tracker.JobControl(jobs[0], jobtracker.JobControlResume)
+			err = tracker.JobControl(jobs[1], jobtracker.JobControlResume)
 			Expect(err).To(BeNil())
 
 			// it should also return the job template
-			template, err := tracker.JobTemplate(jobs[0])
+			template, err := tracker.JobTemplate(jobs[1])
 			Expect(err).To(BeNil())
 			Expect(template.RemoteCommand).To(Equal("sleep"))
 
-			err = tracker.Wait(jobs[0], drmaa2interface.InfiniteTime, drmaa2interface.Done, drmaa2interface.Failed)
+			err = tracker.Wait(jobs[1], drmaa2interface.InfiniteTime, drmaa2interface.Done, drmaa2interface.Failed)
 			Expect(err).To(BeNil())
 		})
 

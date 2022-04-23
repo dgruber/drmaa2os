@@ -118,6 +118,8 @@ func (ps *PubSub) Register(jobid string, states ...drmaa2interface.JobState) (ch
 		if state == drmaa2interface.Failed || state == drmaa2interface.Done {
 			return nil, errors.New("job already finished")
 		}
+	} else {
+		return nil, fmt.Errorf("job %s does not exist", jobid)
 	}
 
 	waitChannel := make(chan drmaa2interface.JobState, 1)

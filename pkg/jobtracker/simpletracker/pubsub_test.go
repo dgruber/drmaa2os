@@ -14,8 +14,10 @@ var _ = Describe("Pubsub", func() {
 	Context("Basic operations", func() {
 
 		It("should be possible to register and unregister", func() {
-			ps, jeCh := NewPubSub(NewJobStore())
+			store := NewJobStore()
+			ps, jeCh := NewPubSub(store)
 			ps.StartBookKeeper()
+			ps.NotifyAndWait(JobEvent{"13", drmaa2interface.Queued, drmaa2interface.JobInfo{}, nil})
 			waitCh, err := ps.Register("13", drmaa2interface.Running)
 			Ω(err).Should(BeNil())
 			ps.Unregister("13")
@@ -32,6 +34,8 @@ var _ = Describe("Pubsub", func() {
 			ps, jeCh := NewPubSub(NewJobStore())
 
 			ps.StartBookKeeper()
+
+			ps.NotifyAndWait(JobEvent{"13", drmaa2interface.Queued, drmaa2interface.JobInfo{}, nil})
 
 			// consumer
 			waitCh, err := ps.Register("13", drmaa2interface.Running)
@@ -54,6 +58,8 @@ var _ = Describe("Pubsub", func() {
 			// producer
 			ps, jeCh := NewPubSub(NewJobStore())
 			ps.StartBookKeeper()
+
+			ps.NotifyAndWait(JobEvent{"13", drmaa2interface.Queued, drmaa2interface.JobInfo{}, nil})
 
 			// consumer
 			waitCh, err := ps.Register("13", drmaa2interface.Running)
@@ -78,6 +84,8 @@ var _ = Describe("Pubsub", func() {
 
 			ps.StartBookKeeper()
 
+			ps.NotifyAndWait(JobEvent{"13", drmaa2interface.Queued, drmaa2interface.JobInfo{}, nil})
+
 			// consumer
 			waitCh, err := ps.Register("13", drmaa2interface.Running)
 			Ω(err).Should(BeNil())
@@ -91,7 +99,7 @@ var _ = Describe("Pubsub", func() {
 			Ω(err3).Should(BeNil())
 
 			// consumer
-			waitCh4, err4 := ps.Register("13", drmaa2interface.Queued)
+			waitCh4, err4 := ps.Register("13", drmaa2interface.Done)
 			Ω(err4).Should(BeNil())
 
 			// produce
@@ -114,6 +122,10 @@ var _ = Describe("Pubsub", func() {
 			ps, jeCh := NewPubSub(NewJobStore())
 
 			ps.StartBookKeeper()
+
+			ps.NotifyAndWait(JobEvent{"1", drmaa2interface.Queued, drmaa2interface.JobInfo{}, nil})
+			ps.NotifyAndWait(JobEvent{"13", drmaa2interface.Queued, drmaa2interface.JobInfo{}, nil})
+			ps.NotifyAndWait(JobEvent{"14", drmaa2interface.Queued, drmaa2interface.JobInfo{}, nil})
 
 			// consumer
 			waitCh, err := ps.Register("14", drmaa2interface.Running)
