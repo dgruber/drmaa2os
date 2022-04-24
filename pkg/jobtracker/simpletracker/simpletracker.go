@@ -276,6 +276,10 @@ func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin, end, ste
 		time.Sleep(time.Millisecond * 10)
 	}
 
+	//if maxParallel == 0 {
+	//	maxParallel = len(pids)
+	//}
+
 	errCh := arrayJobSubmissionController(jt, arrayjobid, t, begin, end, step, maxParallel)
 	if err := <-errCh; err != nil {
 		return "", err
@@ -438,6 +442,8 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 
 	// check if job exists and if it is in an end state already which does not change
 	jt.Lock()
+
+	// for array jobs - check array job task
 	exists := jt.js.HasJob(jobparts[0])
 	if exists == false {
 		jt.Unlock()

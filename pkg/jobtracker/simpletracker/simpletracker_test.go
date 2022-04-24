@@ -121,7 +121,7 @@ var _ = Describe("Simpletracker", func() {
 				Ω(errList).To(BeNil())
 				Ω(len(jobs)).To(Equal(10))
 
-				err = tracker.Wait(jobs[2], time.Second*5, drmaa2interface.Done, drmaa2interface.Failed)
+				err = tracker.Wait(jobs[2], time.Second*10, drmaa2interface.Done, drmaa2interface.Failed)
 				Ω(err).To(BeNil())
 
 				err = tracker.Wait(jobs[3], 0.0, drmaa2interface.Done, drmaa2interface.Failed)
