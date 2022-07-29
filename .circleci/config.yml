@@ -58,7 +58,6 @@ jobs:
             export PATH=${PATH}:${GOPATH}/bin
             export PATH=${PATH}:/opt/sge/include
             go version
-#            go get github.com/dgruber/drmaa2interface
             go build -v -p 1
             qhost
             qstat -F
