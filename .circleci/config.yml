@@ -6,24 +6,22 @@ jobs:
   build:
     docker:
       # specify the version
-      - image: circleci/golang:latest
+      - image: cimg/go:1.18
      
      # 4GB let compiling fail from time to time / trying with -p 1
-     # resource_class: large 
+    resource_class: xlarge 
 
     #### TEMPLATE_NOTE: go expects specific checkout path representing url
     #### expecting it in the form of
     ####   /go/src/github.com/circleci/go-tool
     ####   /go/src/bitbucket.org/circleci/go-tool
-    working_directory: /go/src/github.com/dgruber/drmaa2os
+#    working_directory: $HOME/go/src/github.com/dgruber/drmaa2os
     steps:
       - checkout
       - run: sudo apt-get update
       - run: sudo apt-get install -y libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev
-      - run: go get github.com/dgruber/drmaa2interface
-      - run: GO111MODULE=off; go build -v -p 1
-      - run: GO111MODULE=on; go build -v -p 1
-      - run: go test -v 
+      - run: go build -v -p 1
+      - run: go test -v
       - run: go test -v ./pkg/d2hlp
       - run: go test -v ./pkg/helper
       - run: go test -v ./pkg/storage/...
@@ -37,7 +35,6 @@ jobs:
   libdrmaa:
     docker:
       - image: drmaa/gridengine:latest
-    working_directory: /go/src/github.com/dgruber/drmaa2os
     steps:
       - checkout
       - run:
@@ -55,12 +52,11 @@ jobs:
             popd
             echo "Install Go"
             yum install -y wget tar git gcc
-            export VERSION=1.16 OS=linux ARCH=amd64 && wget https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz && tar -C /usr/local -xzvf go$VERSION.$OS-$ARCH.tar.gz && rm go$VERSION.$OS-$ARCH.tar.gz
-            export GOPATH=/go
-            export PATH=/usr/local/go/bin:${PATH}:${GOPATH}/bin
-            export PATH=${PATH}:/opt/sge/include
-            go get github.com/dgruber/drmaa2interface
-            GO111MODULE=on; go build -v -p 1
+            rm -rf /usr/local/go || true
+            export VERSION=1.18.4 OS=linux ARCH=amd64 && wget https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz && tar -C /usr/local -xzvf go$VERSION.$OS-$ARCH.tar.gz && rm go$VERSION.$OS-$ARCH.tar.gz
+            export PATH=/usr/local/go/bin:${PATH}:/opt/sge/include
+            go version
+            go build -v -p 1
             qhost
             qstat -F
             cd ./pkg/jobtracker/libdrmaa

@@ -2,6 +2,7 @@ package simpletracker
 
 import (
 	"fmt"
+
 	"github.com/dgruber/drmaa2interface"
 )
 
@@ -12,6 +13,7 @@ import (
 func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2interface.JobTemplate,
 	begin, end, step, maxParallel int) chan error {
 	firstJobErrorCh := make(chan error, 1)
+
 	go func() {
 		waitCh := make(chan int, maxParallel)
 		for i := begin; i <= end; i += step {
@@ -20,14 +22,19 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 			}
 			jobid := fmt.Sprintf("%s.%d", arrayjobid, i)
 			jt.ps.Lock()
+
 			// check if job was cancelled while waiting
 			if jt.ps.jobState[jobid] == drmaa2interface.Failed {
 				jt.ps.Unlock()
-				<-waitCh
+				if maxParallel > 0 {
+					<-waitCh
+				}
 				continue
 			}
-			jt.ps.Unlock()
+
 			pid, err := StartProcess(jobid, i, t, jt.ps.jobch)
+			jt.ps.Unlock()
+
 			if err != nil {
 				// job failed
 				jt.ps.Lock()
@@ -36,7 +43,9 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 				if i == begin {
 					firstJobErrorCh <- err
 				}
-				<-waitCh
+				if maxParallel > 0 {
+					<-waitCh
+				}
 				continue
 			}
 
@@ -46,6 +55,7 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 			jt.Lock()
 			jt.js.SaveArrayJobPID(arrayjobid, i, pid)
 			jt.Unlock()
+
 			if maxParallel > 0 {
 				go func() {
 					jt.Wait(jobid, 0.0, drmaa2interface.Done, drmaa2interface.Failed)

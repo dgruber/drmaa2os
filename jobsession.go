@@ -7,6 +7,7 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/d2hlp"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
+	"github.com/mitchellh/copystructure"
 )
 
 // JobSession instance acts as container for job instances controlled
@@ -173,17 +174,25 @@ func (js *JobSession) GetJobArray(id string) (drmaa2interface.ArrayJob, error) {
 //   being submitted to the DRM system.
 // - The job has one of the DRMAA job states.
 func (js *JobSession) RunJob(jt drmaa2interface.JobTemplate) (drmaa2interface.Job, error) {
-	id, err := js.tracker[0].AddJob(jt)
+	jtCopy, err := copystructure.Copy(jt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy job template: %w", err)
+	}
+	id, err := js.tracker[0].AddJob(jtCopy.(drmaa2interface.JobTemplate))
 	if err != nil {
 		return nil, err
 	}
-	return newJob(id, js.name, jt, js.tracker[0]), nil
+	return newJob(id, js.name, jtCopy.(drmaa2interface.JobTemplate), js.tracker[0]), nil
 }
 
 // RunBulkJobs method creates a set of parametric jobs, each with attributes as defined
 // in the given job template instance.
 func (js *JobSession) RunBulkJobs(jt drmaa2interface.JobTemplate, begin, end, step, maxParallel int) (drmaa2interface.ArrayJob, error) {
-	id, err := js.tracker[0].AddArrayJob(jt, begin, end, step, maxParallel)
+	jtCopy, err := copystructure.Copy(jt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy job template: %w", err)
+	}
+	id, err := js.tracker[0].AddArrayJob(jtCopy.(drmaa2interface.JobTemplate), begin, end, step, maxParallel)
 	if err != nil {
 		return nil, err
 	}

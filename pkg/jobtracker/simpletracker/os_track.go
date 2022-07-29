@@ -78,7 +78,8 @@ func collectUsage(state *os.ProcessState, jobid string, startTime time.Time) drm
 	}
 
 	if usage, ok := state.SysUsage().(syscall.Rusage); ok {
-		ji.CPUTime = usage.Utime.Sec + usage.Stime.Sec
+		// cross-building issue in case usage is 32bit
+		ji.CPUTime = int64(usage.Utime.Sec) + int64(usage.Stime.Sec)
 		// https://man7.org/linux/man-pages/man2/getrusage.2.html
 		ji.ExtensionList[extension.JobInfoDefaultJSessionMaxRSS] = fmt.Sprintf("%d", usage.Maxrss)
 		ji.ExtensionList[extension.JobInfoDefaultJSessionSwap] = fmt.Sprintf("%d", usage.Nswap)

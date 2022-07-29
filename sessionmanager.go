@@ -38,6 +38,10 @@ const (
 	// ExternalSession can be used by external JobTracker implementations
 	// during development time before they get added here
 	ExternalSession
+	// GoogleBatchSession manages Google Cloud Batch jobs
+	GoogleBatchSession
+	// MPIOperatorSession manages jobs as MPI operator jobs on Kubernetes
+	MPIOperatorSession
 )
 
 func init() {
@@ -195,6 +199,27 @@ func NewRemoteSessionManager(rs interface{}, dbpath string) (*SessionManager, er
 // add a constant here.
 func NexExternalSessionManager(dbpath string) (*SessionManager, error) {
 	return makeSessionManager(dbpath, ExternalSession)
+}
+
+// NewGoogleBatchSessionManager see https://github.com/dgruber/gcpbatchtracker
+func NewGoogleBatchSessionManager(parameters interface{}, dbpath string) (*SessionManager, error) {
+	sm, err := makeSessionManager(dbpath, GoogleBatchSession)
+	if err != nil {
+		return sm, err
+	}
+	// specific parameters for GoogleBatch (like project ID and region)
+	sm.jobTrackerCreateParams = parameters
+	return sm, nil
+}
+
+// NewMPIOperatorSessionManager (TODO) see https://github.com/dgruber/mpioperatortracker
+func NewMPIOperatorSessionManager(parameters interface{}, dbpath string) (*SessionManager, error) {
+	sm, err := makeSessionManager(dbpath, MPIOperatorSession)
+	if err != nil {
+		return sm, err
+	}
+	sm.jobTrackerCreateParams = parameters
+	return sm, nil
 }
 
 // CreateJobSession creates a new JobSession for managing jobs.
