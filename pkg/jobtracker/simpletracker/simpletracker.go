@@ -276,9 +276,9 @@ func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin, end, ste
 		time.Sleep(time.Millisecond * 10)
 	}
 
-	//if maxParallel == 0 {
-	//	maxParallel = len(pids)
-	//}
+	if maxParallel == 0 {
+		maxParallel = len(pids)
+	}
 
 	errCh := arrayJobSubmissionController(jt, arrayjobid, t, begin, end, step, maxParallel)
 	if err := <-errCh; err != nil {
