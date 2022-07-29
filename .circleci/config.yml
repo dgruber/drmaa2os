@@ -20,9 +20,6 @@ jobs:
       - checkout
       - run: sudo apt-get update
       - run: sudo apt-get install -y libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev
-    #  - run: go get github.com/dgruber/drmaa2interface
-    #  - run: GO111MODULE=off; go build -v -p 1
-    #  - run: GO111MODULE=on; go build -v -p 1
       - run: go build -v -p 1
       - run: go test -v 
       - run: go test -v ./pkg/d2hlp
@@ -38,7 +35,6 @@ jobs:
   libdrmaa:
     docker:
       - image: drmaa/gridengine:latest
-#    working_directory: $HOME/go/src/github.com/dgruber/drmaa2os
     steps:
       - checkout
       - run:
