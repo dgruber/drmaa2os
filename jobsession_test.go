@@ -266,6 +266,23 @@ var _ = Describe("JobSession", func() {
 			Ω(js.Close()).Should(BeNil())
 		})
 
+		It("should be possible to submit a job array with limited parallel execution", func() {
+			jt := drmaa2interface.JobTemplate{
+				RemoteCommand: "sleep",
+				Args:          []string{"0"},
+			}
+			arrayjob, _ := js.RunBulkJobs(jt, 1, 10, 1, 5)
+			//Ω(err).Should(BeNil())
+			jobs := arrayjob.GetJobs()
+			Ω(len(jobs)).Should(Equal(10))
+			for i := 0; i < 10; i++ {
+				_, err := js.WaitAnyTerminated(jobs, time.Second*20)
+				Ω(err).Should(BeNil())
+			}
+
+			Ω(js.Close()).Should(BeNil())
+		})
+
 		It("should be possible to terminate a job array (bulk job)", func() {
 			jt := drmaa2interface.JobTemplate{
 				RemoteCommand: "/bin/sleep",

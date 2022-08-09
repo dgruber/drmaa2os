@@ -104,9 +104,6 @@ func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*J
 	// with state undetermined
 	ps, _ := NewPubSub(jobstore)
 
-	// start to accept job change requests
-	ps.StartBookKeeper()
-
 	// check job states, send change request to pubsub and
 	// start to track the jobs again
 	if persistent {
@@ -166,6 +163,7 @@ func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*J
 		isPersistent: persistent,
 	}
 	tracker.ps.StartBookKeeper()
+
 	return &tracker, nil
 }
 

@@ -31,9 +31,9 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 				}
 				continue
 			}
+			jt.ps.Unlock()
 
 			pid, err := StartProcess(jobid, i, t, jt.ps.jobch)
-			jt.ps.Unlock()
 
 			if err != nil {
 				// job failed
