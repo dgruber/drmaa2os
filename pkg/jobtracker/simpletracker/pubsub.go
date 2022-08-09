@@ -125,6 +125,26 @@ func (ps *PubSub) Register(jobid string, states ...drmaa2interface.JobState) (ch
 	waitChannel := make(chan drmaa2interface.JobState, 1)
 	ps.waitFunctions[jobid] = append(ps.waitFunctions[jobid],
 		waitRequest{ExpectedState: states, WaitChannel: waitChannel})
+
+	// check again if finished meanwhile
+	// check if job is already in the expected state
+	state, exists = ps.jobState[jobid]
+	if exists {
+		for _, expectedState := range states {
+			if expectedState == state {
+				ps.waitFunctions[jobid] = ps.waitFunctions[jobid][:len(ps.waitFunctions[jobid])-1]
+				return nil, nil
+			}
+		}
+		if state == drmaa2interface.Failed || state == drmaa2interface.Done {
+			ps.waitFunctions[jobid] = ps.waitFunctions[jobid][:len(ps.waitFunctions[jobid])-1]
+			return nil, errors.New("job already finished")
+		}
+	} else {
+		ps.waitFunctions[jobid] = ps.waitFunctions[jobid][:len(ps.waitFunctions[jobid])-1]
+		return nil, fmt.Errorf("job %s does not exist", jobid)
+	}
+
 	return waitChannel, nil
 }
 
@@ -184,6 +204,7 @@ func (ps *PubSub) StartBookKeeper() {
 			}
 		}
 	}()
+	return
 }
 func (ps *PubSub) GetJobInfo(jobID string) (drmaa2interface.JobInfo, error) {
 	ps.Lock()
