@@ -29,9 +29,7 @@ func New(jobSessionName string, params ClientTrackerParams) (*ClientJobTracker, 
 	if params.Path != "" {
 		opts = []genclient.ClientOption{genclient.WithBaseURL(params.Server + params.Path)}
 	}
-	for _, v := range params.Opts {
-		opts = append(opts, v)
-	}
+	opts = append(opts, params.Opts...)
 	client, err := genclient.NewClientWithResponses(
 		params.Server,
 		opts...)

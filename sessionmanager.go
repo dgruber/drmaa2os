@@ -245,7 +245,10 @@ func (sm *SessionManager) CreateJobSession(name, contact string) (drmaa2interfac
 			}
 			// store new contact string for job session
 			fmt.Printf("saving contact string %s\n", contact)
-			sm.store.Put(storage.JobSessionType, name, contact)
+			err = sm.store.Put(storage.JobSessionType, name, contact)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to store contact string after session creation: %v", err)
+			}
 		}
 	}
 

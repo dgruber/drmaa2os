@@ -100,7 +100,10 @@ func (js *PersistentJobStorage) SaveJob(jobid string, t drmaa2interface.JobTempl
 		}
 		var buffer bytes.Buffer
 		enc := gob.NewEncoder(&buffer)
-		enc.Encode(t)
+		err = enc.Encode(t)
+		if err != nil {
+			return fmt.Errorf("failed to encode job template: %v", err)
+		}
 		err = db.Put([]byte(jobid), buffer.Bytes())
 		if err != nil {
 			return fmt.Errorf("failed to save job: %v", err)
@@ -136,7 +139,6 @@ func (js *PersistentJobStorage) SaveJob(jobid string, t drmaa2interface.JobTempl
 
 // HasJob returns true if the job is saved in the job store.
 func (js *PersistentJobStorage) HasJob(jobid string) bool {
-
 	err := js.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(JobTemplatesStorageKey))
 		if b == nil {
@@ -152,19 +154,15 @@ func (js *PersistentJobStorage) HasJob(jobid string) bool {
 			}
 			jid := bjid.Get([]byte(jobid))
 			if jid != nil {
+				// job found
 				return nil
 			}
 			return fmt.Errorf("jobid not found")
 		}
 		// job found
 		return nil
-
 	})
-
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (js *PersistentJobStorage) IsArrayJob(jobid string) bool {
@@ -190,7 +188,6 @@ func (js *PersistentJobStorage) IsArrayJob(jobid string) bool {
 // The jobid can be the identifier of a job or a job array. In case
 // of a job array it removes all tasks which belong to the array job.
 func (js *PersistentJobStorage) RemoveJob(jobid string) {
-
 	err := js.db.Update(func(tx *bolt.Tx) error {
 		// is array job?
 		db := tx.Bucket([]byte(IsArrayJobStorageKey))
@@ -215,15 +212,15 @@ func (js *PersistentJobStorage) RemoveJob(jobid string) {
 			for _, somejobid := range js.GetJobIDs() {
 				if strings.HasPrefix(somejobid, jobid+".") {
 					// delete jobid
-					err = jobidsdb.Delete([]byte(somejobid))
-					if err != nil {
-						return fmt.Errorf("failed to delete array job task %s: %v", somejobid, err)
-					}
+					jobidsdb.Delete([]byte(somejobid))
 				}
 			}
 		} else {
 			// delete only job id
-			jobidsdb.Delete([]byte(jobid))
+			err = jobidsdb.Delete([]byte(jobid))
+			if err != nil {
+				return fmt.Errorf("failed to delete job %s: %v", jobid, err)
+			}
 		}
 
 		db, err = tx.CreateBucketIfNotExists([]byte(JobTemplatesStorageKey))

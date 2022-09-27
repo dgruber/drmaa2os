@@ -164,7 +164,7 @@ func (js *JobStore) GetPID(jobid string) (int, error) {
 
 // GetJobIDs returns the IDs of all jobs.
 func (js *JobStore) GetJobIDs() []string {
-	tmp := make([]string, len(js.jobids), len(js.jobids))
+	tmp := make([]string, len(js.jobids))
 	copy(tmp, js.jobids)
 	return tmp
 }

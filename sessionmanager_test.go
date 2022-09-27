@@ -15,8 +15,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const smtempdb string = "drmaa2ostest.db"
-
 var _ = Describe("Sessionmanager", func() {
 
 	var (

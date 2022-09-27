@@ -50,13 +50,13 @@ func (dt *DockerTracker) GetAllMachines(filter []string) ([]drmaa2interface.Mach
 	if err != nil {
 		return nil, fmt.Errorf("failed to get docker host info: %v", err)
 	}
-	if filter != nil {
-		for f := range filter {
-			if filter[f] == info.Name {
-				return []drmaa2interface.Machine{}, nil
-			}
+
+	for f := range filter {
+		if filter[f] == info.Name {
+			return []drmaa2interface.Machine{}, nil
 		}
 	}
+
 	var arch drmaa2interface.CPU
 	if info.Architecture == "x86_64" {
 		arch = drmaa2interface.IA64

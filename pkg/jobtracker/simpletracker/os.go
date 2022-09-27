@@ -53,31 +53,80 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 	defer mtx.Unlock()
 
 	if t.InputPath != "" {
-		stdin, err := cmd.StdinPipe()
-		if err == nil {
-			err = redirectIn(stdin, t.InputPath, waitCh)
-			if err == nil {
-				waitForFiles++
+
+		if t.InputPath == "/dev/stdin" {
+			cmd.Stdin = os.Stdin
+		} else {
+			file, err := os.Open(t.InputPath)
+			if err != nil {
+				panic(err)
 			}
+			cmd.Stdin = file
 		}
+
+		/*
+			stdin, err := cmd.StdinPipe()
+			if err == nil {
+				err = redirectIn(stdin, t.InputPath, waitCh)
+				if err == nil {
+					waitForFiles++
+				} else {
+					panic(err)
+				}
+			}
+		*/
+
 	}
 	if t.OutputPath != "" {
-		stdout, err := cmd.StdoutPipe()
-		if err == nil {
-			err = redirectOut(stdout, t.OutputPath, waitCh)
-			if err == nil {
-				waitForFiles++
+
+		if t.OutputPath == "/dev/stdout" {
+			cmd.Stdout = os.Stdout
+		} else if t.OutputPath == "/dev/stderr" {
+			cmd.Stdout = os.Stderr
+		} else {
+			outfile, err := os.Create(t.OutputPath)
+			if err != nil {
+				panic(err)
 			}
+			cmd.Stdout = outfile
 		}
+
+		/*
+			stdout, err := cmd.StdoutPipe()
+			if err == nil {
+				err = redirectOut(stdout, t.OutputPath, waitCh)
+				if err == nil {
+					waitForFiles++
+				} else {
+					panic(err)
+				}
+			}
+		*/
+
 	}
 	if t.ErrorPath != "" {
-		stderr, err := cmd.StderrPipe()
-		if err == nil {
-			err = redirectOut(stderr, t.ErrorPath, waitCh)
-			if err == nil {
-				waitForFiles++
+
+		if t.ErrorPath == "/dev/stdout" {
+			cmd.Stderr = os.Stdout
+		} else if t.ErrorPath == "/dev/stderr" {
+			cmd.Stderr = os.Stderr
+		} else {
+			outfile, err := os.Create(t.ErrorPath)
+			if err != nil {
+				panic(err)
 			}
+			cmd.Stdout = outfile
 		}
+
+		/*
+			stderr, err := cmd.StderrPipe()
+			if err == nil {
+				err = redirectOut(stderr, t.ErrorPath, waitCh)
+				if err == nil {
+					waitForFiles++
+				}
+			}
+		*/
 	}
 
 	cmd.Env = os.Environ()
@@ -123,13 +172,23 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 }
 
 func redirectOut(src io.ReadCloser, outfilename string, waitCh chan bool) error {
-	buf := make([]byte, 1024)
-	outfile, err := os.Create(outfilename)
-	if err != nil {
-		return err
+	var outfile *os.File
+	if outfilename == "/dev/stdout" {
+		outfile = os.Stdout
+	} else if outfilename == "/dev/stderr" {
+		outfile = os.Stderr
+	} else {
+		var err error
+		outfile, err = os.Create(outfilename)
+		if err != nil {
+			return err
+		}
 	}
 	go func() {
-		io.CopyBuffer(outfile, src, buf)
+		_, err := io.Copy(outfile, src)
+		if err != nil {
+			fmt.Printf("Internal error while copying buffer: %s", err)
+		}
 		src.Close()
 		outfile.Close()
 		waitCh <- true
@@ -138,13 +197,13 @@ func redirectOut(src io.ReadCloser, outfilename string, waitCh chan bool) error 
 }
 
 func redirectIn(out io.WriteCloser, infilename string, waitCh chan bool) error {
-	buf := make([]byte, 1024)
 	file, err := os.Open(infilename)
 	if err != nil {
 		return err
 	}
 	go func() {
-		io.CopyBuffer(out, file, buf)
+		//buf := make([]byte, 1024)
+		io.Copy(out, file)
 		file.Close()
 		// need to close stdin otherwise cmd might wait infinitely
 		out.Close()

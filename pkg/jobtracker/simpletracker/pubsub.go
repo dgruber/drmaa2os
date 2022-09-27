@@ -204,8 +204,8 @@ func (ps *PubSub) StartBookKeeper() {
 			}
 		}
 	}()
-	return
 }
+
 func (ps *PubSub) GetJobInfo(jobID string) (drmaa2interface.JobInfo, error) {
 	ps.Lock()
 	defer ps.Unlock()

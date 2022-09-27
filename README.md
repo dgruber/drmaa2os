@@ -27,7 +27,7 @@ containers running in Kubernetes, as Cloud Foundry tasks, pure Docker, Singulari
 or any HPC workload manager which supports the DRMAA standard through the C _libdrmaa.so_
 library (like SLURM, Grid Engine, ...) without changing the application logic.
 
-Its main pupose is supporting you with an abstraction layer on top of platforms, workload managers, 
+Its main purpose is supporting you with an abstraction layer on top of platforms, workload managers, 
 and HPC cluster schedulers, so that a software developer don't need to deal with the underlaying details and differences of job submission, status checking, and more.
 
 An even simpler interface for creating job workflows without dealing with the DRMAA2 details is
@@ -105,7 +105,7 @@ Note that at this point in time only _JobSessions_ are implemented.
 ## Using other Backends
 
 Using other backends for workload management and execution only differs in creating
-a different _SessionManager_. Different _JobTemplate_ attributes might be neccessary when
+a different _SessionManager_. Different _JobTemplate_ attributes might be necessary when
 switching the implementation. If using a backend which supports container images it
 might be required to set the _JobCategory_ to the container image name.
 
@@ -230,6 +230,8 @@ of the task.
 
 ### Singularity
 
+_Note, for Singularity it is recommended to use the process backend (simpletracker / calling Singularity command line interface) as the Singularity implementation was an experiment and is not tested with newer versions of Singularity._
+
 The Singularity _SessionManager_ wraps the singularity command which is required to be installed.
 The container images can be provided in any form (like pointing to file or shub) but are 
 required to be set as _JobCategory_ for each job.
@@ -307,7 +309,7 @@ based vbox VM).
 
 If _ConnectionURIOverride_ is not set the implementation uses the default connection
 to the Podman REST API server. This server can be setup by _podman system service -t 0 &_
-in Linux enviornments. 
+in Linux environments. 
 
 Note, that it currently the implementation expects that the images are pre-pulled.
 

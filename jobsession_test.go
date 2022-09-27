@@ -18,8 +18,6 @@ import (
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletrackerfakes"
 )
 
-const tempdb string = "drmaa2ostest.db"
-
 var _ = Describe("JobSession", func() {
 
 	var (

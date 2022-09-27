@@ -607,8 +607,8 @@ var _ = Describe("Simpletracker", func() {
 
 		maxParallel := func(jobids []string) int {
 			max := 0
-			dt := make([]time.Time, len(jobids), len(jobids))
-			ft := make([]time.Time, len(jobids), len(jobids))
+			dt := make([]time.Time, len(jobids))
+			ft := make([]time.Time, len(jobids))
 			for i := 0; i < len(jobids); i++ {
 				info, err := tracker.JobInfo(jobids[i])
 				Ω(err).Should(BeNil())
@@ -712,7 +712,7 @@ var _ = Describe("Simpletracker", func() {
 			file.Close()
 		})
 
-		It("should find and attach to jobs after restart", func() {
+		FIt("should find and attach to jobs after restart", func() {
 			persistentJobStore, err := NewPersistentJobStore(newDBPath)
 			Expect(err).To(BeNil())
 

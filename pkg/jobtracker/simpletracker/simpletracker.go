@@ -432,7 +432,7 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 		timeoutCh = make(chan time.Time)
 	} else {
 		// create timeout channel
-		timeoutCh = time.Tick(d)
+		timeoutCh = time.NewTicker(d).C
 	}
 
 	// jobid can be a job or array job task

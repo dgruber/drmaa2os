@@ -21,7 +21,7 @@ func waitAny(waitForStartedState bool, jobs []drmaa2interface.Job, timeout time.
 	errored := make(chan int, len(jobs))
 	abort := make(chan bool, len(jobs))
 
-	if jobs == nil || len(jobs) == 0 {
+	if len(jobs) == 0 {
 		return nil, fmt.Errorf("no job to wait for")
 	}
 
@@ -44,7 +44,6 @@ func waitAny(waitForStartedState bool, jobs []drmaa2interface.Job, timeout time.
 					errored <- index
 				}
 				finished <- true
-				return
 			}()
 			select {
 			case <-abort:
@@ -55,7 +54,7 @@ func waitAny(waitForStartedState bool, jobs []drmaa2interface.Job, timeout time.
 		}()
 	}
 
-	timeoutCh := time.Tick(timeout)
+	t := time.NewTicker(timeout)
 	errorCnt := 0
 
 	for {
@@ -72,7 +71,7 @@ func waitAny(waitForStartedState bool, jobs []drmaa2interface.Job, timeout time.
 				abort <- true
 			}
 			return jobs[jobindex], nil
-		case <-timeoutCh:
+		case <-t.C:
 			return nil, ErrorInvalidState
 		}
 	}

@@ -20,10 +20,7 @@ import (
 func exists(pid int) bool {
 	state := sigar.ProcState{}
 	err := state.Get(pid)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 var _ = Describe("OS specific functionality", func() {

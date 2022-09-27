@@ -54,11 +54,11 @@ func main() {
 
 	jobs, _ := js.GetJobs(drmaa2interface.CreateJobInfo())
 	for i := 0; i < 2; i++ {
-		j, err := js.WaitAnyTerminated(jobs, -1)
+		j, err := js.WaitAnyTerminated(jobs, drmaa2interface.InfiniteTime)
 		jobs = removeJob(jobs, j)
 
 		if err != nil {
-			fmt.Printf("Error while waiting for jobs to finish: %s\n", err.Error())
+			fmt.Printf("Error while waiting for jobs to finish: %v\n", err)
 			break
 		}
 		if j.GetState() == drmaa2interface.Done {
