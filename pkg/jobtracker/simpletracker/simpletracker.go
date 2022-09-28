@@ -104,6 +104,8 @@ func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*J
 	// with state undetermined
 	ps, _ := NewPubSub(jobstore)
 
+	ps.StartBookKeeper()
+
 	// check job states, send change request to pubsub and
 	// start to track the jobs again
 	if persistent {
@@ -131,6 +133,7 @@ func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*J
 						Slots: 1,
 					},
 				})
+
 				// TODO: shows process only be active from now - we can
 				// get the start date from the DB. We also need job template
 				// to know about depending files.
@@ -162,7 +165,6 @@ func NewWithJobStore(jobsession string, jobstore JobStorer, persistent bool) (*J
 		ps:           ps,
 		isPersistent: persistent,
 	}
-	tracker.ps.StartBookKeeper()
 
 	return &tracker, nil
 }

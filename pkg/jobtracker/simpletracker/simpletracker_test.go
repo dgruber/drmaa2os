@@ -712,7 +712,7 @@ var _ = Describe("Simpletracker", func() {
 			file.Close()
 		})
 
-		FIt("should find and attach to jobs after restart", func() {
+		It("should find and attach to jobs after restart", func() {
 			persistentJobStore, err := NewPersistentJobStore(newDBPath)
 			Expect(err).To(BeNil())
 
@@ -733,7 +733,7 @@ var _ = Describe("Simpletracker", func() {
 			// running job
 			jobid, err := tracker.AddJob(drmaa2interface.JobTemplate{
 				RemoteCommand: "sleep",
-				Args:          []string{"1"},
+				Args:          []string{"2"},
 			})
 			Expect(err).To(BeNil())
 			Expect(jobid).NotTo(Equal(""))

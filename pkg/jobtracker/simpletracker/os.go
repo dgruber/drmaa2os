@@ -115,7 +115,7 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 			if err != nil {
 				panic(err)
 			}
-			cmd.Stdout = outfile
+			cmd.Stderr = outfile
 		}
 
 		/*

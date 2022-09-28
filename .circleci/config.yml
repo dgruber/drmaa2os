@@ -9,7 +9,7 @@ jobs:
       - image: cimg/go:1.18
      
      # 4GB let compiling fail from time to time / trying with -p 1
-    resource_class: xlarge 
+    resource_class: large 
 
     #### TEMPLATE_NOTE: go expects specific checkout path representing url
     #### expecting it in the form of
