@@ -756,6 +756,8 @@ var _ = Describe("Simpletracker", func() {
 			tracker, err = NewWithJobStore("testsession", persistentJobStore, true)
 			Expect(err).To(BeNil())
 
+			<-time.Tick(1 * time.Second)
+
 			// expect to find old job
 			jobs, err := tracker.ListJobs()
 			Expect(err).To(BeNil())
