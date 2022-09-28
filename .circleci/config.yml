@@ -33,6 +33,7 @@ jobs:
           name: Code coverage
           command: bash <(curl -s https://codecov.io/bash)
   libdrmaa:
+    resource_class: large 
     docker:
       - image: drmaa/gridengine:latest
     steps:
