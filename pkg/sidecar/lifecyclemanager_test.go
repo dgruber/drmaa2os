@@ -6,14 +6,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	. "github.com/dgruber/drmaa2os/pkg/sidecar"
-	"k8s.io/client-go/kubernetes/fake"
-
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/testing"
+
+	. "github.com/dgruber/drmaa2os/pkg/sidecar"
 )
 
 var _ = Describe("Lifecyclemanager", func() {

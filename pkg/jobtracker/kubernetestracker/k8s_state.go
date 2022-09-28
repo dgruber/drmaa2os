@@ -143,9 +143,12 @@ func GetPodsForJob(cs kubernetes.Interface, namespace, jobID string) ([]corev1.P
 	podList, err := cs.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: "job-name=" + jobID,
 	})
-	if err != nil || len(podList.Items) <= 0 {
+	if err != nil {
 		return nil, fmt.Errorf("could not get pods of job %s in namespace %s: %v",
 			jobID, namespace, err)
+	}
+	if len(podList.Items) <= 0 {
+		return nil, fmt.Errorf("no active pod for job with label selector job-name=%s", jobID)
 	}
 	return podList.Items, nil
 }

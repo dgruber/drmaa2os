@@ -217,10 +217,10 @@ func (kt *KubernetesTracker) JobInfo(jobID string) (drmaa2interface.JobInfo, err
 		return drmaa2interface.JobInfo{}, err
 	}
 	if ji.State == drmaa2interface.Done || ji.State == drmaa2interface.Failed {
-		podList, err := GetPodsForJob(kt.clientSet, kt.namespace, jobID)
-		if err != nil {
-			return ji, fmt.Errorf("could not get pods of job %s in namespace %s: %v",
-				jobID, kt.namespace, err)
+		podList, errGetPods := GetPodsForJob(kt.clientSet, kt.namespace, jobID)
+		if errGetPods != nil {
+			// might be normal if pod already finished
+			return ji, nil
 		}
 		//podName := GetLastStartedPod(podList).Name
 		podName := GetFirstPod(podList).Name

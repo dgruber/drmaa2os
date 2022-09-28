@@ -3,14 +3,15 @@ package singularity_test
 import (
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/dgruber/drmaa2interface"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/dgruber/drmaa2interface"
 )
 
 var _ = Describe("Singularity", func() {

@@ -2,7 +2,7 @@ package singularity
 
 import (
 	"github.com/dgruber/drmaa2interface"
-	g "github.com/onsi/ginkgo"
+	g "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
