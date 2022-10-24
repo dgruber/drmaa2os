@@ -199,6 +199,36 @@ var _ = Describe("OS specific functionality", func() {
 			Ω(err).ShouldNot(BeNil())
 		})
 
+		It("should return an error when stderr file can not be generated", func() {
+			file, err := ioutil.TempFile(os.TempDir(), "d2ostest")
+			Ω(err).Should(BeNil())
+			file.Close()
+
+			jt.RemoteCommand = "/bin/echo"
+			jt.Args = []string{"output"}
+
+			jt.ErrorPath = "/non/existing/path"
+			_, err = StartProcess("1", 0, jt, outCh)
+
+			// wrong path / can not create file
+			Ω(err).ShouldNot(BeNil())
+
+			jt.InputPath = "non/existing/path"
+			jt.ErrorPath = "/dev/stderr"
+
+			_, err = StartProcess("1", 0, jt, outCh)
+
+			// wrong path / can not create file
+			Ω(err).ShouldNot(BeNil())
+
+			jt.InputPath = ""
+			jt.OutputPath = ""
+			jt.ErrorPath = file.Name()
+			_, err = StartProcess("1", 0, jt, outCh)
+
+			Ω(err).Should(BeNil())
+		})
+
 	})
 
 	Context("Potential race conditions", func() {

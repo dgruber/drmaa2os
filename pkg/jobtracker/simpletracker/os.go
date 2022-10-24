@@ -59,7 +59,7 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 		} else {
 			file, err := os.Open(t.InputPath)
 			if err != nil {
-				panic(err)
+				return 0, fmt.Errorf("could not open input file %s: %v", t.InputPath, err)
 			}
 			cmd.Stdin = file
 		}
@@ -86,7 +86,10 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 		} else {
 			outfile, err := os.Create(t.OutputPath)
 			if err != nil {
-				panic(err)
+				if err != nil {
+					return 0, fmt.Errorf("could not truncate/create output file %s: %v",
+						t.OutputPath, err)
+				}
 			}
 			cmd.Stdout = outfile
 		}
@@ -113,7 +116,8 @@ func StartProcess(jobid string, task int, t drmaa2interface.JobTemplate, finishe
 		} else {
 			outfile, err := os.Create(t.ErrorPath)
 			if err != nil {
-				panic(err)
+				return 0, fmt.Errorf("failed to truncate/create error file %s: %v",
+					t.ErrorPath, err)
 			}
 			cmd.Stderr = outfile
 		}
