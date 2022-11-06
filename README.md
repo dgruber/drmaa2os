@@ -39,6 +39,7 @@ For details about the mapping of job operations please consult the platform spec
   * [Docker / Moby](pkg/jobtracker/dockertracker/README.md)
   * [Kubernetes](pkg/jobtracker/kubernetestracker/README.md)
   * [libdrmaa.so](pkg/jobtracker/libdrmaa/README.md)
+  * [Google Batch](https://github.com/dgruber/gcpbatchtracker)
 
 In a more experimental state are:
 
