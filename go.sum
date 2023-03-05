@@ -969,8 +969,8 @@ github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635/go.mod h1:hkRG
 github.com/tchap/go-patricia v2.2.6+incompatible/go.mod h1:bmLyhP68RS6kStMGxByiQ23RP/odRBOTVjwp2cDyi6I=
 github.com/tchap/go-patricia v2.3.0+incompatible h1:GkY4dP3cEfEASBPPkWd+AmjYxhmDkqO9/zg7R0lSQRs=
 github.com/tchap/go-patricia v2.3.0+incompatible/go.mod h1:bmLyhP68RS6kStMGxByiQ23RP/odRBOTVjwp2cDyi6I=
-github.com/theupdateframework/go-tuf v0.3.1 h1:NkjMlCuLcDpHNtsWXY4lTmbbQQ5nOM7JSBbOKEEiI1c=
-github.com/theupdateframework/go-tuf v0.3.1/go.mod h1:lhHZ3Vt2pdAh15h0Cc6gWdlI+Okn2ZznD3q/cNjd5jw=
+github.com/theupdateframework/go-tuf v0.3.2 h1:fzjeUUEL3zZpKgWMn35OoksvuCMVMS4ZZ4o2ZcbUGOU=
+github.com/theupdateframework/go-tuf v0.3.2/go.mod h1:kfQTX2LhNeK/cp03OBiZHoua0Pp2l9w4ShRwFtc0oKg=
 github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399 h1:e/5i7d4oYZ+C1wj2THlRK+oAhjeS/TRQwMfkIuet3w0=
 github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399/go.mod h1:LdwHTNJT99C5fTAzDz0ud328OgXz+gierycbcIx2fRs=
 github.com/tklauser/go-sysconf v0.3.10 h1:IJ1AZGZRWbY8T5Vfk04D9WOA5WSejdflXxP03OUqALw=
