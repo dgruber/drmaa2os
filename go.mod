@@ -63,7 +63,7 @@ require (
 	github.com/moby/sys/mountinfo v0.6.2 // indirect
 	github.com/opencontainers/runc v1.1.3 // indirect
 	github.com/prometheus/common v0.33.0 // indirect
-	github.com/sylabs/sif/v2 v2.7.1 // indirect
+	github.com/sylabs/sif/v2 v2.8.1 // indirect
 	github.com/vbauerster/mpb/v7 v7.4.2 // indirect
 	github.com/vishvananda/netlink v1.2.0-beta // indirect
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
