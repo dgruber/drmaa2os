@@ -32,7 +32,7 @@ func (dt *DockerTracker) GetAllJobIDs(filter *drmaa2interface.JobInfo) ([]string
 	containers, err := dt.cli.ContainerList(context.Background(),
 		types.ContainerListOptions{Filters: f, All: true})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list Docker containers: %v", err)
 	}
 	ids := make([]string, 0, len(containers))
 	for i := range containers {

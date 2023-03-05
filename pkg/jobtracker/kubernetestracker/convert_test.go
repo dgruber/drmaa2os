@@ -67,7 +67,7 @@ var _ = Describe("Convert", func() {
 			jt.DeadlineTime = time.Now().Add(time.Second * 10)
 			deadline, err := deadlineTime(jt)
 			Ω(err).Should(BeNil())
-			Ω(*deadline).Should(BeNumerically("<=", 10))
+			Ω(deadline).Should(BeNumerically("<=", 10))
 		})
 
 		It("should add a label to the job object when requested as extension", func() {

@@ -6,9 +6,9 @@ interface for Kubernetes.
 
 ## Introduction
 
-The Kubernetes tracker provides methods for managing sets of 
+The Kubernetes tracker provides methods for managing sets of
 grouped batch jobs (within _JobSessions_). _JobSessions_ are
-implemented by using labels attached to batch job objects 
+implemented by using labels attached to batch job objects
 ("drmaa2jobsession") refering to the _JobSession_ name.
 
 Namespaces other than "default" can be used when initializing
@@ -28,11 +28,11 @@ after batch job finished).
 
 | DRMAA2 Job Control | Kubernetes      |
 | :-----------------:|:---------------:|
-| Suspend            | *Unsupported*   |
-| Resume             | *Unsupported*   |
+| Suspend            | _Unsupported_   |
+| Resume             | _Unsupported_   |
 | Terminate          | Delete() - leads to Undetermined state |
-| Hold               | *Unsupported*   |
-| Release            | *Unsupported*   |
+| Hold               | _Unsupported_   |
+| Release            | _Unsupported_   |
 
 _Job.Reap()_ removes the Kubernetes job and related objects from Kubernetes.
 
@@ -71,12 +71,12 @@ The job's terminal output is available when the job is in a finished state (fail
 the JobInfo extension key "output" (extension.JobInfoK8sJSessionJobOutput)
 
 ```
-	if jobInfo.ExtensionList != nil {
-		jobOutput, exists := jobInfo.ExtensionList[extension.JobInfoK8sJSessionJobOutput]
-		if exists {
-			fmt.Printf("Output of the job: %s\n", jobOutput)
-		}
-	}
+ if jobInfo.ExtensionList != nil {
+  jobOutput, exists := jobInfo.ExtensionList[extension.JobInfoK8sJSessionJobOutput]
+  if exists {
+   fmt.Printf("Output of the job: %s\n", jobOutput)
+  }
+ }
 ```
 
 ### File staging using the Job Template
@@ -94,33 +94,37 @@ have limitations by itself (like relying on Kubernetes etcd when
 using ConfigMaps which has storage limits itself).
 
 _StageInFiles_ and _StageOutFiles_  have following scheme:
-- Map key specifies the target, as the target is unique.
+
+- Map key specifies the target (in the container), as the target is unique.
 - Map value specifies the data source.
 
-If _StageOutFiles_ is set a sidecar (source in this project) is attached to the job
-which takes care about storing the data in a persistent data structure (configmap).
-This data is then downloaded the host of the DRMAA2 application.
-
-
+Output can also be fetched through JobInfo when the job is in a terminated state.
+Here the container logs are made accessible in the JobInfo extension "output".
 
 Following source definition of _StageInFiles_ are currently implemented:
-- "configmap-data:base64encodedstring" can be used to pass a byte array from the workflow process to the job. Internally a ConfigMap with the data is created in the target cluster. The ConfigMap is deleted
-with the job.Reap() (Delete()) call. The ConfigMap is mounted to the file path specified in the
-target definition.
-- "secret-data:base64encodedstring" can be used to pass a byte array from the workflow 
-process to the job. Internally a Kubernetes secret with the data is created in the 
+
+- "configmap-data:base64encodedstring" can be used to pass a byte array from the workflow
+process to the job. Internally a ConfigMap with the data is created in the target cluster.
+The ConfigMap is deleted with the job.Reap() (Delete()) call. The ConfigMap is mounted to
+the file path specified in the target definition.
+- "secret-data:base64encodedstring" can be used to pass a byte array from the workflow
+process to the job. Internally a Kubernetes secret with the data is created in the
 target cluster. The Secret is removed with the job.Reap() (Delete()) call. Note, that
 the content of the Secret is not stored in the JobTemplate ConfigMap in the cluster.
 - "hostpath:/path/to/host/directory "can be used to mount a directory from the host where
 the Kubernetes job is executed inside of the job's pod. This requires that the job
 has root privileges which can be requested with the JobTemplate's extension "privileged".
 - "configmap:name" Mounts an existing ConfigMap into the directory specified as target
-- "pvc:name" Mounts an existing PVC with into the directory specified as target in the map. 
+- "pvc:name" Mounts an existing PVC with into the directory specified as target in the map.
+- There are more like "gce-disk", "gce-disk-read", "storageclass", "nfs" (for GoogleFilestore)...
+which work similarly. Please check the convert.go file. They can also be used for staging out data
+or as shared storage between multiple jobs.
 
 Target definitions of _StageInFiles_:
+
 - /path/to/file - the path of the file in which the data from the source
 definition is available (for configmap-data and secret-data)
-- /path/to/directory - a path to a directory is required when using a "hostpath" 
+- /path/to/directory - a path to a directory is required when using a "hostpath"
 directory as data source or a pre-existing ConfigMap or Secret.
 
 Example:
@@ -155,13 +159,15 @@ Example:
     }
 
 Required for JobTemplate:
-* RemoteCommand
-* JobCategory as it specifies the image
+
+- RemoteCommand
+- JobCategory as it specifies the image
 
 Other implicit settings:
-* Parallelism: 1
-* Completions: 1
-* BackoffLimit: 1
+
+- Parallelism: 1
+- Completions: 1
+- BackoffLimit: 1
 
 ### Job Info Mapping
 

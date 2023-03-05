@@ -36,7 +36,7 @@ func Guids2ArrayJobID(guids []string) string {
 // is typically needed when a DRM does not support job arrays natively.
 // The returned array job ID is created from all of the returned job IDs and
 // does not work with the DRM directly.
-func AddArrayJobAsSingleJobs(jt drmaa2interface.JobTemplate, t jobtracker.JobTracker, begin int, end int, step int) (string, error) {
+func AddArrayJobAsSingleJobs(jt drmaa2interface.JobTemplate, t jobtracker.JobTracker, begin, end, step int) (string, error) {
 	var guids []string
 	for i := begin; i <= end; i += step {
 		// add task ID as env variable

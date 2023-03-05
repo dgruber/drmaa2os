@@ -2,6 +2,7 @@ package dockertracker_test
 
 import (
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,6 +14,20 @@ import (
 
 	"github.com/dgruber/drmaa2interface"
 )
+
+var _ = BeforeSuite(func() {
+	// pull required images
+
+	// pull alpine
+	st := simpletracker.New("")
+	jobID, err := st.AddJob(drmaa2interface.JobTemplate{
+		RemoteCommand: "docker",
+		Args:          []string{"pull", "alpine"},
+	})
+	Ω(err).Should(BeNil())
+	err = st.Wait(jobID, time.Second*120, drmaa2interface.Done)
+	Ω(err).Should(BeNil())
+})
 
 var _ = Describe("Dockertracker", func() {
 
@@ -76,13 +91,6 @@ var _ = Describe("Dockertracker", func() {
 			Ω(state).Should(Equal(drmaa2interface.Running))
 		})
 
-		XIt("should fail adding the job when RemoteCommand in job template is missing", func() {
-			jt.RemoteCommand = ""
-			id, err := tracker.AddJob(jt)
-			Ω(err).ShouldNot(BeNil())
-			Ω(id).Should(Equal(""))
-		})
-
 		It("should fail adding the job when JobCategory in job template is missing", func() {
 			jt.JobCategory = ""
 			id, err := tracker.AddJob(jt)
@@ -128,6 +136,7 @@ var _ = Describe("Dockertracker", func() {
 	})
 
 	Context("Array job", func() {
+
 		jt := drmaa2interface.JobTemplate{
 			RemoteCommand: "/bin/sleep",
 			Args:          []string{"1"},
@@ -237,6 +246,7 @@ var _ = Describe("Dockertracker", func() {
 				tracker.DeleteJob(id)
 			}
 
+			// alpine image needs to be pulled before!
 			jt := drmaa2interface.JobTemplate{
 				RemoteCommand: "/bin/sleep",
 				Args:          []string{"1"},
@@ -244,8 +254,8 @@ var _ = Describe("Dockertracker", func() {
 			}
 
 			jobid, err := tracker.AddJob(jt)
-			Ω(jobid).ShouldNot(Equal(""))
 			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
 
 			jobs, err = tracker.ListJobs()
 			Ω(err).Should(BeNil())

@@ -252,39 +252,40 @@ func newNodeSelector(jt drmaa2interface.JobTemplate) (map[string]string, error) 
 	return nil, nil
 }
 
-/* 	deadlineTime returns the deadline of the job as int pointer converting from
-    AbsoluteTime to a relative time.
-	"
-	Specifies a deadline after which the implementation or the DRM system SHOULD change the job state to
-		any of the “Terminated” states (see Section 8.1).
-    	The support for this attribute is optional, as expressed by the
-       	- DrmaaCapability::JT_DEADLINE
-		DeadlineTime is defined as AbsoluteTime.
-	"
+/*
+	 	deadlineTime returns the deadline of the job as int pointer converting from
+	    AbsoluteTime to a relative time.
+		"
+		Specifies a deadline after which the implementation or the DRM system SHOULD change the job state to
+			any of the “Terminated” states (see Section 8.1).
+	    	The support for this attribute is optional, as expressed by the
+	       	- DrmaaCapability::JT_DEADLINE
+			DeadlineTime is defined as AbsoluteTime.
+		"
 */
-func deadlineTime(jt drmaa2interface.JobTemplate) (*int64, error) {
+func deadlineTime(jt drmaa2interface.JobTemplate) (int64, error) {
 	var deadline int64
+	deadline = -1 // unset
+
 	if !jt.DeadlineTime.IsZero() {
 		if jt.DeadlineTime.After(time.Now()) {
 			deadline = jt.DeadlineTime.Unix() - time.Now().Unix()
 		} else {
-			return nil, fmt.Errorf("deadlineTime (%s) in job template is in the past", jt.DeadlineTime.String())
+			return 0, fmt.Errorf("deadlineTime (%s) in job template is in the past",
+				jt.DeadlineTime.String())
 		}
 	}
-	return &deadline, nil
+	return deadline, nil
 }
 
 // https://godoc.org/k8s.io/api/core/v1#PodSpec
 // https://github.com/kubernetes/kubernetes/blob/886e04f1fffbb04faf8a9f9ee141143b2684ae68/pkg/api/types.go
-func newPodSpec(v []k8sv1.Volume, c []k8sv1.Container, ns map[string]string, activeDeadline *int64) k8sv1.PodSpec {
+func newPodSpec(v []k8sv1.Volume, c []k8sv1.Container, ns map[string]string) k8sv1.PodSpec {
 	spec := k8sv1.PodSpec{
 		Volumes:       v,
 		Containers:    c,
 		NodeSelector:  ns,
 		RestartPolicy: k8sv1.RestartPolicyNever,
-	}
-	if *activeDeadline > 0 {
-		spec.ActiveDeadlineSeconds = activeDeadline
 	}
 	return spec
 }
@@ -339,12 +340,7 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 		return nil, fmt.Errorf("converting job (newNodeSelector): %s", err)
 	}
 
-	// settings for command etc.
-	dl, err := deadlineTime(jt)
-	if err != nil {
-		return nil, err
-	}
-	podSpec := newPodSpec(volumes, containers, nodeSelector, dl)
+	podSpec := newPodSpec(volumes, containers, nodeSelector)
 
 	// add enviornment variables from pre-existing secrets and config maps
 	envFrom := []v1.EnvFromSource{}
@@ -422,6 +418,8 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 
 	podSpec.RestartPolicy = v1.RestartPolicyNever
 
+	// settings for command etc.
+
 	var one int32 = 1
 	var zero int32 = 0
 
@@ -452,5 +450,14 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 			},
 		},
 	}
+
+	dl, err := deadlineTime(jt)
+	if err != nil {
+		return nil, err
+	}
+	if dl != -1 {
+		job.Spec.ActiveDeadlineSeconds = &dl
+	}
+
 	return addExtensions(&job, jt), nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
@@ -92,7 +93,30 @@ func JobToJobInfo(jc batchv1.JobInterface, jobid string) (drmaa2interface.JobInf
 	ji.ID = jobid
 	ji.ExitStatus = exitStatusFromJobState(ji.State)
 	ji.AllocatedMachines = []string{job.Spec.Template.Spec.NodeName}
+
+	if IsDeadlineTimeException(job.Status.Conditions) {
+		ji.SubState = "DeadlineExceeded"
+	}
+
 	return ji, nil
+}
+
+func IsComplete(c *[]v1.JobCondition) bool {
+	for _, condition := range *c {
+		if condition.Type == v1.JobComplete && condition.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
+}
+
+func IsDeadlineTimeException(c []v1.JobCondition) bool {
+	for _, condition := range c {
+		if strings.Contains(condition.Reason, "DeadlineExceeded") {
+			return true
+		}
+	}
+	return false
 }
 
 // GetJobOutput returns the output of a job pod after after it has been finished.
@@ -119,10 +143,6 @@ func GetMachineNameForPod(cs kubernetes.Interface, namespace, podName string) (s
 }
 
 // GetExitStatusOfJobContainer returns the exit status of a job container.
-// When a job is deleted by deadline time, there is sometimes no terminated
-// state found, but a "DeadlineExceeded" Reason is set. But also this is
-// missing sometimes when request comes immeadiately after the job has been
-// terminated.
 func GetExitStatusOfJobContainer(cs kubernetes.Interface, namespace, podName string) (int32, int32, string, error) {
 	pod, err := cs.CoreV1().Pods(namespace).Get(context.Background(), podName, metav1.GetOptions{})
 	if err != nil {

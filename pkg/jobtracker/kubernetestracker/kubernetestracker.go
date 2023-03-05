@@ -243,22 +243,15 @@ func (kt *KubernetesTracker) JobInfo(jobID string) (drmaa2interface.JobInfo, err
 			ji.AllocatedMachines = []string{machine}
 		}
 
-		// When a job has a deadline, then the job / pod will mark as failed
-		// but does not have the termination status "terminated" struct set.
-		// Hence we need to retry here...
 		exitCode, terminationSignal, message, err := GetExitStatusOfJobContainer(kt.clientSet, kt.namespace, podName)
-		if err != nil {
-			// deadline - no terminated struct
-			if message == "DeadlineExceeded" {
-				ji.ExitStatus = int(138)
-				ji.TerminatingSignal = fmt.Sprintf("%d", 9)
-				ji.SubState = message
-			}
-		} else {
+		if err == nil {
 			ji.ExitStatus = int(exitCode)
 			ji.TerminatingSignal = fmt.Sprintf("%d", terminationSignal)
-			ji.SubState = message
+			if message != "" && ji.SubState == "" {
+				ji.SubState = message
+			}
 		}
+
 		// when job is finished the sidecar of the job
 		// triggers an "epilog" job / or stores data in a
 		// config map - this data needs to be read and

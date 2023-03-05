@@ -304,7 +304,7 @@ var _ = Describe("KubernetesTracker", func() {
 
 		WhenK8sIsAvailableIt("should finish the job when deadline is reached", func() {
 			jt.Args = []string{"-c", "sleep 60"}
-			jt.DeadlineTime = time.Now().Add(time.Second * 10)
+			jt.DeadlineTime = time.Now().Add(time.Second * 2)
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
@@ -315,7 +315,7 @@ var _ = Describe("KubernetesTracker", func() {
 			// there should be a termination signal and reason
 			ji, err := kt.JobInfo(jobid)
 			Ω(err).Should(BeNil())
-			Ω(ji.ExitStatus).Should(Equal(138))
+			Ω(ji.ExitStatus).Should(Equal(1))
 			Ω(ji.TerminatingSignal).Should(Or(Equal("9"), Equal("")))
 			Ω(ji.SubState).Should(Equal("DeadlineExceeded"))
 		})
@@ -325,10 +325,12 @@ var _ = Describe("KubernetesTracker", func() {
 			jobid, err := kt.AddJob(jt)
 			Ω(err).Should(BeNil())
 			Ω(jobid).ShouldNot(Equal(""))
-			defer kt.DeleteJob(jobid)
+
 			err = kt.Wait(jobid, time.Second*30, drmaa2interface.Failed, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
-			Ω(kt.JobState(jobid)).Should(Equal(drmaa2interface.Done))
+			state, _, err := kt.JobState(jobid)
+			Ω(err).Should(BeNil())
+			Ω(state.String()).Should(Equal(drmaa2interface.Done.String()))
 
 			jinfo, err := kt.JobInfo(jobid)
 			Ω(err).Should(BeNil())
