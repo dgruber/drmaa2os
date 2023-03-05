@@ -109,6 +109,13 @@ func WaitForStateWithInterval(jt jobtracker.JobTracker, interval time.Duration, 
 
 	reachedState := <-hasStateCh
 	if !reachedState {
+		state, _, err := jt.JobState(jobid)
+		if err != nil {
+			return err
+		}
+		if IsInExpectedState(state, states...) {
+			return nil
+		}
 		return errors.New("timeout while waiting for job state")
 	}
 	return nil
