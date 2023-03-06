@@ -225,6 +225,7 @@ func (jt *JobTracker) DeleteJob(jobid string) error {
 	if !jt.js.HasJob(jobid) {
 		return errors.New("Job does not exist in job store")
 	}
+
 	jt.ps.Lock()
 	state, exists := jt.ps.jobState[jobid]
 	jt.ps.Unlock()
@@ -270,6 +271,23 @@ func (jt *JobTracker) AddArrayJob(t drmaa2interface.JobTemplate, begin, end, ste
 	}
 	jt.js.SaveArrayJob(arrayjobid, pids, t, begin, end, step)
 	jt.Unlock()
+
+	// NEW: wait for all jobs to be in QUEUED state
+	for i := begin; i <= end; i += step {
+		jobid := fmt.Sprintf("%s.%d", arrayjobid, i)
+		state, _, err := jt.JobState(jobid)
+		if err != nil {
+			fmt.Printf("Internal error: %v", err)
+		} else {
+			// wait until job is in QUEUED state
+			for state != drmaa2interface.Queued {
+				fmt.Printf("waiting for job %s to be in QUEUED state\n",
+					jobid)
+				time.Sleep(time.Millisecond * 10)
+				state, _, _ = jt.JobState(jobid)
+			}
+		}
+	}
 
 	// ensure that all tasks are in the job state map
 	for areAllJobsInJobStateMap(jt, arrayjobid, begin, end, step) == false {
@@ -407,16 +425,34 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 		jt.ps.Lock()
 		state := jt.ps.jobState[jobid]
 		if state == drmaa2interface.Queued {
+			// pid is 0
+			if pid != 0 {
+				fmt.Printf("PID is not 0\n")
+				err := KillPid(pid)
+				if err != nil {
+					return fmt.Errorf("error killing job %s: %s", jobid, err)
+				}
+			}
 			jt.ps.jobState[jobid] = drmaa2interface.Failed
 			jt.ps.Unlock()
 			return nil
 		}
 		jt.ps.Unlock()
-		err := KillPid(pid)
-		if err == nil {
+		if pid == 0 {
+			// we have no PID for task
 			jt.ps.Lock()
 			jt.ps.jobState[jobid] = drmaa2interface.Failed
 			jt.ps.Unlock()
+
+			return fmt.Errorf("No PID for job %s", jobid)
+		}
+		err := KillPid(pid)
+		if err == nil {
+
+			jt.ps.Lock()
+			jt.ps.jobState[jobid] = drmaa2interface.Failed
+			jt.ps.Unlock()
+
 		}
 		return err
 	}
@@ -469,9 +505,13 @@ func (jt *JobTracker) Wait(jobid string, d time.Duration, state ...drmaa2interfa
 				return nil
 			}
 		}
-		return drmaa2interface.Error{Message: "Job finished in different state", ID: drmaa2interface.Internal}
+		return drmaa2interface.Error{
+			Message: "Job finished in different state",
+			ID:      drmaa2interface.Internal}
 	case <-timeoutCh:
-		return drmaa2interface.Error{Message: "Timeout occurred while waiting for job state", ID: drmaa2interface.Timeout}
+		return drmaa2interface.Error{
+			Message: "Timeout occurred while waiting for job state",
+			ID:      drmaa2interface.Timeout}
 	}
 }
 

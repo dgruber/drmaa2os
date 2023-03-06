@@ -169,10 +169,10 @@ func (js *JobSession) GetJobArray(id string) (drmaa2interface.ArrayJob, error) {
 // rejected with an InvalidArgumentException. The error details SHOULD provide further
 // information about the attribute(s) responsible for the rejection. When this method
 // returns a valid Job instance, the following conditions SHOULD be fulfilled:
-// - The job is part of the persistent state of the job session.
-// - All non-DRMAA and DRMAA interfaces to the DRM system report the job as
-//   being submitted to the DRM system.
-// - The job has one of the DRMAA job states.
+//   - The job is part of the persistent state of the job session.
+//   - All non-DRMAA and DRMAA interfaces to the DRM system report the job as
+//     being submitted to the DRM system.
+//   - The job has one of the DRMAA job states.
 func (js *JobSession) RunJob(jt drmaa2interface.JobTemplate) (drmaa2interface.Job, error) {
 	jtCopy, err := copystructure.Copy(jt)
 	if err != nil {
@@ -192,7 +192,8 @@ func (js *JobSession) RunBulkJobs(jt drmaa2interface.JobTemplate, begin, end, st
 	if err != nil {
 		return nil, fmt.Errorf("failed to copy job template: %w", err)
 	}
-	id, err := js.tracker[0].AddArrayJob(jtCopy.(drmaa2interface.JobTemplate), begin, end, step, maxParallel)
+	id, err := js.tracker[0].AddArrayJob(jtCopy.(drmaa2interface.JobTemplate),
+		begin, end, step, maxParallel)
 	if err != nil {
 		return nil, err
 	}

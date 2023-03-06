@@ -28,6 +28,7 @@ var _ = Describe("JobSession", func() {
 
 	BeforeEach(func() {
 		os.Remove("drmaa2ostest")
+
 		sm, _ = drmaa2os.NewDefaultSessionManager("drmaa2ostest")
 		//sm, _ = drmaa2os.NewDockerSessionManager("drmaa2ostest")
 

@@ -21,20 +21,20 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 				waitCh <- i // block when buffer is full - wait until jobs are finished
 			}
 			jobid := fmt.Sprintf("%s.%d", arrayjobid, i)
-			jt.ps.Lock()
 
+			jt.ps.Lock()
 			// check if job was cancelled while waiting
 			if jt.ps.jobState[jobid] == drmaa2interface.Failed {
 				jt.ps.Unlock()
-				if maxParallel > 0 {
-					<-waitCh
+				if i == begin {
+					firstJobErrorCh <- fmt.Errorf("job %s was cancelled before it was started", jobid)
 				}
+				// skip task
 				continue
 			}
 			jt.ps.Unlock()
 
 			pid, err := StartProcess(jobid, i, t, jt.ps.jobch)
-
 			if err != nil {
 				// job failed
 				jt.ps.Lock()
@@ -49,18 +49,30 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 				continue
 			}
 
-			if i == begin {
-				firstJobErrorCh <- nil
-			}
-			jt.Lock()
-			jt.js.SaveArrayJobPID(arrayjobid, i, pid)
-			jt.Unlock()
-
 			if maxParallel > 0 {
 				go func() {
 					jt.Wait(jobid, 0.0, drmaa2interface.Done, drmaa2interface.Failed)
 					<-waitCh
 				}()
+			}
+
+			jt.Lock()
+			// double check if process was cancelled while starting
+			jt.ps.Lock()
+			jt.js.SaveArrayJobPID(arrayjobid, i, pid)
+			if jt.ps.jobState[jobid] == drmaa2interface.Failed {
+				if running, _ := IsPidRunning(pid); running {
+					KillPid(pid)
+					jt.ps.NotifyAndWait(JobEvent{
+						JobState: drmaa2interface.Failed,
+						JobID:    jobid})
+				}
+			}
+			jt.ps.Unlock()
+			jt.Unlock()
+
+			if i == begin {
+				firstJobErrorCh <- nil
 			}
 		}
 	}()
