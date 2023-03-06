@@ -87,6 +87,7 @@ var _ = Describe("JobarrayHlp", func() {
 		})
 
 		It("should report an error when second job fails to get suspended", func() {
+
 			jobs = []drmaa2interface.Job{
 				&fakes.Job{
 					ID:               "1",

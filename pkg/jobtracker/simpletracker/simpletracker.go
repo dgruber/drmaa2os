@@ -444,7 +444,7 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 			jt.ps.jobState[jobid] = drmaa2interface.Failed
 			jt.ps.Unlock()
 
-			return fmt.Errorf("No PID for job %s", jobid)
+			return nil
 		}
 		err := KillPid(pid)
 		if err == nil {
