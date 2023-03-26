@@ -21,7 +21,7 @@ test/kubernetes:
 	ginkgo -v pkg/jobtracker/kubernetestracker
 
 ### Runs the main job tracker tests.
-test/tracker: test/process test/docker test/kubernetes 
+test: test/process test/docker test/kubernetes 
 
 .PHONY: test/libdrmaa libdrmaashell test/process test/docker test/kubernetes test/tracker
 

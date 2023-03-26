@@ -284,8 +284,8 @@ var _ = Describe("JobSession", func() {
 
 		It("should be possible to terminate a job array (bulk job)", func() {
 			jt := drmaa2interface.JobTemplate{
-				RemoteCommand: "/bin/sleep",
-				Args:          []string{"100"},
+				RemoteCommand: "/bin/sh",
+				Args:          []string{"-c", "sleep 100"},
 				JobCategory:   "busybox:latest",
 			}
 

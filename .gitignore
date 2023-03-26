@@ -5,6 +5,8 @@ set_env.sh
 *.so
 *.dylib
 
+.DS_Store
+
 # private keys etc for concourse
 params.yml
 

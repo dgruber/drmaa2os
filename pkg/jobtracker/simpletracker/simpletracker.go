@@ -425,7 +425,7 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 		jt.ps.Lock()
 		state := jt.ps.jobState[jobid]
 		if state == drmaa2interface.Queued {
-			// pid is 0
+			// pid is 0 - this should not be the case
 			if pid != 0 {
 				fmt.Printf("PID is not 0\n")
 				err := KillPid(pid)
@@ -437,15 +437,16 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 			jt.ps.Unlock()
 			return nil
 		}
-		jt.ps.Unlock()
 		if pid == 0 {
 			// we have no PID for task
 			jt.ps.Lock()
 			jt.ps.jobState[jobid] = drmaa2interface.Failed
 			jt.ps.Unlock()
-
-			return nil
+			// that can lead to Wait() calls waiting for the jobs
+			// until they are finished instead of aborting
+			return fmt.Errorf("no PID for job %s", jobid)
 		}
+		jt.ps.Unlock()
 		err := KillPid(pid)
 		if err == nil {
 
