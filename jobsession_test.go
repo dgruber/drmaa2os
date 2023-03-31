@@ -283,13 +283,16 @@ var _ = Describe("JobSession", func() {
 		})
 
 		It("should be possible to terminate a job array (bulk job)", func() {
+
+			amount := 10
+
 			jt := drmaa2interface.JobTemplate{
 				RemoteCommand: "/bin/sh",
 				Args:          []string{"-c", "sleep 100"},
 				JobCategory:   "busybox:latest",
 			}
 
-			arrayjob, err := js.RunBulkJobs(jt, 1, 10, 1, 2)
+			arrayjob, err := js.RunBulkJobs(jt, 1, amount, 1, 2)
 			Ω(err).Should(BeNil())
 
 			jobid := arrayjob.GetID()
@@ -299,7 +302,7 @@ var _ = Describe("JobSession", func() {
 			Ω(err).Should(BeNil())
 
 			tasks := arrayjob.GetJobs()
-			Expect(len(tasks)).Should(Equal(10))
+			Expect(len(tasks)).Should(Equal(amount))
 
 			for _, j := range tasks {
 				err = j.WaitTerminated(time.Second * 12)
