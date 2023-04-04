@@ -53,17 +53,17 @@ func (t *ContainerdJobTracker) JobState(jobID string) (drmaa2interface.JobState,
 	ctx := namespaces.WithNamespace(context.Background(), "default")
 	container, err := t.client.LoadContainer(ctx, jobID)
 	if err != nil {
-		return drmaa2interface.Undetermined, "", err
+		return drmaa2interface.Undetermined, "can't load container", err
 	}
 	task, err := container.Task(ctx, nil)
 	if err != nil {
-		return drmaa2interface.Undetermined, "", err
+		return drmaa2interface.Undetermined, "can't load task", err
 	}
 	status, err := task.Status(ctx)
 	if err != nil {
-		return drmaa2interface.Undetermined, "", err
+		return drmaa2interface.Undetermined, "can't get task status", err
 	}
-	return containerdStatusToDrmaa2State(status.Status), string(status.Status), nil
+	return containerdStatusToDrmaa2State(status), string(status.Status), nil
 }
 
 func (t *ContainerdJobTracker) JobInfo(jobID string) (drmaa2interface.JobInfo, error) {
@@ -102,7 +102,7 @@ func containerdInfoToDRMAA2JobInfo(info containers.Container, status containerd.
 		//JobOwner:       info,
 		Slots:          1,
 		SubmissionTime: info.CreatedAt,
-		State:          containerdStatusToDrmaa2State(status.Status),
+		State:          containerdStatusToDrmaa2State(status),
 		ExitStatus:     int(status.ExitStatus),
 		//JobCategory:       image.Name(),
 		AllocatedMachines: []string{info.ID},
@@ -165,16 +165,21 @@ func (t *ContainerdJobTracker) ListJobCategories() ([]string, error) {
 }
 
 // containerdStatusToDrmaa2State maps a containerd status to a DRMAA2 job state.
-func containerdStatusToDrmaa2State(status containerd.ProcessStatus) drmaa2interface.JobState {
-	switch status {
+func containerdStatusToDrmaa2State(status containerd.Status) drmaa2interface.JobState {
+	switch status.Status {
 	case containerd.Created:
 		return drmaa2interface.Queued
 	case containerd.Running:
 		return drmaa2interface.Running
 	case containerd.Stopped:
-		return drmaa2interface.Done
+		if status.ExitStatus == 0 {
+			return drmaa2interface.Done
+		}
+		return drmaa2interface.Failed
 	case containerd.Paused:
 		return drmaa2interface.Suspended
+	case containerd.Pausing:
+		return drmaa2interface.Running
 	default:
 		return drmaa2interface.Undetermined
 	}
