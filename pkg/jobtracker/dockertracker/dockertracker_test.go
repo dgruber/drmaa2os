@@ -278,7 +278,116 @@ var _ = Describe("Dockertracker", func() {
 
 	})
 
-	Context("JobTemplate settings", func() {
+	Context("Job output", func() {
+
+		It("should return the standard output of a job", func() {
+			tracker, err := New("")
+			Ω(err).Should(BeNil())
+			Ω(tracker).ShouldNot(BeNil())
+
+			// create temporary file
+			tmpFile, err := ioutil.TempFile("", "drmaa2os")
+			Ω(err).Should(BeNil())
+			Ω(tmpFile).ShouldNot(BeNil())
+			tmpFile.Close()
+
+			defer os.Remove(tmpFile.Name())
+
+			jt := drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/echo",
+				Args:          []string{"test"},
+				JobCategory:   "alpine",
+				OutputPath:    tmpFile.Name(),
+			}
+
+			jobid, err := tracker.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			err = tracker.Wait(jobid, drmaa2interface.InfiniteTime, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+
+			output, err := ioutil.ReadFile(tmpFile.Name())
+			Ω(err).Should(BeNil())
+			Ω(string(output)).Should(Equal("test\n"))
+		})
+
+		It("should return the error output of a job", func() {
+			tracker, err := New("")
+			Ω(err).Should(BeNil())
+			Ω(tracker).ShouldNot(BeNil())
+
+			// create temporary file
+			tmpFile, err := ioutil.TempFile("", "drmaa2os")
+			Ω(err).Should(BeNil())
+			Ω(tmpFile).ShouldNot(BeNil())
+			tmpFile.Close()
+
+			defer os.Remove(tmpFile.Name())
+
+			jt := drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sh",
+				Args:          []string{"-c", "echo test 1>&2"},
+				JobCategory:   "alpine",
+				ErrorPath:     tmpFile.Name(),
+			}
+
+			jobid, err := tracker.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			err = tracker.Wait(jobid, drmaa2interface.InfiniteTime, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+
+			output, err := ioutil.ReadFile(tmpFile.Name())
+			Ω(err).Should(BeNil())
+			Ω(string(output)).Should(Equal("test\n"))
+		})
+
+		It("should return the standard and error output of a job", func() {
+			tracker, err := New("")
+			Ω(err).Should(BeNil())
+			Ω(tracker).ShouldNot(BeNil())
+
+			// create temporary file 1
+			tmpFile, err := ioutil.TempFile("", "drmaa2os")
+			Ω(err).Should(BeNil())
+			Ω(tmpFile).ShouldNot(BeNil())
+			tmpFile.Close()
+
+			defer os.Remove(tmpFile.Name())
+
+			// create temporary file 2
+			tmpFile2, err := ioutil.TempFile("", "drmaa2os")
+			Ω(err).Should(BeNil())
+			Ω(tmpFile2).ShouldNot(BeNil())
+			tmpFile2.Close()
+
+			defer os.Remove(tmpFile2.Name())
+
+			jt := drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sh",
+				Args:          []string{"-c", "echo testtest 1>&2 && echo test"},
+				JobCategory:   "alpine",
+				OutputPath:    tmpFile.Name(),
+				ErrorPath:     tmpFile2.Name(),
+			}
+
+			jobid, err := tracker.AddJob(jt)
+			Ω(err).Should(BeNil())
+			Ω(jobid).ShouldNot(Equal(""))
+
+			err = tracker.Wait(jobid, drmaa2interface.InfiniteTime, drmaa2interface.Done)
+			Ω(err).Should(BeNil())
+
+			output, err := ioutil.ReadFile(tmpFile.Name())
+			Ω(err).Should(BeNil())
+			Ω(string(output)).Should(Equal("test\n"))
+
+			output, err = ioutil.ReadFile(tmpFile2.Name())
+			Ω(err).Should(BeNil())
+			Ω(string(output)).Should(Equal("testtest\n"))
+		})
 
 	})
 
