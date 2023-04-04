@@ -43,12 +43,14 @@ For details about the mapping of job operations please consult the platform spec
 
 In a more experimental state are:
 
+  * _New_ [Containerd](pkg/jobtracker/containerdtracker/README.md)
   * [Singularity](pkg/jobtracker/singularity/README.md)
   * [Podman](pkg/jobtracker/podmantracker/README.md)
-  * [Cloud Foundry](pkg/jobtracker/cftracker/README.md)
+  * _Archived_ [Cloud Foundry](pkg/jobtracker/cftracker/README.md)
 
-Note, that Singularity (or Podman) can be considered to be handled with the
-regular OS process backend.
+Note, that Singularity/Apptainer (or Podman) can be considered to be handled with
+theregular OS process backend, just starting the container cli. You would gain
+features like job array task throttling and more...
 
 [Feedback](mailto:info@gridengine.eu) welcome!
 
