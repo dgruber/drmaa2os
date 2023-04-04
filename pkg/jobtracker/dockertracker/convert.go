@@ -1,6 +1,7 @@
 package dockertracker
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +15,10 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
+)
+
+const (
+	ContainerLabelJobTemplate = "drmaa2jobtemplate"
 )
 
 func checkJobTemplate(jt drmaa2interface.JobTemplate) error {
@@ -95,6 +100,13 @@ func jobTemplateToContainerConfig(jobsession string, jt drmaa2interface.JobTempl
 
 	// TODO extensions
 	// cc.Volumes
+
+	// add job template as label (JSON / base64 encoded)
+	jtJSON, err := json.Marshal(jt)
+	if err != nil {
+		return nil, err
+	}
+	cc.Labels[ContainerLabelJobTemplate] = base64.StdEncoding.EncodeToString(jtJSON)
 
 	return &cc, nil
 }

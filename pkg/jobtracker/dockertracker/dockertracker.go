@@ -42,9 +42,10 @@ type DockerTracker struct {
 // is configured can be influenced by (from the Docker
 // Documentation (https://github.com/moby/moby/blob/master/client/client.go)):
 // "Use DOCKER_HOST to set the url to the docker server.
-//  Use DOCKER_API_VERSION to set the version of the API to reach, leave empty for latest.
-//  Use DOCKER_CERT_PATH to load the TLS certificates from.
-//  Use DOCKER_TLS_VERIFY to enable or disable TLS verification, off by default."
+//
+//	Use DOCKER_API_VERSION to set the version of the API to reach, leave empty for latest.
+//	Use DOCKER_CERT_PATH to load the TLS certificates from.
+//	Use DOCKER_TLS_VERIFY to enable or disable TLS verification, off by default."
 func New(jobsession string) (*DockerTracker, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
