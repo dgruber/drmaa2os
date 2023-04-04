@@ -3,6 +3,7 @@ package containerdtracker
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/cio"
@@ -13,6 +14,10 @@ import (
 
 func (t *ContainerdJobTracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) {
 	ctx := namespaces.WithNamespace(context.Background(), "default")
+
+	if jt.JobName == "" {
+		jt.JobName = "drmaa2os-job-" + fmt.Sprintf("%d", time.Now().UnixNano())
+	}
 
 	// Pull the image
 	image, err := t.client.Pull(ctx, jt.JobCategory, containerd.WithPullUnpack)
