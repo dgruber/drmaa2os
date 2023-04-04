@@ -94,13 +94,26 @@ func handleInputOutput(cli *client.Client, id string, options types.ContainerAtt
 
 func redirectOut(res types.HijackedResponse, outfilename, errfilename string) {
 	go func() {
-		outfile, err := os.Create(outfilename)
-		if err != nil {
-			panic(err)
+		var err error
+
+		var outfile *os.File
+		if outfilename == "/dev/stdout" {
+			outfile = os.Stdout
+		} else {
+			outfile, err = os.Create(outfilename)
+			if err != nil {
+				panic(err)
+			}
 		}
-		errfile, err := os.Create(errfilename)
-		if err != nil {
-			panic(err)
+
+		var errfile *os.File
+		if errfilename == "/dev/stderr" {
+			errfile = os.Stderr
+		} else {
+			errfile, err = os.Create(errfilename)
+			if err != nil {
+				panic(err)
+			}
 		}
 		stdcopy.StdCopy(outfile, errfile, res.Reader)
 		outfile.Close()

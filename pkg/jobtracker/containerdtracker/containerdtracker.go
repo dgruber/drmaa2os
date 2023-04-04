@@ -2,97 +2,180 @@ package containerdtracker
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"syscall"
 	"time"
 
 	"github.com/containerd/containerd"
+	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/dgruber/drmaa2interface"
+	"github.com/dgruber/drmaa2os/pkg/helper"
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 )
 
-// ContainerDTracker is an implementation of the drmaa2.JobTracker interface for containerd
-type ContainerDTracker struct {
+// ContainerdJobTracker implements the JobTracker interface for containerd.
+type ContainerdJobTracker struct {
 	client *containerd.Client
-	ns     string
 }
 
-// NewJobTracker creates a new JobTracker instance
-func NewJobTracker(client *containerd.Client, namespace string) *JobTracker {
-	return &ContainerDTracker{
-		client: client,
-		ns:     namespace,
-	}
-}
-
-// JobState returns the current state of the job with the given ID
-func (t *ContainerDTracker) JobState(id string) (drmaa2.JobState, error) {
-	job, err := t.GetJob(id)
+// NewContainerdJobTracker creates a new ContainerdJobTracker instance with the given containerd address.
+func NewContainerdJobTracker(containerdAddr string) (*ContainerdJobTracker, error) {
+	client, err := containerd.New(containerdAddr)
 	if err != nil {
-		return drmaa2.Undetermined, err
+		return nil, err
 	}
-	return job.State()
+	return &ContainerdJobTracker{client: client}, nil
 }
 
-// JobControl allows control actions to be performed on the job with the given ID
-func (t *ContainerDTracker) JobControl(id string, action drmaa2.JobControlAction) error {
-	job, err := t.GetJob(id)
+func (t *ContainerdJobTracker) ListJobs() ([]string, error) {
+	ctx := namespaces.WithNamespace(context.Background(), "default")
+	containers, err := t.client.Containers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, len(containers))
+	for i, container := range containers {
+		ids[i] = container.ID()
+	}
+	return ids, nil
+}
+
+func (t *ContainerdJobTracker) ListArrayJobs(arrayjobID string) ([]string, error) {
+	return helper.ArrayJobID2GUIDs(arrayjobID)
+}
+
+func (t *ContainerdJobTracker) AddArrayJob(jt drmaa2interface.JobTemplate, begin int, end int, step int, maxParallel int) (string, error) {
+	return helper.AddArrayJobAsSingleJobs(jt, t, begin, end, step)
+}
+
+func (t *ContainerdJobTracker) JobState(jobID string) (drmaa2interface.JobState, string, error) {
+	ctx := namespaces.WithNamespace(context.Background(), "default")
+	container, err := t.client.LoadContainer(ctx, jobID)
+	if err != nil {
+		return drmaa2interface.Undetermined, "", err
+	}
+	task, err := container.Task(ctx, nil)
+	if err != nil {
+		return drmaa2interface.Undetermined, "", err
+	}
+	status, err := task.Status(ctx)
+	if err != nil {
+		return drmaa2interface.Undetermined, "", err
+	}
+	return containerdStatusToDrmaa2State(status.Status), string(status.Status), nil
+}
+
+func (t *ContainerdJobTracker) JobInfo(jobID string) (drmaa2interface.JobInfo, error) {
+	ctx := namespaces.WithNamespace(context.Background(), "default")
+	container, err := t.client.LoadContainer(ctx, jobID)
+	if err != nil {
+		return drmaa2interface.JobInfo{}, err
+	}
+
+	info, err := container.Info(ctx)
+	if err != nil {
+		return drmaa2interface.JobInfo{}, err
+	}
+
+	task, err := container.Task(ctx, nil)
+	if err != nil {
+		return drmaa2interface.JobInfo{}, err
+	}
+
+	status, err := task.Status(ctx)
+	if err != nil {
+		return drmaa2interface.JobInfo{}, err
+	}
+
+	image, err := t.client.GetImage(ctx, info.Image)
+	if err != nil {
+		return drmaa2interface.JobInfo{}, err
+	}
+
+	return containerdInfoToDRMAA2JobInfo(info, status, image)
+}
+
+func containerdInfoToDRMAA2JobInfo(info containers.Container, status containerd.Status, image containerd.Image) (drmaa2interface.JobInfo, error) {
+	ji := drmaa2interface.JobInfo{
+		ID: info.ID,
+		//JobOwner:       info,
+		Slots:          1,
+		SubmissionTime: info.CreatedAt,
+		State:          containerdStatusToDrmaa2State(status.Status),
+		ExitStatus:     int(status.ExitStatus),
+		//JobCategory:       image.Name(),
+		AllocatedMachines: []string{info.ID},
+	}
+
+	switch status.Status {
+	case containerd.Created, containerd.Running:
+		ji.DispatchTime = info.CreatedAt
+	case containerd.Stopped:
+		ji.FinishTime = status.ExitTime
+	}
+
+	return ji, nil
+}
+
+func (t *ContainerdJobTracker) JobControl(jobID, action string) error {
+	ctx := namespaces.WithNamespace(context.Background(), "default")
+	container, err := t.client.LoadContainer(ctx, jobID)
 	if err != nil {
 		return err
 	}
-	return job.Control(action)
-}
-
-func (dt *ContainerDTracker) ListJobs() ([]string, error) {
-	return nil, nil
-}
-
-func (dt *ContainerDTracker) AddJob(jt drmaa2interface.JobTemplate) (string, error) {
-	return "", nil
-}
-
-func (dt *ContainerDTracker) AddArrayJob(jt drmaa2interface.JobTemplate, begin int, end int, step int, maxParallel int) (string, error) {
-	return "", nil
-}
-
-func (dt *ContainerDTracker) ListArrayJobs(string) ([]string, error) {
-	return nil, nil
-}
-
-func (dt *ContainerDTracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
-	return drmaa2interface.Undetermined, "", nil
-}
-
-func (dt *ContainerDTracker) JobInfo(jobID string) (drmaa2interface.JobInfo, error) {
-	ctx := namespaces.WithNamespace(context.Background(), dt.ns)
-	container, err := dt.client.LoadContainer(ctx, jobID)
+	task, err := container.Task(ctx, nil)
 	if err != nil {
-		return drmaa2interface.JobInfo{}, fmt.Errorf("could not load container: %v", err)
+		return err
 	}
-	return ConvertContainerToInfo(ctx, container)
-}
-
-func (dt *ContainerDTracker) JobControl(jobid, state string) error {
-	switch state {
-	case "suspend":
-		return dt.cli.ContainerKill(context.Background(), jobid, "SIGSTOP")
-	case "resume":
-		return dt.cli.ContainerKill(context.Background(), jobid, "SIGCONT")
-	case "hold":
-		return errors.New("Unsupported Operation")
-	case "release":
-		return errors.New("Unsupported Operation")
-	case "terminate":
-		return dt.cli.ContainerKill(context.Background(), jobid, "SIGKILL")
+	switch action {
+	case jobtracker.JobControlSuspend:
+		return task.Pause(ctx)
+	case jobtracker.JobControlResume:
+		return task.Resume(ctx)
+	case jobtracker.JobControlHold:
+		// Not implemented.
+		return fmt.Errorf("Hold action is not supported in this implementation")
+	case jobtracker.JobControlRelease:
+		// Not implemented.
+		return fmt.Errorf("Release action is not supported in this implementation")
+	case jobtracker.JobControlTerminate:
+		return task.Kill(ctx, syscall.SIGKILL)
+	default:
+		return fmt.Errorf("unsupported action: %s", action)
 	}
-	return errors.New("undefined state")
-	return nil
 }
 
-func (dt *ContainerDTracker) Wait(jobid string, timeout time.Duration, state ...drmaa2interface.JobState) error {
-	return nil
+func (t *ContainerdJobTracker) Wait(jobID string, timeout time.Duration, state ...drmaa2interface.JobState) error {
+	return helper.WaitForState(t, jobID, timeout, state...)
 }
 
-func (dt *ContainerDTracker) DeleteJob(jobid string) error {
-	return nil
+func (t *ContainerdJobTracker) DeleteJob(jobID string) error {
+	ctx := namespaces.WithNamespace(context.Background(), "default")
+	container, err := t.client.LoadContainer(ctx, jobID)
+	if err != nil {
+		return err
+	}
+	return container.Delete(ctx, containerd.WithSnapshotCleanup)
+}
+
+func (t *ContainerdJobTracker) ListJobCategories() ([]string, error) {
+	// Not implemented.
+	return nil, fmt.Errorf("ListJobCategories is not supported in this implementation")
+}
+
+// containerdStatusToDrmaa2State maps a containerd status to a DRMAA2 job state.
+func containerdStatusToDrmaa2State(status containerd.ProcessStatus) drmaa2interface.JobState {
+	switch status {
+	case containerd.Created:
+		return drmaa2interface.Queued
+	case containerd.Running:
+		return drmaa2interface.Running
+	case containerd.Stopped:
+		return drmaa2interface.Done
+	case containerd.Paused:
+		return drmaa2interface.Suspended
+	default:
+		return drmaa2interface.Undetermined
+	}
 }

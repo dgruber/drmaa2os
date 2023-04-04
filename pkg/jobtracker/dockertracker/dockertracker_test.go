@@ -278,6 +278,46 @@ var _ = Describe("Dockertracker", func() {
 
 	})
 
+	Context("Job template", func() {
+
+		It("should return the job template of a job", func() {
+			tracker, err := New("")
+			Ω(err).Should(BeNil())
+			Ω(tracker).ShouldNot(BeNil())
+
+			jt := drmaa2interface.JobTemplate{
+				RemoteCommand: "/bin/sleep",
+				Args:          []string{"0"},
+				JobCategory:   "alpine",
+				OutputPath:    "/dev/stdout",
+				ErrorPath:     "/dev/stderr",
+				Extension: drmaa2interface.Extension{
+					ExtensionList: map[string]string{
+						"some": "extension",
+					},
+				},
+			}
+
+			jobid, err := tracker.AddJob(jt)
+			Ω(err).Should(BeNil())
+
+			jt2, err := tracker.JobTemplate(jobid)
+			Ω(err).Should(BeNil())
+
+			Ω(jt2.RemoteCommand).Should(Equal(jt.RemoteCommand))
+			Ω(jt2.Args).Should(Equal(jt.Args))
+			Ω(jt2.JobCategory).Should(Equal(jt.JobCategory))
+			Ω(jt2.OutputPath).Should(Equal(jt.OutputPath))
+			Ω(jt2.ErrorPath).Should(Equal(jt.ErrorPath))
+			Ω(jt2.Extension.ExtensionList["some"]).Should(Equal("extension"))
+
+			tracker.Wait(jobid, drmaa2interface.InfiniteTime, drmaa2interface.Done)
+			err = tracker.DeleteJob(jobid)
+			Ω(err).Should(BeNil())
+		})
+
+	})
+
 	Context("Job output", func() {
 
 		It("should return the standard output of a job", func() {
