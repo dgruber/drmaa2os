@@ -84,7 +84,7 @@ func jobTemplateToContainerConfig(jobsession string, jt drmaa2interface.JobTempl
 		cc.User = jt.ExtensionList["user"]
 		cc.ExposedPorts = newPortSet(jt.ExtensionList["exposedPorts"])
 
-		if value, found := jt.ExtensionList["entrypoint"]; found && jt.ExtensionList["entrypoint"] != "" {
+		if value, found := jt.ExtensionList["entrypoint"]; found && value != "" {
 			cc.Entrypoint = strings.Split(value, " ")
 		}
 	}

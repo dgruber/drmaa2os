@@ -2,7 +2,6 @@ package dockertracker
 
 import (
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/dgruber/drmaa2interface"
@@ -84,13 +83,13 @@ func handleInputOutput(cli *client.Client, id string, options types.ContainerAtt
 	if err != nil {
 		panic(err)
 	}
-	if stdoutfile != "" && stderrfile != "" {
-		redirectOut(res, stdoutfile, stderrfile)
-	} else if stdoutfile != "" {
-		redirect(res, stdoutfile)
-	} else if stderrfile != "" {
-		redirect(res, stderrfile)
+	if stdoutfile == "" {
+		stdoutfile = "/dev/null"
 	}
+	if stderrfile == "" {
+		stderrfile = "/dev/null"
+	}
+	redirectOut(res, stdoutfile, stderrfile)
 }
 
 func redirectOut(res types.HijackedResponse, outfilename, errfilename string) {
@@ -106,19 +105,6 @@ func redirectOut(res types.HijackedResponse, outfilename, errfilename string) {
 		stdcopy.StdCopy(outfile, errfile, res.Reader)
 		outfile.Close()
 		errfile.Close()
-		res.Close()
-	}()
-}
-
-func redirect(res types.HijackedResponse, file string) {
-	go func() {
-		buf := make([]byte, 1)
-		file, err := os.Create(file)
-		if err != nil {
-			panic(err)
-		}
-		io.CopyBuffer(file, res.Reader, buf)
-		file.Close()
 		res.Close()
 	}()
 }
