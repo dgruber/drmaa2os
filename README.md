@@ -41,15 +41,17 @@ For details about the mapping of job operations please consult the platform spec
   * [libdrmaa.so](pkg/jobtracker/libdrmaa/README.md)
   * [Google Batch](https://github.com/dgruber/gcpbatchtracker)
 
-In a more experimental state are:
+In a very experimental state are:
 
+  * [Split trackers in front/backend via OpenAPI](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/remote) 
   * _New_ [Containerd](pkg/jobtracker/containerdtracker/README.md)
   * [Singularity](pkg/jobtracker/singularity/README.md)
   * [Podman](pkg/jobtracker/podmantracker/README.md)
+  * [mpioperator](https://github.com/dgruber/mpioperatortracker)
   * _Archived_ [Cloud Foundry](pkg/jobtracker/cftracker/README.md)
 
-Note, that Singularity/Apptainer (or Podman) can be considered to be handled with
-theregular OS process backend, just starting the container cli. You would gain
+Note, that Singularity/Apptainer (or Podman) should be considered to be handled with
+the regular OS process backend, just starting the container cli. You gain
 features like job array task throttling and more...
 
 [Feedback](mailto:info@gridengine.eu) welcome!
