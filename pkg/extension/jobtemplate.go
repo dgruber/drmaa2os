@@ -27,6 +27,13 @@ const (
 	// in a ConfigMap when the job is finished. This is only required
 	// when the ConfigMap is consumed by someone (like a successor job).
 	JobTemplateK8sBasicSideCar string = "DRMAA2_JOB_OUTPUT_IN_JOBINFO"
+	// JobTemplateK8sDistribution defines the Kubernetes distribution
+	// used. Currently supported are: "GKE"/"gke". Currently this is
+	// used for specifying the accellerators (GPUs) for GKE.
+	JobTemplateK8sDistribution string = "distribution"
+	// JobTemplateK8sAccelerator defines the type of accelerator (GPU)
+	// to be used. Example: "1*nvidia-tesla-v100"
+	JobTemplateK8sAccelerator string = "accelerator"
 )
 
 const (
