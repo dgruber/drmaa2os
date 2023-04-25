@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"time"
 
@@ -300,6 +301,38 @@ var _ = Describe("Convert", func() {
 				}
 				Ω(pvc).Should(BeNumerically("==", 1))
 				Ω(nfs).Should(BeNumerically("==", 1))
+			})
+
+		})
+
+		Context("GKE GPUs", func() {
+
+			var jt drmaa2interface.JobTemplate
+
+			BeforeEach(func() {
+				jt = drmaa2interface.JobTemplate{
+					JobCategory:   "busybox:latest",
+					JobName:       "name",
+					RemoteCommand: "/entrypoint.sh",
+				}
+				jt.StageInFiles = map[string]string{
+					"/root":             "hostpath:/",
+					"/usr/local/nvidia": "hostpath:/home/kubernetes/bin/nvidia",
+				}
+				jt.ExtensionList = map[string]string{
+					extension.JobTemplateK8sPrivileged:   "true",
+					extension.JobTemplateK8sDistribution: "gke",
+					extension.JobTemplateK8sAccelerator:  "7*nvidia-tesla-k80",
+				}
+			})
+
+			It("should add the nodeSelector and resource limits for GPUs on GKE accordingly", func() {
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.Template.Spec.NodeSelector).ShouldNot(BeNil())
+				Ω(job.Spec.Template.Spec.NodeSelector["cloud.google.com/gke-accelerator"]).Should(Equal("nvidia-tesla-k80"))
+				Ω(job.Spec.Template.Spec.Containers[0].Resources.Limits).ShouldNot(BeNil())
+				Ω(job.Spec.Template.Spec.Containers[0].Resources.Limits["nvidia.com/gpu"]).Should(Equal(resource.MustParse("7")))
 			})
 
 		})
