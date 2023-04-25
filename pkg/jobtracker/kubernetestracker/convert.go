@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -416,6 +418,8 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 		}
 	}
 
+	podSpec = addExtensionsAccelerators(podSpec, jt)
+
 	podSpec.RestartPolicy = v1.RestartPolicyNever
 
 	// settings for command etc.
@@ -460,4 +464,43 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 	}
 
 	return addExtensions(&job, jt), nil
+}
+
+func addExtensionsAccelerators(podSpec v1.PodSpec, jt drmaa2interface.JobTemplate) v1.PodSpec {
+	if jt.ExtensionList != nil {
+
+		distribution, exists := jt.ExtensionList[extension.JobTemplateK8sDistribution]
+		// GKE job using GPUs
+		if exists && strings.ToLower(distribution) == "gke" {
+			accelerator, set := jt.ExtensionList[extension.JobTemplateK8sAccelerator]
+			if set {
+				amount, gpuType := parseAccelerator(accelerator)
+				if amount != "0" && gpuType != "" {
+					for i := range podSpec.Containers {
+						if podSpec.Containers[i].Resources.Limits == nil {
+							podSpec.Containers[i].Resources.Limits = make(map[v1.ResourceName]resource.Quantity)
+						}
+						podSpec.Containers[i].Resources.Limits[v1.ResourceName("nvidia.com/gpu")] = resource.MustParse(amount)
+					}
+					if podSpec.NodeSelector == nil {
+						podSpec.NodeSelector = make(map[string]string)
+					}
+					podSpec.NodeSelector["cloud.google.com/gke-accelerator"] = gpuType
+				}
+			}
+		}
+	}
+	return podSpec
+}
+
+func parseAccelerator(accelerator string) (string, string) {
+	p := strings.Split(accelerator, "*")
+	if len(p) != 2 {
+		return "0", ""
+	}
+	amount, err := strconv.Atoi(p[0])
+	if err != nil {
+		return "0", ""
+	}
+	return strconv.Itoa(amount), p[1]
 }

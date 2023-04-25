@@ -41,7 +41,7 @@ For details about the mapping of job operations please consult the platform spec
   * [libdrmaa.so](pkg/jobtracker/libdrmaa/README.md)
   * [Google Batch](https://github.com/dgruber/gcpbatchtracker)
 
-In a more experimental state are:
+In a very experimental state are:
 
   * [Split trackers in front/backend via OpenAPI](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/remote) 
   * _New_ [Containerd](pkg/jobtracker/containerdtracker/README.md)
