@@ -381,6 +381,62 @@ var _ = Describe("Convert", func() {
 
 		})
 
+		Context("Security context", func() {
+
+			var jt drmaa2interface.JobTemplate
+
+			BeforeEach(func() {
+				jt = drmaa2interface.JobTemplate{
+					JobCategory:   "busybox:latest",
+					JobName:       "name",
+					RemoteCommand: "/entrypoint.sh",
+				}
+				jt.ExtensionList = map[string]string{
+					//"unknown": "true",
+				}
+			})
+
+			It("should not set the security context by default", func() {
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.Template.Spec.SecurityContext).Should(BeNil())
+			})
+
+			// fsgroup
+			It("should set the fsgroup security context accordingly", func() {
+				jt.ExtensionList["fsgroup"] = "1000"
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.Template.Spec.SecurityContext).ShouldNot(BeNil())
+				Ω(job.Spec.Template.Spec.SecurityContext.FSGroup).ShouldNot(BeNil())
+				Ω(*job.Spec.Template.Spec.SecurityContext.FSGroup).Should(Equal(int64(1000)))
+			})
+
+			// runasuser
+			It("should set the runasuser security context accordingly", func() {
+				jt.ExtensionList["runasuser"] = "1000"
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.Template.Spec.SecurityContext).ShouldNot(BeNil())
+				Ω(job.Spec.Template.Spec.SecurityContext.RunAsUser).ShouldNot(BeNil())
+				Ω(*job.Spec.Template.Spec.SecurityContext.RunAsUser).Should(Equal(int64(1000)))
+			})
+
+			// runasgroup
+			It("should set the runasgroup security context accordingly", func() {
+				jt.ExtensionList["runasgroup"] = "1000"
+				jt.ExtensionList["runasuser"] = "1111"
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.Template.Spec.SecurityContext).ShouldNot(BeNil())
+				Ω(job.Spec.Template.Spec.SecurityContext.RunAsGroup).ShouldNot(BeNil())
+				Ω(*job.Spec.Template.Spec.SecurityContext.RunAsGroup).Should(Equal(int64(1000)))
+				Ω(job.Spec.Template.Spec.SecurityContext.RunAsUser).ShouldNot(BeNil())
+				Ω(*job.Spec.Template.Spec.SecurityContext.RunAsUser).Should(Equal(int64(1111)))
+			})
+
+		})
+
 		Context("Pull policy", func() {
 
 			var jt drmaa2interface.JobTemplate
