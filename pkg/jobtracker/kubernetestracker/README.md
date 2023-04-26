@@ -150,6 +150,9 @@ Example:
 | "labels"      | "key=value,key2=value2" v1.Labels |
 | "scheduler"   | poseidon, kube-batch or any other k8s scheduler |
 | "privileged"  | "true" or "TRUE"; runs container in privileged mode |
+| "pullpolicy"  | overrides image pull policy; "always", "never", "ifnotpresent" (in any uppercase, lowercase format) |
+| "distribution"  | Required for accelerators: "aks", "gke", or "eks" |
+| "accelerator"  | GPU (or other type) request: "1*nvidia-tesla-v100". For aks it requires a number prefix but the type string can be arbitrary but not empty. Sets resource limits, node selector, tolerations. |
 
 Example:
 

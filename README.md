@@ -56,8 +56,7 @@ features like job array task throttling and more...
 
 [Feedback](mailto:info@gridengine.eu) welcome!
 
-For a Go DRMAA2 wrapper based on C DRMAA2 (_libdrmaa2.so_) like for *Univa Grid Engine* please
-check out [drmaa2](https://github.com/dgruber/drmaa2).
+For a Go DRMAA2 wrapper based on C DRMAA2 (_libdrmaa2.so_) like for *Univa Grid Engine* please check out [drmaa2](https://github.com/dgruber/drmaa2).
 
 ## Basic Usage
 
