@@ -318,9 +318,58 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 			for i := range job.Spec.Template.Spec.Containers {
 				p := true
 				fmt.Printf("add extension privileged=%s\n", privileged)
-				job.Spec.Template.Spec.Containers[i].SecurityContext = &v1.SecurityContext{
-					Privileged: &p,
+				if job.Spec.Template.Spec.Containers[i].SecurityContext == nil {
+					job.Spec.Template.Spec.Containers[i].SecurityContext = &v1.SecurityContext{
+						Privileged: &p,
+					}
+				} else {
+					job.Spec.Template.Spec.Containers[i].SecurityContext.Privileged = &p
 				}
+			}
+		}
+	}
+
+	if runasuser, set := jt.ExtensionList["runasuser"]; set && runasuser != "" {
+		p, err := strconv.ParseInt(runasuser, 10, 64)
+		if err != nil {
+			fmt.Printf("runasuser: %s\n", err)
+		} else {
+			if job.Spec.Template.Spec.SecurityContext == nil {
+				job.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{
+					RunAsUser: &p,
+				}
+			} else {
+				job.Spec.Template.Spec.SecurityContext.RunAsUser = &p
+			}
+		}
+	}
+
+	if runasgroup, set := jt.ExtensionList["runasgroup"]; set && runasgroup != "" {
+		p, err := strconv.ParseInt(runasgroup, 10, 64)
+		if err != nil {
+			fmt.Printf("runasgroup: %s\n", err)
+		} else {
+			if job.Spec.Template.Spec.SecurityContext == nil {
+				job.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{
+					RunAsGroup: &p,
+				}
+			} else {
+				job.Spec.Template.Spec.SecurityContext.RunAsGroup = &p
+			}
+		}
+	}
+
+	if fsuser, set := jt.ExtensionList["fsgroup"]; set && fsuser != "" {
+		p, err := strconv.ParseInt(fsuser, 10, 64)
+		if err != nil {
+			fmt.Printf("fsgroup: %s\n", err)
+		} else {
+			if job.Spec.Template.Spec.SecurityContext == nil {
+				job.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{
+					FSGroup: &p,
+				}
+			} else {
+				job.Spec.Template.Spec.SecurityContext.FSGroup = &p
 			}
 		}
 	}
