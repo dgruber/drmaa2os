@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"time"
@@ -104,7 +105,7 @@ var _ = Describe("Convert", func() {
 			Ω(*job.Spec.Template.Spec.Containers[0].SecurityContext.Privileged).To(BeTrue())
 		})
 
-		It("should not run privileged when 'privileged' is set as JobTemplate extension", func() {
+		It("should not run privileged when 'privileged' is noz set as JobTemplate extension", func() {
 			job, err := convertJob("jobsession", "default", jt)
 			Ω(err).Should(BeNil())
 			Ω(job).ShouldNot(BeNil())
@@ -333,6 +334,86 @@ var _ = Describe("Convert", func() {
 				Ω(job.Spec.Template.Spec.NodeSelector["cloud.google.com/gke-accelerator"]).Should(Equal("nvidia-tesla-k80"))
 				Ω(job.Spec.Template.Spec.Containers[0].Resources.Limits).ShouldNot(BeNil())
 				Ω(job.Spec.Template.Spec.Containers[0].Resources.Limits["nvidia.com/gpu"]).Should(Equal(resource.MustParse("7")))
+			})
+
+			It("should not add the nodeSelector and resource limits for GPUs on GKE if not specified", func() {
+				jt.ExtensionList = map[string]string{
+					extension.JobTemplateK8sPrivileged:   "true",
+					extension.JobTemplateK8sDistribution: "gke",
+				}
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.Template.Spec.NodeSelector).Should(BeNil())
+				Ω(job.Spec.Template.Spec.Containers[0].Resources.Limits).Should(BeNil())
+			})
+
+			It("should set resource limits and tolarations for GPUs on AKS accordingly", func() {
+				jt.ExtensionList = map[string]string{
+					extension.JobTemplateK8sPrivileged:   "true",
+					extension.JobTemplateK8sDistribution: "aks",
+					extension.JobTemplateK8sAccelerator:  "7*nvidia-tesla-k80",
+				}
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.Template.Spec.Tolerations).ShouldNot(BeNil())
+				Ω(job.Spec.Template.Spec.Tolerations[0].Key).Should(Equal("sku"))
+				Ω(job.Spec.Template.Spec.Tolerations[0].Operator).Should(Equal(corev1.TolerationOpEqual))
+				Ω(job.Spec.Template.Spec.Tolerations[0].Value).Should(Equal("gpu"))
+				Ω(job.Spec.Template.Spec.Tolerations[0].Effect).Should(Equal(corev1.TaintEffectNoSchedule))
+
+				Ω(job.Spec.Template.Spec.Containers[0].Resources.Limits).ShouldNot(BeNil())
+				Ω(job.Spec.Template.Spec.Containers[0].Resources.Limits["nvidia.com/gpu"]).Should(Equal(resource.MustParse("7")))
+			})
+
+			It("should set resource limits for GPUs on EKS accordingly", func() {
+				jt.ExtensionList = map[string]string{
+					extension.JobTemplateK8sPrivileged:   "true",
+					extension.JobTemplateK8sDistribution: "eks",
+					extension.JobTemplateK8sAccelerator:  "7*nvidia-tesla-k80",
+				}
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.Template.Spec.Tolerations).Should(BeNil())
+
+				Ω(job.Spec.Template.Spec.Containers[0].Resources.Limits).ShouldNot(BeNil())
+				Ω(job.Spec.Template.Spec.Containers[0].Resources.Limits["nvidia.com/gpu"]).Should(Equal(resource.MustParse("7")))
+			})
+
+		})
+
+		Context("Pull policy", func() {
+
+			var jt drmaa2interface.JobTemplate
+
+			BeforeEach(func() {
+				jt = drmaa2interface.JobTemplate{
+					JobCategory:   "busybox:latest",
+					JobName:       "name",
+					RemoteCommand: "/entrypoint.sh",
+				}
+				jt.ExtensionList = map[string]string{
+					"pullpolicy": "Always",
+				}
+			})
+
+			It("should set the pull policy accordingly", func() {
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.Template.Spec.Containers[0].ImagePullPolicy).Should(Equal(corev1.PullAlways))
+			})
+
+			It("should set the pull policy to IfNotPresent", func() {
+				jt.ExtensionList["pullpolicy"] = "IfNotPresent"
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.Template.Spec.Containers[0].ImagePullPolicy).Should(Equal(corev1.PullIfNotPresent))
+			})
+
+			It("should set the pull policy to Never", func() {
+				jt.ExtensionList["pullpolicy"] = "neVer"
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.Template.Spec.Containers[0].ImagePullPolicy).Should(Equal(corev1.PullNever))
 			})
 
 		})

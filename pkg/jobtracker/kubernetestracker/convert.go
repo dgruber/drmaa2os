@@ -385,6 +385,18 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 		podSpec.Containers[0].EnvFrom = envFrom
 	}
 
+	if jt.ExtensionList != nil && jt.ExtensionList["pullpolicy"] != "" {
+		switch strings.ToLower(jt.ExtensionList["pullpolicy"]) {
+		case "always":
+			podSpec.Containers[0].ImagePullPolicy = v1.PullAlways
+		case "never":
+			podSpec.Containers[0].ImagePullPolicy = v1.PullNever
+		case "ifnotpresent":
+			podSpec.Containers[0].ImagePullPolicy = v1.PullIfNotPresent
+		}
+		// unknown pull policy will be ignored
+	}
+
 	// Add sidecar which stores the output of the job in a configmap.
 	// This is not needed as the job output is read from the logs of
 	// the pod object. But it is useful for storing the output in a
@@ -470,6 +482,48 @@ func addExtensionsAccelerators(podSpec v1.PodSpec, jt drmaa2interface.JobTemplat
 	if jt.ExtensionList != nil {
 
 		distribution, exists := jt.ExtensionList[extension.JobTemplateK8sDistribution]
+
+		// AKS job using GPUs
+		if exists && strings.ToLower(distribution) == "aks" {
+			accelerator, set := jt.ExtensionList[extension.JobTemplateK8sAccelerator]
+			if set {
+				amount, gpuType := parseAccelerator(accelerator)
+				if amount != "0" && gpuType != "" {
+					for i := range podSpec.Containers {
+						if podSpec.Containers[i].Resources.Limits == nil {
+							podSpec.Containers[i].Resources.Limits = make(map[v1.ResourceName]resource.Quantity)
+						}
+						podSpec.Containers[i].Resources.Limits[v1.ResourceName("nvidia.com/gpu")] = resource.MustParse(amount)
+					}
+					if podSpec.Tolerations == nil {
+						podSpec.Tolerations = make([]v1.Toleration, 0)
+					}
+					podSpec.Tolerations = append(podSpec.Tolerations, v1.Toleration{
+						Key:      "sku",
+						Operator: v1.TolerationOpEqual,
+						Value:    "gpu",
+						Effect:   v1.TaintEffectNoSchedule,
+					})
+				}
+			}
+		}
+
+		// EKS job using GPUs
+		if exists && strings.ToLower(distribution) == "eks" {
+			accelerator, set := jt.ExtensionList[extension.JobTemplateK8sAccelerator]
+			if set {
+				amount, gpuType := parseAccelerator(accelerator)
+				if amount != "0" && gpuType != "" {
+					for i := range podSpec.Containers {
+						if podSpec.Containers[i].Resources.Limits == nil {
+							podSpec.Containers[i].Resources.Limits = make(map[v1.ResourceName]resource.Quantity)
+						}
+						podSpec.Containers[i].Resources.Limits[v1.ResourceName("nvidia.com/gpu")] = resource.MustParse(amount)
+					}
+				}
+			}
+		}
+
 		// GKE job using GPUs
 		if exists && strings.ToLower(distribution) == "gke" {
 			accelerator, set := jt.ExtensionList[extension.JobTemplateK8sAccelerator]
