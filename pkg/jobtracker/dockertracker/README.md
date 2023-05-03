@@ -89,6 +89,9 @@ Mapping between the job template and the Docker container config request:
 | Extension: "uts" | --uts "host" |
 | Extension: "pid" | --pid "host" |
 | Extension: "rm" | --rm  "true" or "TRUE"|
+| Extension: "gpus" | Sets GPU device request for nvidia driver. Value must be "all" or a number |
+
+Check convert.go for more details. Add your own extention and create a pull request.
 
 If more extensions needed just open an issue.
 
