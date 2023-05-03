@@ -360,7 +360,6 @@ var _ = Describe("Convert", func() {
 				Ω(job.Spec.Template.Spec.Tolerations[0].Operator).Should(Equal(corev1.TolerationOpEqual))
 				Ω(job.Spec.Template.Spec.Tolerations[0].Value).Should(Equal("gpu"))
 				Ω(job.Spec.Template.Spec.Tolerations[0].Effect).Should(Equal(corev1.TaintEffectNoSchedule))
-
 				Ω(job.Spec.Template.Spec.Containers[0].Resources.Limits).ShouldNot(BeNil())
 				Ω(job.Spec.Template.Spec.Containers[0].Resources.Limits["nvidia.com/gpu"]).Should(Equal(resource.MustParse("7")))
 			})
