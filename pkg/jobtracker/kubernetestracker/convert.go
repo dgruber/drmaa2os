@@ -317,7 +317,6 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 		if strings.ToUpper(privileged) == "TRUE" {
 			for i := range job.Spec.Template.Spec.Containers {
 				p := true
-				fmt.Printf("add extension privileged=%s\n", privileged)
 				if job.Spec.Template.Spec.Containers[i].SecurityContext == nil {
 					job.Spec.Template.Spec.Containers[i].SecurityContext = &v1.SecurityContext{
 						Privileged: &p,

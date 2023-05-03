@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -77,6 +78,8 @@ func jobTemplateToContainerConfig(jobsession string, jt drmaa2interface.JobTempl
 		cmdSlice := strslice.StrSlice{jt.RemoteCommand}
 		cmdSlice = append(cmdSlice, jt.Args...)
 		cc.Cmd = cmdSlice
+	} else if jt.Args != nil {
+		cc.Cmd = strslice.StrSlice(jt.Args)
 	}
 
 	if jt.WorkingDirectory != "" {
@@ -157,6 +160,37 @@ func jobTemplateToHostConfig(jt drmaa2interface.JobTemplate) (*container.HostCon
 			if strings.ToUpper(rm) == "TRUE" {
 				hc.AutoRemove = true
 			}
+		}
+		gpus, exists := jt.ExtensionList["gpus"]
+		if exists {
+			var count int
+			if gpus == "all" {
+				count = -1
+			} else {
+				var err error
+				count, err = strconv.Atoi(gpus)
+				if err != nil {
+					return nil, fmt.Errorf("gpus extension must be 'all' or a number")
+				}
+			}
+			if hc.Resources.DeviceRequests == nil {
+				hc.Resources.DeviceRequests = make([]container.DeviceRequest, 0)
+			}
+			hc.Resources.DeviceRequests = append(hc.Resources.DeviceRequests, container.DeviceRequest{
+				Driver: "nvidia",
+				Count:  count,
+				Capabilities: [][]string{
+					{"gpu"},
+					{"nvidia"},
+					{"compute"},
+					{"compat32"},
+					{"graphics"},
+					{"utility"},
+					{"video"},
+					{"display"},
+				},
+			},
+			)
 		}
 	}
 
