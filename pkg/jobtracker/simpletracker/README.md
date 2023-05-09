@@ -49,9 +49,9 @@ A JobTemplate is mapped into the process creation process in the following way:
 | Args                 | Arguments of the executable |
 | WorkingDir           | Working directory           |
 | JobEnvironment       | Environment variables set   |
-| InputPath            | if set it the file that as stdin |
-| OutputPath           | if set it the file that as stdout |
-| ErrorPath            | if set it the file that as stderr |
+| InputPath            | If set it uses this file as stdin for the job |
+| OutputPath           | File to print stdout to (like /dev/stdout) |
+| ErrorPath            | File to print stderr to (like /dev/stderr) |
 
 JOB_ID env variable is set and TASK_ID env variable is set in case of a a job array.
 
