@@ -54,7 +54,7 @@ jobs:
             echo "Install Go"
             yum install -y wget tar git gcc
             rm -rf /usr/local/go || true
-            export VERSION=1.18.4 OS=linux ARCH=amd64 && wget https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz && tar -C /usr/local -xzvf go$VERSION.$OS-$ARCH.tar.gz && rm go$VERSION.$OS-$ARCH.tar.gz
+            export VERSION=1.21.2 OS=linux ARCH=amd64 && wget https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz && tar -C /usr/local -xzvf go$VERSION.$OS-$ARCH.tar.gz && rm go$VERSION.$OS-$ARCH.tar.gz
             export PATH=/usr/local/go/bin:${PATH}:/opt/sge/include
             go version
             go build -v -p 1
