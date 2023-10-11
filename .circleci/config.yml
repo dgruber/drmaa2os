@@ -64,7 +64,7 @@ jobs:
             qstat -F
             cd ./pkg/jobtracker/libdrmaa
             go mod download
-            ginkgo -v .
+            go test -v .
 workflows:
   version: 2
   build_and_test:
