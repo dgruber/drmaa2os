@@ -36,7 +36,8 @@ func RunServer(jobTracker jobtracker.JobTracker) {
 	// using chi router and logging + basic auth middleware
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
-	router.Use(middleware.BasicAuth("remotetracker",
+	router.Use(middleware.BasicAuth(
+		"remotetracker",
 		map[string]string{
 			"user": "testpassword",
 		}))
