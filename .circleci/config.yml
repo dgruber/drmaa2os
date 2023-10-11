@@ -59,11 +59,12 @@ jobs:
             export PATH=/usr/local/go/bin:${PATH}:/opt/sge/include
             go version
             go build -v -p 1
+            go install github.com/onsi/ginkgo/v2/ginkgo
             qhost
             qstat -F
             cd ./pkg/jobtracker/libdrmaa
             go mod download
-            go test -v .
+            ginkgo -v .
 workflows:
   version: 2
   build_and_test:

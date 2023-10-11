@@ -337,6 +337,7 @@ func (jt *JobTracker) ListArrayJobs(id string) ([]string, error) {
 func (jt *JobTracker) JobState(jobid string) (drmaa2interface.JobState, string, error) {
 	jt.Lock()
 	defer jt.Unlock()
+
 	jt.ps.Lock()
 	defer jt.ps.Unlock()
 
@@ -428,8 +429,11 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 			// pid is 0 - this should not be the case
 			if pid != 0 {
 				fmt.Printf("PID is not 0\n")
+				<-time.After(time.Millisecond * 10)
 				err := KillPid(pid)
 				if err != nil {
+					jt.ps.jobState[jobid] = drmaa2interface.Failed
+					jt.ps.Unlock()
 					return fmt.Errorf("error killing job %s: %s", jobid, err)
 				}
 			}
@@ -439,7 +443,6 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 		}
 		if pid == 0 {
 			// we have no PID for task
-			jt.ps.Lock()
 			jt.ps.jobState[jobid] = drmaa2interface.Failed
 			jt.ps.Unlock()
 			// that can lead to Wait() calls waiting for the jobs
@@ -449,11 +452,9 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 		jt.ps.Unlock()
 		err := KillPid(pid)
 		if err == nil {
-
 			jt.ps.Lock()
 			jt.ps.jobState[jobid] = drmaa2interface.Failed
 			jt.ps.Unlock()
-
 		}
 		return err
 	}
