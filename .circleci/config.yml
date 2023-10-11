@@ -21,11 +21,12 @@ jobs:
       - run: sudo apt-get update
       - run: sudo apt-get install -y libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev
       - run: go build -v -p 1
-      - run: go test -v
-      - run: go test -v ./pkg/d2hlp
-      - run: go test -v ./pkg/helper
-      - run: go test -v ./pkg/storage/...
-      - run: go test -v ./pkg/jobtracker/simpletracker/...
+      - run: go install github.com/onsi/ginkgo/v2/ginkgo
+      - run: ginkgo -v
+      - run: ginkgo -v ./pkg/d2hlp
+      - run: ginkgo -v ./pkg/helper
+      - run: ginkgo -v ./pkg/storage/...
+      - run: ginkgo -v ./pkg/jobtracker/simpletracker/...
       - run:
           name: Code coverage file
           command: go test ./ ./pkg/helper ./pkg/d2hlp ./pkg/storage ./pkg/jobtracker/simpletracker -race -coverprofile=coverage.txt -covermode=atomic
