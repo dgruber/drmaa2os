@@ -37,7 +37,7 @@ require (
 	golang.org/x/net v0.15.0
 	k8s.io/api v0.27.6
 	k8s.io/apimachinery v0.27.6
-	k8s.io/client-go v0.22.5
+	k8s.io/client-go v0.27.6
 )
 
 require (
