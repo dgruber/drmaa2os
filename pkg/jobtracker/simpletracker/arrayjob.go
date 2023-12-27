@@ -18,7 +18,8 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 		waitCh := make(chan int, maxParallel)
 		for i := begin; i <= end; i += step {
 			if maxParallel > 0 {
-				waitCh <- i // block when buffer is full - wait until jobs are finished
+				// block when buffer is full - wait until jobs are finished
+				waitCh <- i
 			}
 			jobid := fmt.Sprintf("%s.%d", arrayjobid, i)
 
@@ -27,7 +28,8 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 			if jt.ps.jobState[jobid] == drmaa2interface.Failed {
 				jt.ps.Unlock()
 				if i == begin {
-					firstJobErrorCh <- fmt.Errorf("job %s was cancelled before it was started", jobid)
+					firstJobErrorCh <- fmt.Errorf(
+						"job %s was cancelled before it was started", jobid)
 				}
 				// skip task
 				continue
@@ -51,7 +53,8 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 
 			if maxParallel > 0 {
 				go func() {
-					jt.Wait(jobid, 0.0, drmaa2interface.Done, drmaa2interface.Failed)
+					jt.Wait(jobid, 0.0, drmaa2interface.Done,
+						drmaa2interface.Failed)
 					<-waitCh
 				}()
 			}

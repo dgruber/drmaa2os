@@ -171,6 +171,8 @@ var _ = Describe("Convert", func() {
 			jt.ExtensionList["uts"] = "host"
 			jt.ExtensionList["pid"] = "host"
 			jt.ExtensionList["rm"] = "true"
+			jt.ExtensionList["ulimit"] = "memlock=-1,stack=67108864"
+			jt.ExtensionList["shm-size"] = "10g"
 			hc, err := jobTemplateToHostConfig(jt)
 			Ω(err).Should(BeNil())
 			Ω(hc).ShouldNot(BeNil())
@@ -183,6 +185,13 @@ var _ = Describe("Convert", func() {
 			Ω(hc.IpcMode.IsHost()).Should(BeTrue())
 			Ω(hc.UTSMode.IsHost()).Should(BeTrue())
 			Ω(hc.PidMode.IsHost()).Should(BeTrue())
+			Ω(hc.ShmSize).Should(BeNumerically("==", 10*1024*1024*1024))
+			Ω(hc.Ulimits[0].Name).Should(Equal("memlock"))
+			Ω(hc.Ulimits[0].Soft).Should(BeNumerically("==", -1))
+			Ω(hc.Ulimits[0].Hard).Should(BeNumerically("==", -1))
+			Ω(hc.Ulimits[1].Name).Should(Equal("stack"))
+			Ω(hc.Ulimits[1].Soft).Should(BeNumerically("==", 67108864))
+			Ω(hc.Ulimits[1].Hard).Should(BeNumerically("==", 67108864))
 		})
 	})
 

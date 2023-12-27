@@ -85,11 +85,13 @@ Mapping between the job template and the Docker container config request:
 | Extension: "net" | --net  / like "host" |
 | Extension: "privileged" | --privileged  / "true"  when enabled, default "false"|
 | Extension: "restart" | --restart  / like "unless-stopped", default "no" / use with care|
-| Extension: "ipc" | --ipc "host" |
+| Extension: "ipc" | Value like "host": --ipc "host" |
 | Extension: "uts" | --uts "host" |
 | Extension: "pid" | --pid "host" |
 | Extension: "rm" | --rm  "true" or "TRUE"|
 | Extension: "gpus" | Sets GPU device request for nvidia driver. Value must be "all" or a number |
+| Extension: "shm-size" | Human-readable string representing an amount of RAM in bytes, kibibytes, mebibytes, gibibytes, or tebibytes |
+| Extension: "ulimit" | Comma separted list of ulimits: "memlock=-1,stack=67108864" |
 
 Check convert.go for more details. Add your own extention and create a pull request.
 

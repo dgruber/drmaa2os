@@ -16,6 +16,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
+	"github.com/docker/go-units"
 )
 
 const (
@@ -161,6 +162,30 @@ func jobTemplateToHostConfig(jt drmaa2interface.JobTemplate) (*container.HostCon
 				hc.AutoRemove = true
 			}
 		}
+		// "human-readable string representing an amount of RAM
+		// in bytes, kibibytes, mebibytes, gibibytes, or tebibytes and
+		// returns the number of bytes, or -1 if the string is unparseable."
+		shmsize, exists := jt.ExtensionList["shm-size"]
+		if exists {
+			shms, err := units.RAMInBytes(shmsize)
+			if err != nil {
+				return nil, fmt.Errorf("cannot parse shm-size: %s", err)
+			}
+			hc.ShmSize = shms
+		}
+
+		if jt.ExtensionList["ulimit"] != "" {
+			hc.Ulimits = make([]*units.Ulimit, 0)
+			for _, ulimit := range strings.Split(
+				jt.ExtensionList["ulimit"], ",") {
+				ul, err := units.ParseUlimit(ulimit)
+				if err != nil {
+					return nil, fmt.Errorf("cannot parse ulimit: %s", err)
+				}
+				hc.Ulimits = append(hc.Ulimits, ul)
+			}
+		}
+
 		gpus, exists := jt.ExtensionList["gpus"]
 		if exists {
 			var count int

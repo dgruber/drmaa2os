@@ -66,7 +66,7 @@ func makeLocalJobInfo() drmaa2interface.JobInfo {
 
 func collectUsage(state *os.ProcessState, jobid string, startTime time.Time) drmaa2interface.JobInfo {
 	ji := makeLocalJobInfo()
-	ji.State = drmaa2interface.Undetermined
+	ji.State = drmaa2interface.Failed
 
 	if status, ok := state.Sys().(syscall.WaitStatus); ok {
 		ji.ExitStatus = status.ExitStatus()
