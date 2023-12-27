@@ -9,6 +9,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 
+	"os"
+
 	"time"
 )
 
@@ -107,7 +109,9 @@ var _ = Describe("Convert", func() {
 			JobCategory:       "my/image",
 			WorkingDirectory:  "/working/dir",
 			CandidateMachines: []string{"hostname"},
-			StageInFiles:      map[string]string{"outer": "inner"},
+			StageInFiles: map[string]string{
+				"./outer": "inner",
+			},
 		}
 
 		It("should convert the JobTemplate settings", func() {
@@ -125,7 +129,9 @@ var _ = Describe("Convert", func() {
 			hc, err := jobTemplateToHostConfig(jt)
 			Ω(err).Should(BeNil())
 			Ω(hc.Binds).ShouldNot(BeNil())
-			Ω(hc.Binds[0]).Should(Equal("outer:inner"))
+			wd, err := os.Getwd()
+			Ω(err).Should(BeNil())
+			Ω(hc.Binds[0]).Should(Equal(wd + "/outer:inner"))
 		})
 
 		It("should convert the environment variables", func() {

@@ -61,7 +61,8 @@ func main() {
 		jobs = removeJob(jobs, j)
 
 		if err != nil {
-			fmt.Printf("Error while waiting for jobs to finish: %s\n", err.Error())
+			fmt.Printf("Error while waiting for jobs to finish: %s\n",
+				err.Error())
 			break
 		}
 		if j.GetState() == drmaa2interface.Done {

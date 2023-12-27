@@ -77,7 +77,7 @@ Mapping between the job template and the Docker container config request:
 | CandidateMachines[0] | Hostname                        |
 | WorkingDir           | WorkingDir                      |
 | JobEnvironment (k: v)| Env ("k=v")                     |
-| StageInFiles         | -v localPath:containerPath      |
+| StageInFiles         | key: hostPath -v hostPath:containerPath      |
 | ErrorPath            | Writes stderr into a local file (not a file in the container). |
 | OutputPath           | Writes stdout into a local file (not a file in the container). |
 | Extension: "user"    | User / must exist in container if set |

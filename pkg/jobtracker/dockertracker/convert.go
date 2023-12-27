@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -118,13 +119,19 @@ func jobTemplateToContainerConfig(jobsession string, jt drmaa2interface.JobTempl
 func jobTemplateToHostConfig(jt drmaa2interface.JobTemplate) (*container.HostConfig, error) {
 	var hc container.HostConfig
 	//hc.CpusetMems
-	//hc.Ulimits
+
 	for outer, inner := range jt.StageInFiles {
 		// TODO: Mapping must be the other way around as you might
 		// want to map the same file/directory to multiple locations
 		// inside the container. So the destination is unique and
 		// must be the key (and the source the value).
-		hc.Binds = append(hc.Binds, fmt.Sprintf("%s:%s", outer, inner))
+
+		hostPath, err := filepath.Abs(outer)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get absolute path of %s: %s",
+				outer, err)
+		}
+		hc.Binds = append(hc.Binds, fmt.Sprintf("%s:%s", hostPath, inner))
 	}
 	if jt.ExtensionList != nil {
 		restart, exists := jt.ExtensionList["restart"]

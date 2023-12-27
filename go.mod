@@ -5,8 +5,8 @@ go 1.21
 toolchain go1.21.2
 
 replace (
-	github.com/containerd/containerd => github.com/containerd/containerd v1.6.24
-	github.com/docker/docker => github.com/docker/docker v20.10.26+incompatible
+	github.com/containerd/containerd => github.com/containerd/containerd v1.6.26
+	github.com/docker/docker => github.com/docker/docker v20.10.27+incompatible
 	github.com/docker/go-connections => github.com/docker/go-connections v0.4.0
 	k8s.io/api => k8s.io/api v0.27.6
 	k8s.io/apimachinery => k8s.io/apimachinery v0.27.6
@@ -30,7 +30,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
-	github.com/opencontainers/image-spec v1.1.0-rc2.0.20221005185240-3a7f492d3f1b
+	github.com/opencontainers/image-spec v1.1.0-rc5
 	github.com/pkg/errors v0.9.1
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	go.etcd.io/bbolt v1.3.8
@@ -163,6 +163,7 @@ require (
 	github.com/containerd/cgroups v1.0.4 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/containerd/fifo v1.0.0 // indirect
+	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/ttrpc v1.1.2 // indirect
 	github.com/containerd/typeurl v1.0.2 // indirect
 	github.com/containernetworking/cni v1.1.2 // indirect
@@ -231,11 +232,11 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/proglottis/gpgme v0.1.3 // indirect
 	github.com/prometheus/client_golang v1.12.1 // indirect
-	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sigstore/sigstore v1.3.1-0.20220629021053-b95fc0d626c1 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cobra v1.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stefanberger/go-pkcs11uri v0.0.0-20201008174630-78d3cae3a980 // indirect
