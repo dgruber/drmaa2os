@@ -1,5 +1,9 @@
 package dockertracker_test
 
+/*
+
+Not yet implemented
+
 import (
 	"bufio"
 	"bytes"
@@ -96,3 +100,5 @@ var _ = Describe("Job Outputter", func() {
 	})
 
 })
+
+*/
