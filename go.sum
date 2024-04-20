@@ -983,8 +983,8 @@ github.com/containernetworking/plugins v0.9.1/go.mod h1:xP/idU2ldlzN6m4p5LmGiwRD
 github.com/containernetworking/plugins v1.1.1 h1:+AGfFigZ5TiQH00vhR8qPeSatj53eNGz0C1d3wVYlHE=
 github.com/containernetworking/plugins v1.1.1/go.mod h1:Sr5TH/eBsGLXK/h71HeLfX19sZPp3ry5uHSkI4LPxV8=
 github.com/containers/buildah v1.23.1/go.mod h1:4WnrN0yrA7ab0ppgunixu2WM1rlD2rG8QLJAKbEkZlQ=
-github.com/containers/buildah v1.27.1 h1:i5yP3uJBq9mKANOP4WA+5x9cBuEQ4FJIAzEPoPzRrXQ=
-github.com/containers/buildah v1.27.1/go.mod h1:anH3ExvDXRNP9zLQCrOc1vWb5CrhqLF/aYFim4tslvA=
+github.com/containers/buildah v1.27.4 h1:ENGd5pHAqMxn8EZXZ4uiq6rt1BZ7TYhuXrmVQFLHmAc=
+github.com/containers/buildah v1.27.4/go.mod h1:FVZlpAffn7BTMQgGIxsrRXh70595XI7KWdkFRF1oUSU=
 github.com/containers/common v0.44.2/go.mod h1:7sdP4vmI5Bm6FPFxb3lvAh1Iktb6tiO1MzjUzhxdoGo=
 github.com/containers/common v0.44.5/go.mod h1:7sdP4vmI5Bm6FPFxb3lvAh1Iktb6tiO1MzjUzhxdoGo=
 github.com/containers/common v0.49.1 h1:6y4/s2WwYxrv+Cox7fotOo316wuZI+iKKPUQweCYv50=
@@ -992,8 +992,8 @@ github.com/containers/common v0.49.1/go.mod h1:ueM5hT0itKqCQvVJDs+EtjornAQtrHYxQ
 github.com/containers/conmon v2.0.20+incompatible/go.mod h1:hgwZ2mtuDrppv78a/cOBNiCm6O0UMWGx1mu7P00nu5I=
 github.com/containers/image/v5 v5.16.0/go.mod h1:XgTpfAPLRGOd1XYyCU5cISFr777bLmOerCSpt/v7+Q4=
 github.com/containers/image/v5 v5.17.0/go.mod h1:GnYVusVRFPMMTAAUkrcS8NNSpBp8oyrjOUe04AAmRr4=
-github.com/containers/image/v5 v5.22.0 h1:KemxPmD4D2YYOFZN2SgoTk7nBFcnwPiPW0MqjYtknSE=
-github.com/containers/image/v5 v5.22.0/go.mod h1:D8Ksv2RNB8qLJ7xe1P3rgJJOSQpahA6amv2Ax++/YO4=
+github.com/containers/image/v5 v5.22.1 h1:Oj8C/ACrNn18f8MNTqOeBOHAN51GF1rEhoVSCA/ylvI=
+github.com/containers/image/v5 v5.22.1/go.mod h1:D8Ksv2RNB8qLJ7xe1P3rgJJOSQpahA6amv2Ax++/YO4=
 github.com/containers/libtrust v0.0.0-20190913040956-14b96171aa3b/go.mod h1:9rfv8iPl1ZP7aqh9YA68wnZv2NUDbXdcdPHVz0pFbPY=
 github.com/containers/libtrust v0.0.0-20200511145503-9c3a6c22cd9a h1:spAGlqziZjCJL25C6F1zsQY05tfCKE9F5YwtEWWe6hU=
 github.com/containers/libtrust v0.0.0-20200511145503-9c3a6c22cd9a/go.mod h1:9rfv8iPl1ZP7aqh9YA68wnZv2NUDbXdcdPHVz0pFbPY=
@@ -1012,8 +1012,8 @@ github.com/containers/storage v1.36.0/go.mod h1:vbd3SKVQNHdmU5qQI6hTEcKPxnZkGqyd
 github.com/containers/storage v1.37.0/go.mod h1:kqeJeS0b7DO2ZT1nVWs0XufrmPFbgV3c+Q/45RlH6r4=
 github.com/containers/storage v1.37.2/go.mod h1:kqeJeS0b7DO2ZT1nVWs0XufrmPFbgV3c+Q/45RlH6r4=
 github.com/containers/storage v1.38.0/go.mod h1:lBzt28gAk5ADZuRtwdndRJyqX22vnRaXmlF+7ktfMYc=
-github.com/containers/storage v1.42.0 h1:zm2AQD4NDeTB3JQ8X+Wo5+VRqNB+b4ocEd7Qj6ylPJA=
-github.com/containers/storage v1.42.0/go.mod h1:JiUJwOgOo1dr2DdOUc1MRe2GCAXABYoYmOdPF8yvH78=
+github.com/containers/storage v1.42.1-0.20221104172635-d3b97ec7b760 h1:naITfBmiyK4M7lLBGwFc8ql6KCZFRDuqu6MQm2SjcoA=
+github.com/containers/storage v1.42.1-0.20221104172635-d3b97ec7b760/go.mod h1:JiUJwOgOo1dr2DdOUc1MRe2GCAXABYoYmOdPF8yvH78=
 github.com/coreos/bbolt v1.3.2/go.mod h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/etcd v3.3.13+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
@@ -1766,8 +1766,9 @@ github.com/opencontainers/selinux v1.8.4/go.mod h1:HTvjPFoGMbpQsG886e3lQwnsRWtE4
 github.com/opencontainers/selinux v1.8.5/go.mod h1:HTvjPFoGMbpQsG886e3lQwnsRWtE4TC1OF3OUvG9FAo=
 github.com/opencontainers/selinux v1.9.1/go.mod h1:2i0OySw99QjzBBQByd1Gr9gSjvuho1lHsJxIJ3gGbJI=
 github.com/opencontainers/selinux v1.10.0/go.mod h1:2i0OySw99QjzBBQByd1Gr9gSjvuho1lHsJxIJ3gGbJI=
-github.com/opencontainers/selinux v1.10.1 h1:09LIPVRP3uuZGQvgR+SgMSNBd1Eb3vlRbGqQpoHsF8w=
 github.com/opencontainers/selinux v1.10.1/go.mod h1:2i0OySw99QjzBBQByd1Gr9gSjvuho1lHsJxIJ3gGbJI=
+github.com/opencontainers/selinux v1.10.2 h1:NFy2xCsjn7+WspbfZkUd5zyVeisV7VFbPSP96+8/ha4=
+github.com/opencontainers/selinux v1.10.2/go.mod h1:cARutUbaUrlRClyvxOICCgKixCs6L05aUsohzA3EkHQ=
 github.com/openshift/imagebuilder v1.2.2-0.20210415181909-87f3e48c2656/go.mod h1:9aJRczxCH0mvT6XQ+5STAQaPWz7OsWcU5/mRkt8IWeo=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/ostreedev/ostree-go v0.0.0-20190702140239-759a8c1ac913/go.mod h1:J6OG6YJVEWopen4avK3VNQSnALmmjvniMmni/YFYAwc=
@@ -2969,8 +2970,9 @@ google.golang.org/protobuf v1.28.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqw
 google.golang.org/protobuf v1.28.1/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 google.golang.org/protobuf v1.29.1/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 google.golang.org/protobuf v1.30.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
-google.golang.org/protobuf v1.31.0 h1:g0LDEJHgrBl9N9r17Ru3sqWhkIx2NB67okBHPwC7hs8=
 google.golang.org/protobuf v1.31.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
+google.golang.org/protobuf v1.33.0 h1:uNO2rsAINq/JlFpSdYEKIZ0uKD/R9cpdv0T+yoGwGmI=
+google.golang.org/protobuf v1.33.0/go.mod h1:c6P6GXX6sHbq/GpV6MGZEdwhWPcYBgnhAHhKbcUYpos=
 gopkg.in/airbrake/gobrake.v2 v2.0.9/go.mod h1:/h5ZAUhDkGaJfjzjKLSjv6zCL6O0LLBxU4K+aSYdM/U=
 gopkg.in/alecthomas/kingpin.v2 v2.2.6/go.mod h1:FMv+mEhP44yOT+4EoQTLFTRgOQ1FBLkstjWtayDeSgw=
 gopkg.in/alexcesaro/statsd.v2 v2.0.0 h1:FXkZSCZIH17vLCO5sO2UucTHsH9pc+17F6pl3JVCwMc=

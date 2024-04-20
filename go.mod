@@ -44,8 +44,8 @@ require (
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/containerd/containerd v1.6.18
 	github.com/containerd/stargz-snapshotter/estargz v0.12.0 // indirect
-	github.com/containers/buildah v1.27.1 // indirect
-	github.com/containers/image/v5 v5.22.0 // indirect
+	github.com/containers/buildah v1.27.4 // indirect
+	github.com/containers/image/v5 v5.22.1 // indirect
 	github.com/containers/psgo v1.7.2 // indirect
 	github.com/cri-o/ocicni v0.3.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
@@ -156,7 +156,7 @@ require (
 	github.com/containers/common v0.49.1 // indirect
 	github.com/containers/libtrust v0.0.0-20200511145503-9c3a6c22cd9a // indirect
 	github.com/containers/ocicrypt v1.1.5 // indirect
-	github.com/containers/storage v1.42.0 // indirect
+	github.com/containers/storage v1.42.1-0.20221104172635-d3b97ec7b760 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -211,7 +211,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417 // indirect
 	github.com/opencontainers/runtime-tools v0.9.1-0.20220714195903-17b3287fafb7 // indirect
-	github.com/opencontainers/selinux v1.10.1 // indirect
+	github.com/opencontainers/selinux v1.10.2 // indirect
 	github.com/ostreedev/ostree-go v0.0.0-20210805093236-719684c64e4f // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/proglottis/gpgme v0.1.3 // indirect
@@ -247,7 +247,7 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/grpc v1.59.0 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
