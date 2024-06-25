@@ -139,7 +139,7 @@ func jobTemplateToHostConfig(jt drmaa2interface.JobTemplate) (*container.HostCon
 			// experimental / should be handled outside
 			// like --restart=unless-stopped
 			hc.RestartPolicy = container.RestartPolicy{
-				Name: restart,
+				Name: container.RestartPolicyMode(restart),
 			}
 		}
 		privileged, exists := jt.ExtensionList["privileged"]
