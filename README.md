@@ -1,6 +1,6 @@
 💙💛
 
-# drmaa2os - A Go API for OS Processes, Docker Containers, Cloud Foundry Tasks, Kubernetes Jobs, Grid Engine Jobs, Podman containers, and more...
+# drmaa2os - A Go API for OS Processes, Docker Containers, Cloud Foundry Tasks, Kubernetes Jobs, Open Cluster Scheduler / Grid Engine Jobs, Podman containers, and more...
 
 _DRMAA2 for OS processes and more_
 
@@ -25,7 +25,7 @@ supervising workloads running in operating system processes, containers, PODs, t
 The API allows you to develop and run job workflows in OS processes and switch later to 
 containers running in Kubernetes, as Cloud Foundry tasks, pure Docker, Singularity, 
 or any HPC workload manager which supports the DRMAA standard through the C _libdrmaa.so_
-library (like SLURM, Grid Engine, ...) without changing the application logic.
+library (like SLURM, Open Cluster Scheduler, Grid Engine, ...) without changing the application logic.
 
 Its main purpose is supporting you with an abstraction layer on top of platforms, workload managers, 
 and HPC cluster schedulers, so that a software developer don't need to deal with the underlaying details and differences of job submission, status checking, and more.
