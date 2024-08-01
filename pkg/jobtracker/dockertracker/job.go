@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
@@ -53,7 +54,7 @@ func runJob(jobsession string, cli *client.Client, jt drmaa2interface.JobTemplat
 		return "", fmt.Errorf("creating container: %s", err.Error())
 	}
 
-	err = cli.ContainerStart(context.Background(), ccBody.ID, types.ContainerStartOptions{})
+	err = cli.ContainerStart(context.Background(), ccBody.ID, container.StartOptions{})
 	if err != nil {
 		return "", fmt.Errorf("starting container: %s", err.Error())
 	}
@@ -71,14 +72,14 @@ func runJob(jobsession string, cli *client.Client, jt drmaa2interface.JobTemplat
 
 		handleInputOutput(cli,
 			ccBody.ID,
-			types.ContainerAttachOptions{Stream: true, Stdout: stdout, Stderr: stderr, Logs: true},
+			container.AttachOptions{Stream: true, Stdout: stdout, Stderr: stderr, Logs: true},
 			jt.OutputPath,
 			jt.ErrorPath)
 	}
 	return ccBody.ID, nil
 }
 
-func handleInputOutput(cli *client.Client, id string, options types.ContainerAttachOptions, stdoutfile, stderrfile string) {
+func handleInputOutput(cli *client.Client, id string, options container.AttachOptions, stdoutfile, stderrfile string) {
 	res, err := cli.ContainerAttach(context.Background(), id, options)
 	if err != nil {
 		panic(err)

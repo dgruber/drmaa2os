@@ -2,17 +2,17 @@ package dockertracker
 
 import (
 	"errors"
+	"strings"
+	"time"
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
 	"github.com/dgruber/drmaa2os/pkg/helper"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-
-	"strings"
-	"time"
 
 	"golang.org/x/net/context"
 )
@@ -64,7 +64,7 @@ func (dt *DockerTracker) ListJobs() ([]string, error) {
 	}
 	f := filters.NewArgs()
 	f.Add("label", "drmaa2_jobsession="+dt.jobsession)
-	containers, err := dt.cli.ContainerList(context.Background(), types.ContainerListOptions{Filters: f, All: true})
+	containers, err := dt.cli.ContainerList(context.Background(), container.ListOptions{Filters: f, All: true})
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (dt *DockerTracker) DeleteJob(jobid string) error {
 	}
 	return dt.cli.ContainerRemove(context.Background(),
 		jobid,
-		types.ContainerRemoveOptions{
+		container.RemoveOptions{
 			Force:         true,
 			RemoveLinks:   false,
 			RemoveVolumes: true,

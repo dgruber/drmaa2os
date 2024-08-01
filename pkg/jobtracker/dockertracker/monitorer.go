@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dgruber/drmaa2interface"
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"golang.org/x/net/context"
 )
@@ -30,7 +30,7 @@ func (dt *DockerTracker) GetAllJobIDs(filter *drmaa2interface.JobInfo) ([]string
 	}
 	f := filters.NewArgs()
 	containers, err := dt.cli.ContainerList(context.Background(),
-		types.ContainerListOptions{Filters: f, All: true})
+		container.ListOptions{Filters: f, All: true})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list Docker containers: %v", err)
 	}
