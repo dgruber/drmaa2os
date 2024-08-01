@@ -471,6 +471,14 @@ var _ = Describe("Convert", func() {
 				Ω(job.Spec.Template.Spec.Containers[0].ImagePullPolicy).Should(Equal(corev1.PullNever))
 			})
 
+			It("should set ttlSecondsAfterFinished", func() {
+				jt.ExtensionList["ttlsecondsafterfinished"] = "100"
+				job, err := convertJob("session", "default", jt)
+				Ω(err).Should(BeNil())
+				Ω(job.Spec.TTLSecondsAfterFinished).ShouldNot(BeNil())
+				Ω(*job.Spec.TTLSecondsAfterFinished).Should(Equal(int32(100)))
+			})
+
 		})
 
 	})

@@ -42,6 +42,8 @@ const (
 	GoogleBatchSession
 	// MPIOperatorSession manages jobs as MPI operator jobs on Kubernetes
 	MPIOperatorSession
+	// ContainerdSession manages jobs as containerd containers
+	ContainerdSession
 )
 
 func init() {
@@ -219,6 +221,19 @@ func NewMPIOperatorSessionManager(parameters interface{}, dbpath string) (*Sessi
 		return sm, err
 	}
 	sm.jobTrackerCreateParams = parameters
+	return sm, nil
+}
+
+// NewContainerdSessionManager creates a new session manager for containerd.
+// The first parameter is either nil for using defaults or must be
+// of type _containerdtracker.ContainerdTrackerParams_.
+func NewContainerdSessionManager(cs interface{}, dbpath string) (*SessionManager, error) {
+	sm, err := makeSessionManager(dbpath, ContainerdSession)
+	if err != nil {
+		return sm, err
+	}
+	// specific parameters for Containerd
+	sm.jobTrackerCreateParams = cs
 	return sm, nil
 }
 

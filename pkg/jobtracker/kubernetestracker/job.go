@@ -41,7 +41,7 @@ func jobStateChange(jc clientBatchv1.JobInterface, job *batchv1.Job, action stri
 		return errors.New("Unsupported Operation")
 	case "terminate":
 		// activeDeadlineSeconds to zero
-		return jc.Delete(context.TODO(), job.GetName(), k8sapi.DeleteOptions{})
+		return deleteJob(jc, job)
 	}
 	return fmt.Errorf("Undefined job operation")
 }
