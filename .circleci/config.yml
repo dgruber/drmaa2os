@@ -70,4 +70,5 @@ workflows:
   build_and_test:
     jobs:
       - build
-      - libdrmaa
+#      - libdrmaa
+# TODO: Update to Open Cluster Scheduler

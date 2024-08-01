@@ -487,6 +487,21 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 	var one int32 = 1
 	var zero int32 = 0
 
+	// default is unset: never delete the finished job
+	var ttl *int32
+
+	if jt.ExtensionList != nil &&
+		jt.ExtensionList["ttlsecondsafterfinished"] != "" {
+		ttlSeconds, err := strconv.Atoi(
+			jt.ExtensionList["ttlsecondsafterfinished"])
+		if err != nil {
+			return nil, fmt.Errorf(
+				"converting job (ttlsecondsafterfinished): %s", err)
+		}
+		ttl32 := int32(ttlSeconds)
+		ttl = &ttl32
+	}
+
 	job := batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Job",
@@ -499,9 +514,10 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 			Namespace:    namespace,
 		},
 		Spec: batchv1.JobSpec{
-			Parallelism:  &one,
-			Completions:  &one,
-			BackoffLimit: &zero,
+			Parallelism:             &one,
+			Completions:             &one,
+			BackoffLimit:            &zero,
+			TTLSecondsAfterFinished: ttl,
 
 			Template: k8sv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{

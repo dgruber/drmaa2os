@@ -16,7 +16,9 @@ var _ = Describe("ContainerdJobTracker", func() {
 	var err error
 
 	BeforeEach(func() {
-		tracker, err = containerdtracker.NewContainerdJobTracker("/run/containerd/containerd.sock")
+		tracker, err = containerdtracker.NewContainerdJobTracker(
+			"testsession",
+			"/run/containerd/containerd.sock")
 		Expect(err).NotTo(HaveOccurred())
 	})
 

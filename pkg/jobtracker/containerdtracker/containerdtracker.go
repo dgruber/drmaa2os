@@ -16,18 +16,24 @@ import (
 
 // ContainerdJobTracker implements the JobTracker interface for containerd.
 type ContainerdJobTracker struct {
-	client *containerd.Client
+	client         *containerd.Client
+	JobSessionName string
 }
 
 // NewContainerdJobTracker creates a new ContainerdJobTracker instance with the given containerd address.
-func NewContainerdJobTracker(containerdAddr string) (*ContainerdJobTracker, error) {
+func NewContainerdJobTracker(jobSessionName, containerdAddr string) (*ContainerdJobTracker, error) {
 	client, err := containerd.New(containerdAddr)
 	if err != nil {
 		return nil, err
 	}
-	return &ContainerdJobTracker{client: client}, nil
+	return &ContainerdJobTracker{
+		client:         client,
+		JobSessionName: jobSessionName,
+	}, nil
 }
 
+// ListJobs returns a list of all container IDs visible to the containerd client
+// which are associated with the current job session.
 func (t *ContainerdJobTracker) ListJobs() ([]string, error) {
 	ctx := namespaces.WithNamespace(context.Background(), "default")
 	containers, err := t.client.Containers(ctx)
@@ -36,7 +42,16 @@ func (t *ContainerdJobTracker) ListJobs() ([]string, error) {
 	}
 	ids := make([]string, len(containers))
 	for i, container := range containers {
-		ids[i] = container.ID()
+		labels, err := container.Labels(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("Error getting container labels: %v", err)
+		}
+		if labels["drmaa2"] != "true" {
+			continue
+		}
+		if labels["jobSessionName"] == t.JobSessionName {
+			ids[i] = container.ID()
+		}
 	}
 	return ids, nil
 }
@@ -159,9 +174,19 @@ func (t *ContainerdJobTracker) DeleteJob(jobID string) error {
 	return container.Delete(ctx, containerd.WithSnapshotCleanup)
 }
 
+// ListJobCategories lists all available container images.
 func (t *ContainerdJobTracker) ListJobCategories() ([]string, error) {
-	// Not implemented.
-	return nil, fmt.Errorf("ListJobCategories is not supported in this implementation")
+	ctx := namespaces.WithNamespace(context.Background(), "default")
+	images, err := t.client.ListImages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, len(images))
+	for i, image := range images {
+		names[i] = image.Name()
+	}
+
+	return names, nil
 }
 
 // containerdStatusToDrmaa2State maps a containerd status to a DRMAA2 job state.

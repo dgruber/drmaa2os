@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -125,4 +126,28 @@ func WaitForStateWithInterval(jt jobtracker.JobTracker, interval time.Duration, 
 // happens. It checks the job state every 100 ms.
 func WaitForState(jt jobtracker.JobTracker, jobid string, timeout time.Duration, states ...drmaa2interface.JobState) error {
 	return WaitForStateWithInterval(jt, 100*time.Millisecond, jobid, timeout, states...)
+}
+
+// JobTemplateToBase64 encodes a job template to base64 encoded string.
+func JobTemplateToBase64(jt drmaa2interface.JobTemplate) (string, error) {
+	jtBytes, err := json.Marshal(jt)
+	if err != nil {
+		return "", fmt.Errorf("could not marshal job template: %v", err)
+	}
+	return base64.StdEncoding.EncodeToString(jtBytes), nil
+}
+
+// GetJobTemplateFromBase64 decodes a base64 encoded job template and returns
+// the job template object.
+func GetJobTemplateFromBase64(base64encondedJT string) (drmaa2interface.JobTemplate, error) {
+	jt := drmaa2interface.JobTemplate{}
+	decodedJT, err := base64.StdEncoding.DecodeString(base64encondedJT)
+	if err != nil {
+		return jt, fmt.Errorf("could not decode job template: %v", err)
+	}
+	err = json.Unmarshal(decodedJT, &jt)
+	if err != nil {
+		return jt, fmt.Errorf("could not unmarshal job template: %v", err)
+	}
+	return jt, nil
 }
