@@ -153,7 +153,7 @@ Example:
 | "pullpolicy"  | overrides image pull policy; "always", "never", "ifnotpresent" (in any uppercase, lowercase format) |
 | "distribution"  | Required for accelerators: "aks", "gke", or "eks" |
 | "accelerator"  | GPU (or other type) request: "1*nvidia-tesla-v100". For aks it requires a number prefix but the type string can be arbitrary but not empty. Sets resource limits, node selector, tolerations. |
-| "ttlsecondsafterfinished" | Removes the job object n seconds after it is finished. If not the job object will never be deleted |
+| "ttlsecondsafterfinished" | Removes the job object n seconds after it is finished. If not set the job object will never be deleted |
 
 Example:
 
