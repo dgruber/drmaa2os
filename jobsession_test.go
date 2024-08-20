@@ -288,7 +288,7 @@ var _ = Describe("JobSession", func() {
 
 			jt := drmaa2interface.JobTemplate{
 				RemoteCommand: "/bin/sh",
-				Args:          []string{"-c", "top -d10"},
+				Args:          []string{"-c", "for i in $(seq 1 10); do echo $i; sleep 1; done"},
 				JobCategory:   "busybox:latest",
 			}
 
@@ -304,10 +304,8 @@ var _ = Describe("JobSession", func() {
 			err = arrayjob.Terminate()
 			Ω(err).Should(BeNil())
 
-			<-time.After(time.Second * 1)
-
 			for _, j := range tasks {
-				err = j.WaitTerminated(time.Second * 12)
+				err = j.WaitTerminated(time.Second * 2)
 				Ω(err).Should(BeNil())
 				Ω(j.GetState().String()).Should(Equal(drmaa2interface.Failed.String()))
 			}
