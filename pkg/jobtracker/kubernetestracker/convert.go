@@ -309,6 +309,15 @@ func addExtensions(job *batchv1.Job, jt drmaa2interface.JobTemplate) *batchv1.Jo
 		}
 	}
 
+	if pullsecrets, set := jt.ExtensionList[extension.JobTemplateK8sPullSecrets]; set && pullsecrets != "" {
+		secrets := strings.Split(pullsecrets, ",")
+		for _, secret := range secrets {
+			job.Spec.Template.Spec.ImagePullSecrets = append(
+				job.Spec.Template.Spec.ImagePullSecrets,
+				k8sv1.LocalObjectReference{Name: secret})
+		}
+	}
+
 	if scheduler, set := jt.ExtensionList[extension.JobTemplateK8sScheduler]; set && scheduler != "" {
 		job.Spec.Template.Spec.SchedulerName = scheduler
 	}

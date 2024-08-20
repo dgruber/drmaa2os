@@ -133,6 +133,33 @@ var _ = Describe("Convert", func() {
 			}
 		})
 
+		// Test "imagepullsecrets" with 1 value or multiple values , separated
+		It("should add imagepullsecrets to the job object when requested as extension", func() {
+			jt.ExtensionList = map[string]string{"imagepullsecrets": "secret1,secret2"}
+			job, err := convertJob("jobsession", "default", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.Spec.Template.Spec.ImagePullSecrets).ShouldNot(BeNil())
+			Ω(len(job.Spec.Template.Spec.ImagePullSecrets)).Should(BeNumerically("==", 2))
+			Ω(job.Spec.Template.Spec.ImagePullSecrets[0].Name).Should(Equal("secret1"))
+			Ω(job.Spec.Template.Spec.ImagePullSecrets[1].Name).Should(Equal("secret2"))
+
+			jt.ExtensionList = map[string]string{"imagepullsecrets": "secret1"}
+			job, err = convertJob("jobsession", "default", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.Spec.Template.Spec.ImagePullSecrets).ShouldNot(BeNil())
+			Ω(len(job.Spec.Template.Spec.ImagePullSecrets)).Should(BeNumerically("==", 1))
+			Ω(job.Spec.Template.Spec.ImagePullSecrets[0].Name).Should(Equal("secret1"))
+
+			// empty value
+			jt.ExtensionList = map[string]string{"imagepullsecrets": ""}
+			job, err = convertJob("jobsession", "default", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.Spec.Template.Spec.ImagePullSecrets).Should(BeNil())
+		})
+
 		Context("error cases", func() {
 			It("should error when the RemoteCommand is not set in the JobTemplate", func() {
 				jt.RemoteCommand = ""

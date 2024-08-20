@@ -34,6 +34,10 @@ const (
 	// JobTemplateK8sAccelerator defines the type of accelerator (GPU)
 	// to be used. Example: "1*nvidia-tesla-v100"
 	JobTemplateK8sAccelerator string = "accelerator"
+	// JobTemplateK8sPullSecrets defines the name of one or more
+	// image pull secrets to be used by the job container. The names
+	// must be comma separated.
+	JobTemplateK8sPullSecrets string = "imagepullsecrets"
 )
 
 const (

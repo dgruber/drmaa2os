@@ -154,6 +154,10 @@ Example:
 | "distribution"  | Required for accelerators: "aks", "gke", or "eks" |
 | "accelerator"  | GPU (or other type) request: "1*nvidia-tesla-v100". For aks it requires a number prefix but the type string can be arbitrary but not empty. Sets resource limits, node selector, tolerations. |
 | "ttlsecondsafterfinished" | Removes the job object n seconds after it is finished. If not set the job object will never be deleted |
+| "runasgroup" | Sets in the security context the GID to this number. |
+| "runasuser" | Sets in the security context this UID to this number. |
+| "fsgroup" | Sets in the security context this ID as filesystem group. |
+| "imagepullsecrets" | Sets ImagePullSecrets in pod sec so that image can be pulled from a private registry. Comma separated list. Check out Kubernetes documentation for creating such a secret. |
 
 Example:
 
@@ -161,6 +165,7 @@ Example:
         "labels": "key=value",
         "privileged": "true",
         "ttlsecondsafterfinished": "600",
+        "imagepullsecrets": "myregistrykey",
     }
 
 Required for JobTemplate:
