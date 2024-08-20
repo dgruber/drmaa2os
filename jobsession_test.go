@@ -301,6 +301,8 @@ var _ = Describe("JobSession", func() {
 			err = arrayjob.Terminate()
 			Ω(err).Should(BeNil())
 
+			<-time.After(time.Second * 1)
+
 			tasks := arrayjob.GetJobs()
 			Expect(len(tasks)).Should(Equal(amount))
 
