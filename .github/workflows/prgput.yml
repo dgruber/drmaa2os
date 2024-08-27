@@ -2,7 +2,9 @@ name: Code Review GPT
 
 on:
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - review
 
 jobs:
   run_code_review:
