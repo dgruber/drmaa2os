@@ -22,14 +22,16 @@ func TrackProcess(cmd *exec.Cmd, proc *os.Process, jobID string, startTime time.
 	var err error
 
 	if cmd != nil {
-		// Wait for process and get state
-		err = cmd.Wait()
-		state = cmd.ProcessState
+		// wait for process and get state
+		state, err = cmd.Process.Wait()
+		// additionally wait for file descriptors to prevent blocking
+		cmd.Wait()
 	} else {
 		state, err = proc.Wait()
 	}
 
-	// Wait until all file descriptors (stdout, stderr) of the process are closed
+	// wait until all filedescriptors (stdout, stderr) of the
+	// process are closed
 	if cmd != nil {
 		for waitForFiles > 0 {
 			<-waitCh
@@ -76,7 +78,7 @@ func collectUsage(state *os.ProcessState, jobid string, startTime time.Time) drm
 	}
 
 	if usage, ok := state.SysUsage().(syscall.Rusage); ok {
-		// Cross-building issue in case usage is 32bit
+		// cross-building issue in case usage is 32bit
 		ji.CPUTime = int64(usage.Utime.Sec) + int64(usage.Stime.Sec)
 		// https://man7.org/linux/man-pages/man2/getrusage.2.html
 		ji.ExtensionList[extension.JobInfoDefaultJSessionMaxRSS] = fmt.Sprintf("%d", usage.Maxrss)
