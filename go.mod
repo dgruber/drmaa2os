@@ -53,7 +53,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect
-	github.com/opencontainers/runc v1.1.12 // indirect
+	github.com/opencontainers/runc v1.1.14 // indirect
 	github.com/prometheus/common v0.33.0 // indirect
 	github.com/sylabs/sif/v2 v2.8.1 // indirect
 	github.com/vbauerster/mpb/v7 v7.4.2 // indirect
