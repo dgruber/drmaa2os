@@ -9,9 +9,9 @@ import (
 	"github.com/dgruber/drmaa2os"
 	"github.com/dgruber/drmaa2os/pkg/helper"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 
 	"golang.org/x/net/context"
@@ -180,7 +180,7 @@ func (dt *DockerTracker) ListJobCategories() ([]string, error) {
 	if err := dt.check(); err != nil {
 		return nil, err
 	}
-	images, err := dt.cli.ImageList(context.Background(), types.ImageListOptions{})
+	images, err := dt.cli.ImageList(context.Background(), image.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
