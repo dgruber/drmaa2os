@@ -1,8 +1,6 @@
 module github.com/dgruber/drmaa2os/examples/kubernetes
 
-go 1.21.0
-
-toolchain go1.23.1
+go 1.23.2
 
 replace (
 	github.com/dgruber/drmaa2os => ../../../drmaa2os
