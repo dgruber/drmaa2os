@@ -1,6 +1,6 @@
 module github.com/dgruber/drmaa2os/examples/kubernetes
 
-go 1.16
+go 1.23.2
 
 replace (
 	github.com/dgruber/drmaa2os => ../../../drmaa2os
@@ -8,6 +8,6 @@ replace (
 )
 
 require (
-	github.com/dgruber/drmaa2interface v1.0.2
+	github.com/dgruber/drmaa2interface v1.2.1
 	github.com/dgruber/drmaa2os v0.3.26
 )
