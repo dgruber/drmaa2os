@@ -3,7 +3,7 @@ name: Code Review GPT
 on:
   pull_request:
     branches:
-      - main
+      - master
       - review
 
 jobs:
