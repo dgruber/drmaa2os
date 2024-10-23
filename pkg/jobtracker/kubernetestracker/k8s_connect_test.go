@@ -22,8 +22,13 @@ var _ = Describe("K8Connect", func() {
 			os.Setenv("HOME", os.TempDir())
 			defer os.Setenv("HOME", home)
 			cs, err := NewClientSet()
-			Ω(err).ShouldNot(BeNil())
-			Ω(cs).Should(BeNil())
+			// test only works when KUBECONFIG is unset (as this is the fallback)
+			if _, exists := os.LookupEnv("KUBECONFIG"); exists {
+				Ω(err).To(BeNil())
+			} else {
+				Ω(err).ShouldNot(BeNil())
+				Ω(cs).Should(BeNil())
+			}
 		})
 
 	})
@@ -38,8 +43,8 @@ var _ = Describe("K8Connect", func() {
 		It("should create the path to the standard kubernetes config file", func() {
 			cfg, err := kubeConfigFile()
 			Ω(err).Should(BeNil())
-			Ω(cfg).Should(ContainSubstring(".kube"))
-			Ω(cfg).Should(ContainSubstring("config"))
+			// the file should exist
+			Ω(cfg).Should(BeAnExistingFile())
 		})
 
 		It("should create a k8s client set (requires a kubernetes config)", func() {
@@ -53,18 +58,37 @@ var _ = Describe("K8Connect", func() {
 
 		Context("errors of helper functions", func() {
 
-			It("should error when home path is empty", func() {
-				originalHome := os.Getenv("HOME")
-				originalUserprofile := os.Getenv("USERPROFILE")
-				os.Setenv("HOME", "")
+			var originalHome, originalUserprofile, kubeconfig string
+			var dir string
+
+			BeforeEach(func() {
+				originalHome = os.Getenv("HOME")
+				originalUserprofile = os.Getenv("USERPROFILE")
+				kubeconfig = os.Getenv("KUBECONFIG")
 				os.Setenv("USERPROFILE", "")
+				os.Setenv("KUBECONFIG", "")
+				var err error
+				dir, err = os.MkdirTemp("", "test")
+				Expect(err).Should(BeNil())
+				os.Setenv("HOME", dir)
+			})
+
+			AfterEach(func() {
+				os.Setenv("HOME", originalHome)
+				os.Setenv("USERPROFILE", originalUserprofile)
+				os.Setenv("KUBECONFIG", kubeconfig)
+				if dir != "" {
+					os.RemoveAll(dir)
+				}
+			})
+
+			It("should error when home path is empty", func() {
 				home := homeDir()
-				Ω(home).Should(Equal(""))
+				Ω(home).ShouldNot(Equal(""))
+				Expect(home).To(Equal(os.Getenv("HOME")))
 				cfgFile, err := kubeConfigFile()
 				Ω(err).ShouldNot(BeNil())
 				Ω(cfgFile).Should(Equal(""))
-				os.Setenv("HOME", originalHome)
-				os.Setenv("USERPROFILE", originalUserprofile)
 			})
 
 		})

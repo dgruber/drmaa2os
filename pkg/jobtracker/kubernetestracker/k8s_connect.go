@@ -34,11 +34,12 @@ func NewClientSet() (*kubernetes.Clientset, error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening .kube/config file: %s", err.Error())
 	}
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		return nil, fmt.Errorf("reading .kube/config file: %s", err.Error())
 	}
+
 	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, fmt.Errorf("creating ClientSet from .kube/config file: %s", err.Error())
@@ -48,7 +49,7 @@ func NewClientSet() (*kubernetes.Clientset, error) {
 
 func kubeConfigFile() (string, error) {
 	// let KUBECONFIG override the default
-	if env, exists := os.LookupEnv("KUBECONFIG"); exists {
+	if env, exists := os.LookupEnv("KUBECONFIG"); exists && env != "" {
 		return env, nil
 	}
 	home := homeDir()
