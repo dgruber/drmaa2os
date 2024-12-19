@@ -18,24 +18,29 @@ var _ = Describe("Job", func() {
 		})
 
 		It("should error when action is undefined", func() {
-			var fakeJobInterface fake.FakeJobs
+			var fakeJobInterface fake.FakeBatchV1
 			var fakeJob batchv1.Job
 
-			err := jobStateChange(&fakeJobInterface, &fakeJob, "somethingwrong")
+			err := jobStateChange(fakeJobInterface.Jobs("default"),
+				&fakeJob, "somethingwrong")
 			Ω(err).ShouldNot(BeNil())
 		})
 
 		It("should error when action is unsupported", func() {
-			var fakeJobInterface fake.FakeJobs
+			var fakeJobInterface fake.FakeBatchV1
 			var fakeJob batchv1.Job
 
-			err := jobStateChange(&fakeJobInterface, &fakeJob, "suspend")
+			err := jobStateChange(fakeJobInterface.Jobs("default"),
+				&fakeJob, "suspend")
 			Ω(err).ShouldNot(BeNil())
-			err = jobStateChange(&fakeJobInterface, &fakeJob, "resume")
+			err = jobStateChange(fakeJobInterface.Jobs("default"),
+				&fakeJob, "resume")
 			Ω(err).ShouldNot(BeNil())
-			err = jobStateChange(&fakeJobInterface, &fakeJob, "hold")
+			err = jobStateChange(fakeJobInterface.Jobs("default"),
+				&fakeJob, "hold")
 			Ω(err).ShouldNot(BeNil())
-			err = jobStateChange(&fakeJobInterface, &fakeJob, "release")
+			err = jobStateChange(fakeJobInterface.Jobs("default"),
+				&fakeJob, "release")
 			Ω(err).ShouldNot(BeNil())
 		})
 

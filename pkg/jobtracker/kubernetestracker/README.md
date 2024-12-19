@@ -67,10 +67,14 @@ Using _ExtensionList_  key "env-from-secrets" (or "env-from-secret") will map th
 
 Using _ExtensionList_  key "env-from-configmaps" (or "env-from-configmap") will map the ":" separated configmaps listed in the map's values as enviornment variables in the job container. The configmaps must exist. (use _extension.JobTemplateK8sEnvFromConfigMap_ as key)
 
-The job's terminal output is available when the job is in a finished state (failed or done) by
-the JobInfo extension key "output" (extension.JobInfoK8sJSessionJobOutput)
+For more details see the [JobTemplateExtensions](#job-template-extensions)
+section below.
 
-```
+The job's terminal output is available when the job is in a finished state
+(failed or done) by the JobInfo extension key "output"
+(extension.JobInfoK8sJSessionJobOutput).
+
+```go
  if jobInfo.ExtensionList != nil {
   jobOutput, exists := jobInfo.ExtensionList[extension.JobInfoK8sJSessionJobOutput]
   if exists {
@@ -137,13 +141,15 @@ in the map is unique.
 
 Example:
 
-    jobtemplate.StageInFiles = map[string]string{
-        "/path/file.txt": "configmap-data:"+base64.StdEncoding.EncodeToString([]byte("content")),
-        "/path/password.txt": "secret-data:"+base64.StdEncoding.EncodeToString([]byte("secret")),
-        "/container/local/dir": "hostpath:/some/directory",
-    }
+```go
+jobtemplate.StageInFiles = map[string]string{
+    "/path/file.txt": "configmap-data:"+base64.StdEncoding.EncodeToString([]byte("content")),
+    "/path/password.txt": "secret-data:"+base64.StdEncoding.EncodeToString([]byte("secret")),
+    "/container/local/dir": "hostpath:/some/directory",
+}
+```
 
-### Job Template extensions
+### Job Template Extensions
 
 | Extension key | Extension value                   |
 |:--------------|----------------------------------:|
@@ -158,15 +164,19 @@ Example:
 | "runasuser" | Sets in the security context this UID to this number. |
 | "fsgroup" | Sets in the security context this ID as filesystem group. |
 | "imagepullsecrets" | Sets ImagePullSecrets in pod sec so that image can be pulled from a private registry. Comma separated list. Check out Kubernetes documentation for creating such a secret. |
+| "service-account-name" | Sets the service account name for the job. |
+| "node-selectors" | Sets the node selectors for the job. The format is "kubernetes.io/hostname=node1,mylabel=myvalue". |
 
 Example:
 
-    jobtemplate.ExtensionList = map[string]string{
-        "labels": "key=value",
-        "privileged": "true",
-        "ttlsecondsafterfinished": "600",
-        "imagepullsecrets": "myregistrykey",
-    }
+```go
+jobtemplate.ExtensionList = map[string]string{
+    "labels": "key=value",
+    "privileged": "true",
+    "ttlsecondsafterfinished": "600",
+    "imagepullsecrets": "myregistrykey",
+}
+```
 
 Required for JobTemplate:
 

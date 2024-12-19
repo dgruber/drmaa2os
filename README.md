@@ -1,6 +1,6 @@
 💙💛
 
-# drmaa2os - A Go API for OS Processes, Docker Containers, Cloud Foundry Tasks, Kubernetes Jobs, Open Cluster Scheduler / Grid Engine Jobs, Podman containers, and more...
+# drmaa2os - A Go API for OS Processes, Docker Containers, Cloud Foundry Tasks Kubernetes Jobs, Open Cluster Scheduler / Grid Engine Jobs, Podman containers, and more...
 
 _DRMAA2 for OS processes and more_
 
@@ -18,16 +18,15 @@ _DRMAA2 for OS processes and more_
 > 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
 > ```
 
-
 This is a Go API based on an open standard ([Open Grid Forum DRMAA2](https://www.ogf.org/documents/GFD.231.pdf)) for submitting and
 supervising workloads running in operating system processes, containers, PODs, tasks, or HPC batch jobs.
 
-The API allows you to develop and run job workflows in OS processes and switch later to 
-containers running in Kubernetes, as Cloud Foundry tasks, pure Docker, Singularity, 
-or any HPC workload manager which supports the DRMAA standard through the C _libdrmaa.so_
-library (like SLURM, Open Cluster Scheduler, Grid Engine, ...) without changing the application logic.
+The API allows you to develop and run job workflows in OS processes and switch later to containers running in Kubernetes, as Cloud Foundry tasks, pure Docker, Singularity, or any HPC workload manager which supports the DRMAA standard
+through the C _libdrmaa.so_ library (like Gridware Cluster Scheduler and
+[Open Cluster Scheduler (including any Grid Engine)](https://github.com/hpc-gridware/clusterscheduler) ,SLURM, ...) without changing the application
+logic.
 
-Its main purpose is supporting you with an abstraction layer on top of platforms, workload managers, 
+Its main purpose is supporting you with an abstraction layer on top of platforms, workload managers,
 and HPC cluster schedulers, so that a software developer don't need to deal with the underlaying details and differences of job submission, status checking, and more.
 
 An even simpler interface for creating job workflows without dealing with the DRMAA2 details is
@@ -35,28 +34,26 @@ An even simpler interface for creating job workflows without dealing with the DR
 
 For details about the mapping of job operations please consult the platform specific READMEs:
 
-  * [OS Processes](pkg/jobtracker/simpletracker/README.md)
-  * [Docker / Moby](pkg/jobtracker/dockertracker/README.md)
-  * [Kubernetes](pkg/jobtracker/kubernetestracker/README.md)
-  * [libdrmaa.so](pkg/jobtracker/libdrmaa/README.md)
-  * [Google Batch](https://github.com/dgruber/gcpbatchtracker)
+* [OS Processes](pkg/jobtracker/simpletracker/README.md)
+* [Docker / Moby](pkg/jobtracker/dockertracker/README.md)
+* [Kubernetes](pkg/jobtracker/kubernetestracker/README.md)
+* [libdrmaa.so](pkg/jobtracker/libdrmaa/README.md)
+* [Google Batch](https://github.com/dgruber/gcpbatchtracker)
 
 In a very experimental state are:
 
-  * [Split trackers in front/backend via OpenAPI](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/remote) 
-  * _New_ [Containerd](pkg/jobtracker/containerdtracker/README.md)
-  * [Singularity](pkg/jobtracker/singularity/README.md)
-  * [Podman](pkg/jobtracker/podmantracker/README.md)
-  * [mpioperator](https://github.com/dgruber/mpioperatortracker)
-  * _Archived_ [Cloud Foundry](pkg/jobtracker/cftracker/README.md)
+* [Split trackers in front/backend via OpenAPI](https://github.com/dgruber/drmaa2os/tree/master/pkg/jobtracker/remote)
+* _New_ [Containerd](pkg/jobtracker/containerdtracker/README.md)
+* [Singularity](pkg/jobtracker/singularity/README.md)
+* [Podman](pkg/jobtracker/podmantracker/README.md)
+* [mpioperator](https://github.com/dgruber/mpioperatortracker)
+* _Archived_ [Cloud Foundry](pkg/jobtracker/cftracker/README.md)
 
 Note, that Singularity/Apptainer (or Podman) should be considered to be handled with
 the regular OS process backend, just starting the container cli. You gain
 features like job array task throttling and more...
 
 [Feedback](mailto:info@gridengine.eu) welcome!
-
-For a Go DRMAA2 wrapper based on C DRMAA2 (_libdrmaa2.so_) like for *Univa Grid Engine* please check out [drmaa2](https://github.com/dgruber/drmaa2).
 
 ## Basic Usage
 
@@ -73,37 +70,37 @@ Note that at this point in time only _JobSessions_ are implemented.
         _ "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
     )
 
-	sm, err := drmaa2os.NewDefaultSessionManager("testdb.db")
-	if err != nil {
-		panic(err)
-	}
+    sm, err := drmaa2os.NewDefaultSessionManager("testdb.db")
+    if err != nil {
+        panic(err)
+    }
 
-	js, err := sm.CreateJobSession("jobsession", "")
-	if err != nil {
-		panic(err)
-	}
+    js, err := sm.CreateJobSession("jobsession", "")
+    if err != nil {
+        panic(err)
+    }
 
-	jt := drmaa2interface.JobTemplate{
-		RemoteCommand: "sleep",
-		Args:          []string{"2"},
-	}
+    jt := drmaa2interface.JobTemplate{
+        RemoteCommand: "sleep",
+        Args:          []string{"2"},
+    }
 
-	job, err := js.RunJob(jt)
-	if err != nil {
-		panic(err)
-	}
+    job, err := js.RunJob(jt)
+    if err != nil {
+        panic(err)
+    }
 
-	job.WaitTerminated(drmaa2interface.InfiniteTime)
+    job.WaitTerminated(drmaa2interface.InfiniteTime)
 
-	if job.GetState() == drmaa2interface.Done {
-		job2, _ := js.RunJob(jt)
-		job2.WaitTerminated(drmaa2interface.InfiniteTime)
-	} else {
-		fmt.Println("Failed to execute job1 successfully")
-	}
+    if job.GetState() == drmaa2interface.Done {
+        job2, _ := js.RunJob(jt)
+        job2.WaitTerminated(drmaa2interface.InfiniteTime)
+    } else {
+        fmt.Println("Failed to execute job1 successfully")
+    }
 
-	js.Close()
-	sm.DestroyJobSession("jobsession")
+    js.Close()
+    sm.DestroyJobSession("jobsession")
 ```
 
 ## Using other Backends
@@ -131,30 +128,30 @@ is created.
         _ "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
     )
 
-	sm, err := drmaa2os.NewDockerSessionManager("testdb.db")
-	if err != nil {
-		panic(err)
-	}
+    sm, err := drmaa2os.NewDockerSessionManager("testdb.db")
+    if err != nil {
+        panic(err)
+    }
 
-	js, err := sm.CreateJobSession("jobsession", "")
-	if err != nil {
-		panic(err)
-	}
+    js, err := sm.CreateJobSession("jobsession", "")
+    if err != nil {
+        panic(err)
+    }
 
-	jt := drmaa2interface.JobTemplate{
-		RemoteCommand: "sleep",
-		Args:          []string{"2"},
-		JobCategory:   "busybox",
-	}
-	job, err := js.RunJob(jt)
-	if err != nil {
-		panic(err)
-	}
+    jt := drmaa2interface.JobTemplate{
+        RemoteCommand: "sleep",
+        Args:          []string{"2"},
+        JobCategory:   "busybox",
+    }
+    job, err := js.RunJob(jt)
+    if err != nil {
+        panic(err)
+    }
 
-	job.WaitTerminated(drmaa2interface.InfiniteTime)
+    job.WaitTerminated(drmaa2interface.InfiniteTime)
 
-	js.Close()
-	sm.DestroyJobSession("jobsession")
+    js.Close()
+    sm.DestroyJobSession("jobsession")
 ```
 
 ### Kubernetes
@@ -166,30 +163,30 @@ is created.
         _ "github.com/dgruber/drmaa2os/pkg/jobtracker/kubernetestracker"
     )
 
-	sm, err := drmaa2os.NewKubernetesSessionManager("testdb.db")
-	if err != nil {
-		panic(err)
-	}
+    sm, err := drmaa2os.NewKubernetesSessionManager("testdb.db")
+    if err != nil {
+        panic(err)
+    }
 
-	js, err := sm.CreateJobSession("jobsession", "")
-	if err != nil {
-		panic(err)
-	}
+    js, err := sm.CreateJobSession("jobsession", "")
+    if err != nil {
+        panic(err)
+    }
 
-	jt := drmaa2interface.JobTemplate{
-		RemoteCommand: "sleep",
-		Args:          []string{"2"},
-		JobCategory:   "busybox",
-	}
-	job, err := js.RunJob(jt)
-	if err != nil {
-		panic(err)
-	}
+    jt := drmaa2interface.JobTemplate{
+        RemoteCommand: "sleep",
+        Args:          []string{"2"},
+        JobCategory:   "busybox",
+    }
+    job, err := js.RunJob(jt)
+    if err != nil {
+        panic(err)
+    }
 
-	job.WaitTerminated(drmaa2interface.InfiniteTime)
+    job.WaitTerminated(drmaa2interface.InfiniteTime)
 
-	js.Close()
-	sm.DestroyJobSession("jobsession")
+    js.Close()
+    sm.DestroyJobSession("jobsession")
 ```
 
 ### Cloud Foundry
@@ -241,7 +238,6 @@ The container images can be provided in any form (like pointing to file or shub)
 required to be set as _JobCategory_ for each job.
 
 ```go
-
     import (
         "github.com/dgruber/drmaa2os
         _ "github.com/dgruber/drmaa2os/pkg/jobtracker/singularity"
@@ -307,13 +303,11 @@ CGO_LDFLAGS and CGO_CFLAGS must be set according to the documentation in [https:
 First experimental version is implemented and tested on macos accessing Podman
 on a remote VM. When compiling on macos _brew install gpgme_ helped me getting
 the C header dependencies of Podman installed. Accessing podman can be achieved
-through _ssh_ in that case (calling podman system service --time=0 unix:///tmp/podman.sock
-in the podman VM for which the ssh port is defined at localhost:2222 on a Vagrant
-based vbox VM).
+through _ssh_ in that case (calling podman system service --time=0 unix:///tmp/podman.sock in the podman VM for which the ssh port is defined at localhost:2222
+on a Vagrant based vbox VM).
 
-If _ConnectionURIOverride_ is not set the implementation uses the default connection
-to the Podman REST API server. This server can be setup by _podman system service -t 0 &_
-in Linux environments. 
+If _ConnectionURIOverride_ is not set the implementation uses the default
+connection to the Podman REST API server. This server can be setup by _podman system service -t 0 &_ in Linux environments.
 
 Note, that it currently the implementation expects that the images are pre-pulled.
 
@@ -327,21 +321,22 @@ be used.
         _ "github.com/dgruber/drmaa2os/pkg/jobtracker/podmantracker"
     )
     
-	sm, err := drmaa2os.NewPodmanSessionManager(PodmanTrackerParams{
-					ConnectionURIOverride: "ssh://vagrant@localhost:2222/tmp/podman.sock?secure=False",
-				}, "testdb.db")
-	if err != nil {
-		panic(err)
-	}
+    sm, err := drmaa2os.NewPodmanSessionManager(PodmanTrackerParams{
+        ConnectionURIOverride: "ssh://vagrant@localhost:2222/tmp/podman.sock?secure=False",
+    }, "testdb.db")
+    if err != nil {
+        panic(err)
+    }
 ```
 
 ### Remote
 
-The _remote_ directory in _/pkg/jobtracker_ contains a client/server implementation of the
-_JobTracker_ interface allowing to create clients and server for any backends (_JobTracker_ 
-implementations) mentioned above. The client/server protocol is defined in OpenAPI v3. Based
-on that _Go_ client and server stubs have been generated using _oapi-codegen_. The OpenAPI
-spec contains also the DRMAA2 data types which might be useful for other projects.
+The _remote_ directory in _/pkg/jobtracker_ contains a client/server
+implementation of the _JobTracker_ interface allowing to create clients and
+server for any backends (_JobTracker_ implementations) mentioned above. The
+client/server protocol is defined in OpenAPI v3. Based on that _Go_ client and
+server stubs have been generated using _oapi-codegen_. The OpenAPI spec
+contains also the DRMAA2 data types which might be useful for other projects.
 
 The remote _JobTracker_ server can be used in any Go DRMAA2 application.
 
@@ -351,12 +346,12 @@ The remote _JobTracker_ server can be used in any Go DRMAA2 application.
         _ "github.com/dgruber/drmaa2os/pkg/jobtracker/remote/client"
     )
     
-	sm, err := drmaa2os.NewRemoteSessionManager(ClientTrackerParams{
-					Server: "localhost:8080",
-				}, "testdb.db")
-	if err != nil {
-		panic(err)
-	}
+    sm, err := drmaa2os.NewRemoteSessionManager(ClientTrackerParams{
+        Server: "localhost:8080",
+    }, "testdb.db")
+    if err != nil {
+        panic(err)
+    }
 ```
 
 The server can be implemented by using any _JobTracker_ implementation as
@@ -372,17 +367,15 @@ argument in the server implementation.
     }
 
     func SetupHandler(jobtracker jobtracker.JobTracker) {
-	    impl, _ := server.NewJobTrackerImpl(jobtracker)
+        impl, _ := server.NewJobTrackerImpl(jobtracker)
 
-	    s := &http.Server{
-		    Addr:           ":8080",
-		    Handler:        genserver.Handler(impl),
-		    ReadTimeout:    10 * time.Second,
-		    WriteTimeout:   10 * time.Second,
-		    MaxHeaderBytes: 1 << 20,
-	    }
-	    log.Fatal(s.ListenAndServe())
-}
+        s := &http.Server{
+            Addr:           ":8080",
+            Handler:        genserver.Handler(impl),
+            ReadTimeout:    10 * time.Second,
+            WriteTimeout:   10 * time.Second,
+            MaxHeaderBytes: 1 << 20,
+        }
+        log.Fatal(s.ListenAndServe())
+    }
 ```
-
-
