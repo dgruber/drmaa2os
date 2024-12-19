@@ -454,6 +454,30 @@ func convertJob(jobsession, namespace string, jt drmaa2interface.JobTemplate) (*
 		// unknown pull policy will be ignored
 	}
 
+	if jt.ExtensionList != nil {
+		jo, exists := jt.ExtensionList[extension.JobTemplateK8sServiceAccountName]
+		if exists && jo != "" {
+			podSpec.ServiceAccountName = jo
+		}
+	}
+
+	if jt.ExtensionList != nil {
+		jo, exists := jt.ExtensionList[extension.JobTemplateK8sNodeSelectors]
+		if exists && jo != "" {
+			if podSpec.NodeSelector == nil {
+				podSpec.NodeSelector = map[string]string{}
+			}
+			for _, selector := range strings.Split(jo, ",") {
+				selector = strings.TrimSpace(selector)
+				selectorKv := strings.Split(selector, "=")
+				if len(selectorKv) >= 2 {
+					podSpec.NodeSelector[selectorKv[0]] = strings.Join(
+						selectorKv[1:], "=")
+				}
+			}
+		}
+	}
+
 	// Add sidecar which stores the output of the job in a configmap.
 	// This is not needed as the job output is read from the logs of
 	// the pod object. But it is useful for storing the output in a

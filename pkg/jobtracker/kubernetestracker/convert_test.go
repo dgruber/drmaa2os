@@ -133,6 +133,29 @@ var _ = Describe("Convert", func() {
 			}
 		})
 
+		It("should add a service account name to the job object when requested as extension", func() {
+			jt.ExtensionList = map[string]string{
+				"service-account-name": "my-service-account",
+			}
+			job, err := convertJob("jobsession", "default", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.Spec.Template.Spec.ServiceAccountName).Should(
+				Equal("my-service-account"))
+		})
+
+		It("should add node selectors to the job object when requested as extension", func() {
+			jt.ExtensionList = map[string]string{"node-selectors": "kubernetes.io/hostname=node1,mylabel=myvalue"}
+			job, err := convertJob("jobsession", "default", jt)
+			Ω(err).Should(BeNil())
+			Ω(job).ShouldNot(BeNil())
+			Ω(job.Spec.Template.Spec.NodeSelector).Should(
+				BeEquivalentTo(map[string]string{
+					"kubernetes.io/hostname": "node1",
+					"mylabel":                "myvalue",
+				}))
+		})
+
 		// Test "imagepullsecrets" with 1 value or multiple values , separated
 		It("should add imagepullsecrets to the job object when requested as extension", func() {
 			jt.ExtensionList = map[string]string{"imagepullsecrets": "secret1,secret2"}

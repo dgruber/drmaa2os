@@ -38,6 +38,12 @@ const (
 	// image pull secrets to be used by the job container. The names
 	// must be comma separated.
 	JobTemplateK8sPullSecrets string = "imagepullsecrets"
+	// JobTemplateK8sServiceAccountName defines the name of the service account
+	// to be used by the job container.
+	JobTemplateK8sServiceAccountName string = "service-account-name"
+	// JobTemplateK8sNodeSelectors defines the node selectors to be used by the job container.
+	// The value must be specified in the form: key=value,key=value,...
+	JobTemplateK8sNodeSelectors string = "node-selectors"
 )
 
 const (
