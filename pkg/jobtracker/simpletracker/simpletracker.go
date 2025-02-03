@@ -11,6 +11,9 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
+	"github.com/checkpoint-restore/go-criu/v5/rpc"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 )
 
 // init registers the process tracker at the SessionManager
@@ -384,8 +387,12 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 			return errors.New("job is not running")
 		}
 		if jt.checkpointRestart {
-			// TODO use CRIU
-			return fmt.Errorf("checkpoint / restart not implemented (TODO)")
+			err := checkpointProcess(pid, jobid)
+			if err == nil {
+				jt.ps.Lock()
+				jt.ps.jobState[jobid] = drmaa2interface.Suspended
+				jt.ps.Unlock()
+			}
 		} else {
 			err := SuspendPid(pid)
 			if err == nil {
@@ -394,18 +401,19 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 				jt.ps.Unlock()
 			}
 		}
-		// TODO: make suspended state persistent
-
 		return err
 	case "resume":
 		if pid == 0 {
 			return errors.New("job is not running")
 		}
 		if jt.checkpointRestart {
-			// TODO use CRIU
-			return fmt.Errorf("checkpoint / restart not implemented (TODO)")
+			err := restoreProcess(pid, jobid)
+			if err == nil {
+				jt.ps.Lock()
+				jt.ps.jobState[jobid] = drmaa2interface.Running
+				jt.ps.Unlock()
+			}
 		} else {
-
 			err := ResumePid(pid)
 			if err == nil {
 				jt.ps.Lock()
@@ -413,8 +421,6 @@ func (jt *JobTracker) JobControl(jobid, state string) error {
 				jt.ps.Unlock()
 			}
 		}
-		// TODO: make suspended state persistent
-
 		return err
 	case "hold":
 		return errors.New("Unsupported Operation")
@@ -535,5 +541,56 @@ func (jt *JobTracker) Close() error {
 	if closer, ok := jt.js.(StoreCloser); ok {
 		return closer.Close()
 	}
+	return nil
+}
+
+// checkpointProcess checkpoints a process using CRIU
+func checkpointProcess(pid int, jobid string) error {
+	conn, err := grpc.Dial("unix:///var/run/criu_service.socket", grpc.WithInsecure())
+	if err != nil {
+		return fmt.Errorf("failed to connect to CRIU service: %v", err)
+	}
+	defer conn.Close()
+
+	client := rpc.NewCriuClient(conn)
+	req := &rpc.CriuReq{
+		Type: proto.String("DUMP"),
+		Opts: &rpc.CriuOpts{
+			Pid:     proto.Int32(int32(pid)),
+			ImagesDirFd: proto.String(fmt.Sprintf("/tmp/checkpoint/%s", jobid)),
+			LeaveRunning: proto.Bool(false),
+		},
+	}
+
+	_, err = client.Dump(context.Background(), req)
+	if err != nil {
+		return fmt.Errorf("failed to checkpoint process: %v", err)
+	}
+
+	return nil
+}
+
+// restoreProcess restores a process using CRIU
+func restoreProcess(pid int, jobid string) error {
+	conn, err := grpc.Dial("unix:///var/run/criu_service.socket", grpc.WithInsecure())
+	if err != nil {
+		return fmt.Errorf("failed to connect to CRIU service: %v", err)
+	}
+	defer conn.Close()
+
+	client := rpc.NewCriuClient(conn)
+	req := &rpc.CriuReq{
+		Type: proto.String("RESTORE"),
+		Opts: &rpc.CriuOpts{
+			Pid:     proto.Int32(int32(pid)),
+			ImagesDirFd: proto.String(fmt.Sprintf("/tmp/checkpoint/%s", jobid)),
+		},
+	}
+
+	_, err = client.Restore(context.Background(), req)
+	if err != nil {
+		return fmt.Errorf("failed to restore process: %v", err)
+	}
+
 	return nil
 }
