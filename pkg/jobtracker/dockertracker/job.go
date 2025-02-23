@@ -40,6 +40,7 @@ func runJob(jobsession string, cli *client.Client, jt drmaa2interface.JobTemplat
 	// if err != nil {
 	//	return "", fmt.Errorf("Error while pulling image: %s", err.Error())
 	// }
+
 	ccBody, err := cli.ContainerCreate(context.Background(),
 		config,
 		hostConfig,

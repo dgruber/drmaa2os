@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -43,9 +45,21 @@ func NewPersistentJobStore(path string) (*PersistentJobStorage, error) {
 	}
 
 	var err error
+
+	// allocate parent directory if it does not exist
+	dir := filepath.Dir(path)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0700)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to create parent directory for job storage: %v\n", err)
+		}
+	}
+
 	jobstore.db, err = bolt.Open(path, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialized boltdb for job storage: %v\n", err)
+		return nil, fmt.Errorf(
+			"failed to initialized boltdb for job storage: %v\n", err)
 	}
 
 	// ensure all buckets do exist
