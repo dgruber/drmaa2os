@@ -2,7 +2,10 @@ package boltstore
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/dgruber/drmaa2os/pkg/storage"
@@ -20,6 +23,16 @@ type BoltStore struct {
 
 func (b *BoltStore) Init() error {
 	var err error
+
+	// allocate parent directory if it does not exist
+	dir := filepath.Dir(b.dbfile)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0700)
+		if err != nil {
+			return fmt.Errorf(
+				"failed to create parent directory for job storage: %v\n", err)
+		}
+	}
 	b.db, err = bolt.Open(b.dbfile, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		log.Fatalf("failed to initialized boltdb: %v\n", err)
