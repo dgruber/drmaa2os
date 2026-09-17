@@ -1,3 +1,12 @@
+# All packages which can be built without Grid Engine headers (libdrmaa)
+# and without the podman v3 libraries, which do not compile anymore.
+BUILDABLE_PACKAGES = $$(go list ./... | grep -v -e /libdrmaa -e podman)
+
+### Builds and vets all packages in BUILDABLE_PACKAGES. Run it after
+### updating dependencies (see the held back versions in go.mod).
+vet:
+	go vet $(BUILDABLE_PACKAGES)
+
 ### Runs the DRMAA job tracker tests in a Docker container.
 test/libdrmaa:
 	docker build -t drmaa/drmaajobtrackertest:latest -f ./Dockerfiles/libdrmaa/Dockerfile .
@@ -10,18 +19,22 @@ libdrmaashell:
 
 ### Runs tests the simpletracker, the job tracker for OS processes.
 test/process:
-	ginkgo -v pkg/jobtracker/simpletracker
+	go tool ginkgo -v pkg/jobtracker/simpletracker
 
 ### Runs docker job tracker tests.
 test/docker:
-	ginkgo -v pkg/jobtracker/dockertracker
+	go tool ginkgo -v pkg/jobtracker/dockertracker
+
+### Runs the docker job tracker tests which do not need a Docker daemon.
+test/docker/nodaemon:
+	go tool ginkgo -v --label-filter='!docker' pkg/jobtracker/dockertracker
 
 ### Runs Kubernetes job tracker tests.
 test/kubernetes:
-	ginkgo -v pkg/jobtracker/kubernetestracker
+	go tool ginkgo -v pkg/jobtracker/kubernetestracker
 
 ### Runs the main job tracker tests.
-test: test/process test/docker test/kubernetes 
+test: test/process test/docker test/kubernetes
 
-.PHONY: test/libdrmaa libdrmaashell test/process test/docker test/kubernetes test/tracker
+.PHONY: vet test/libdrmaa libdrmaashell test/process test/docker test/docker/nodaemon test/kubernetes test/tracker
 

@@ -75,11 +75,9 @@ require (
 	github.com/go-playground/validator/v10 v10.22.1 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/gomarkdown/markdown v0.0.0-20260917010721-cc30ffac3c05 // indirect
+	github.com/gomarkdown/markdown v0.0.0-20260411013819-759bbc3e3207 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/iris-contrib/schema v0.0.6 // indirect
-	github.com/kataras/blocks v0.0.8 // indirect
-	github.com/kataras/golog v0.1.12 // indirect
 	github.com/kataras/iris/v12 v12.2.11 // indirect
 	github.com/kataras/pio v0.0.13 // indirect
 	github.com/kataras/sitemap v0.0.6 // indirect
@@ -130,8 +128,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
-	github.com/containerd/cgroups/v3 v3.1.0 // indirect
-	github.com/containerd/containerd/api v1.9.0 // indirect
 	github.com/containerd/continuity v0.5.0 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
@@ -223,7 +219,6 @@ require (
 	github.com/oasdiff/yaml3 v0.0.14 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/runtime-spec v1.2.1 // indirect
 	github.com/opencontainers/runtime-tools v0.9.1-0.20230914150019-408c51e934dc // indirect
 	github.com/opencontainers/selinux v1.15.1 // indirect
 	github.com/ostreedev/ostree-go v0.0.0-20210805093236-719684c64e4f // indirect
@@ -235,7 +230,6 @@ require (
 	github.com/sigstore/fulcio v1.6.5 // indirect
 	github.com/sigstore/protobuf-specs v0.5.1 // indirect
 	github.com/sigstore/rekor v1.3.6 // indirect
-	github.com/sigstore/sigstore v1.10.9 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
@@ -280,8 +274,22 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 	tags.cncf.io/container-device-interface v0.8.1 // indirect
 )
+
+// The versions below are held back on purpose: `go get -u` upgrades them
+// and breaks the build. Re-apply them with `go get <module>@<version>`
+// after an update and check the result with `make vet`.
+require (
+	github.com/containerd/cgroups/v3 v3.1.0 // indirect; newer versions require runtime-spec v1.3
+	github.com/containerd/containerd/api v1.9.0 // indirect; newer versions break containerd v1.7
+	github.com/kataras/blocks v0.0.8 // indirect; newer versions break kataras/iris v12.2.11
+	github.com/kataras/golog v0.1.12 // indirect; newer versions break kataras/iris v12.2.11
+	github.com/opencontainers/runtime-spec v1.2.1 // indirect; newer versions break containerd v1.7
+	github.com/sigstore/sigstore v1.10.9 // indirect; newer versions require Go 1.27
+	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect; newer versions require Go 1.27
+)
+
+tool github.com/onsi/ginkgo/v2/ginkgo
