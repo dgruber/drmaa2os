@@ -4,7 +4,10 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os"
 
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"path/filepath"
 
 	// test with process tracker
 	_ "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
@@ -35,6 +38,29 @@ var _ = Describe("Sessionmanager", func() {
 				Ω(js).ShouldNot(BeNil())
 				err = sm.DestroyJobSession("testsession")
 				Ω(err).Should(BeNil())
+			})
+		})
+
+		Context("when the job tracker cannot be created", func() {
+			It("should not keep the Job Session", func() {
+				// Docker session with an unreachable Docker daemon
+				daemon := httptest.NewServer(http.NotFoundHandler())
+				GinkgoT().Setenv("DOCKER_HOST", "tcp://"+daemon.Listener.Addr().String())
+				GinkgoT().Setenv("DOCKER_API_VERSION", "")
+				GinkgoT().Setenv("DOCKER_CERT_PATH", "")
+				daemon.Close()
+
+				dockerSM, err := drmaa2os.NewDockerSessionManager(
+					filepath.Join(GinkgoT().TempDir(), "drmaa2ostest"))
+				Ω(err).Should(BeNil())
+
+				js, err := dockerSM.CreateJobSession("testsession", "")
+				Ω(err).ShouldNot(BeNil())
+				Ω(js).Should(BeNil())
+
+				names, err := dockerSM.GetJobSessionNames()
+				Ω(err).Should(BeNil())
+				Ω(names).Should(BeEmpty())
 			})
 		})
 

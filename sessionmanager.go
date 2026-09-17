@@ -247,6 +247,11 @@ func (sm *SessionManager) CreateJobSession(name, contact string) (drmaa2interfac
 	// JobTracker implementation package
 	jt, err := sm.newRegisteredJobTracker(name, sm.jobTrackerCreateParams)
 	if err != nil {
+		// do not keep a job session which has no job tracker, otherwise
+		// the session could not be created again once the backend works
+		if errDelete := sm.delete(storage.JobSessionType, name); errDelete != nil {
+			return nil, fmt.Errorf("%w (removing job session failed: %v)", err, errDelete)
+		}
 		return nil, err
 	}
 	js := newJobSession(name, []jobtracker.JobTracker{jt})
