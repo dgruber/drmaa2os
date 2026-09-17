@@ -26,8 +26,8 @@ var _ = Describe("K8Connect", func() {
 			GinkgoT().Setenv("USERPROFILE", "")
 			GinkgoT().Setenv("HOME", GinkgoT().TempDir())
 			cs, err := NewClientSet()
-			Ω(err).ShouldNot(BeNil())
-			Ω(cs).Should(BeNil())
+			Expect(err).ShouldNot(BeNil())
+			Expect(cs).Should(BeNil())
 		})
 
 	})

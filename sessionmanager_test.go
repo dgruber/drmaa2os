@@ -52,15 +52,15 @@ var _ = Describe("Sessionmanager", func() {
 
 				dockerSM, err := drmaa2os.NewDockerSessionManager(
 					filepath.Join(GinkgoT().TempDir(), "drmaa2ostest"))
-				Ω(err).Should(BeNil())
+				Expect(err).Should(BeNil())
 
 				js, err := dockerSM.CreateJobSession("testsession", "")
-				Ω(err).ShouldNot(BeNil())
-				Ω(js).Should(BeNil())
+				Expect(err).ShouldNot(BeNil())
+				Expect(js).Should(BeNil())
 
 				names, err := dockerSM.GetJobSessionNames()
-				Ω(err).Should(BeNil())
-				Ω(names).Should(BeEmpty())
+				Expect(err).Should(BeNil())
+				Expect(names).Should(BeEmpty())
 			})
 		})
 

@@ -42,7 +42,7 @@ func pullAlpine() {
 		}
 		pullAlpineErr = st.Wait(jobID, time.Second*120, drmaa2interface.Done)
 	})
-	Ω(pullAlpineErr).Should(BeNil())
+	Expect(pullAlpineErr).Should(BeNil())
 }
 
 // fakeDockerDaemon is an HTTP server which behaves like a Docker daemon
@@ -87,7 +87,7 @@ func startFakeDockerDaemon(reportedAPIVersion, acceptedAPIVersion string, contai
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		Ω(json.NewEncoder(w).Encode(response)).Should(Succeed())
+		Expect(json.NewEncoder(w).Encode(response)).Should(Succeed())
 	}))
 	DeferCleanup(daemon.server.Close)
 	return daemon
@@ -111,12 +111,12 @@ var _ = Describe("Dockertracker without Docker daemon", func() {
 			daemon.useDaemon("")
 
 			tracker, err := New("")
-			Ω(err).Should(BeNil())
-			Ω(tracker).ShouldNot(BeNil())
+			Expect(err).Should(BeNil())
+			Expect(tracker).ShouldNot(BeNil())
 
 			jobs, err := tracker.ListJobs()
-			Ω(err).Should(BeNil())
-			Ω(jobs).Should(BeEmpty())
+			Expect(err).Should(BeNil())
+			Expect(jobs).Should(BeEmpty())
 		})
 
 		It("should ping the daemon only once", func() {
@@ -124,12 +124,12 @@ var _ = Describe("Dockertracker without Docker daemon", func() {
 			daemon.useDaemon("")
 
 			tracker, err := New("")
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 			for i := 0; i < 3; i++ {
 				_, err = tracker.ListJobs()
-				Ω(err).Should(BeNil())
+				Expect(err).Should(BeNil())
 			}
-			Ω(daemon.pings.Load()).Should(BeNumerically("==", 1))
+			Expect(daemon.pings.Load()).Should(BeNumerically("==", 1))
 		})
 
 		It("should use DOCKER_API_VERSION instead of negotiating", func() {
@@ -138,11 +138,11 @@ var _ = Describe("Dockertracker without Docker daemon", func() {
 			daemon.useDaemon("1.43")
 
 			tracker, err := New("")
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			jobs, err := tracker.ListJobs()
-			Ω(err).Should(BeNil())
-			Ω(jobs).Should(BeEmpty())
+			Expect(err).Should(BeNil())
+			Expect(jobs).Should(BeEmpty())
 		})
 
 	})
@@ -155,9 +155,9 @@ var _ = Describe("Dockertracker without Docker daemon", func() {
 			daemon.server.Close()
 
 			tracker, err := New("")
-			Ω(err).ShouldNot(BeNil())
-			Ω(err.Error()).Should(ContainSubstring("connecting to Docker daemon"))
-			Ω(tracker).Should(BeNil())
+			Expect(err).ShouldNot(BeNil())
+			Expect(err.Error()).Should(ContainSubstring("connecting to Docker daemon"))
+			Expect(tracker).Should(BeNil())
 		})
 
 		It("should be closable by the job session", func() {
@@ -165,15 +165,15 @@ var _ = Describe("Dockertracker without Docker daemon", func() {
 			daemon.useDaemon("")
 
 			tracker, err := New("")
-			Ω(err).Should(BeNil())
+			Expect(err).Should(BeNil())
 
 			var closer jobtracker.Closer = tracker
-			Ω(closer.Close()).Should(Succeed())
+			Expect(closer.Close()).Should(Succeed())
 		})
 
 		It("should return an error when closing an uninitialized tracker", func() {
 			var tracker DockerTracker
-			Ω(tracker.Close()).ShouldNot(Succeed())
+			Expect(tracker.Close()).ShouldNot(Succeed())
 		})
 
 	})
