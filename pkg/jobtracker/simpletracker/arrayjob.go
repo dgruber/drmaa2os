@@ -63,7 +63,13 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 			// double check if process was cancelled while starting
 			jt.ps.Lock()
 			jt.js.SaveArrayJobPID(arrayjobid, i, pid)
-			if jt.ps.jobState[jobid] == drmaa2interface.Failed {
+			cancelled := jt.ps.jobState[jobid] == drmaa2interface.Failed
+			jt.ps.Unlock()
+			jt.Unlock()
+
+			// NotifyAndWait must be called without holding the PubSub
+			// lock as the PubSub book keeper requires it for the event.
+			if cancelled {
 				if running, _ := IsPidRunning(pid); running {
 					KillPid(pid)
 					jt.ps.NotifyAndWait(JobEvent{
@@ -71,8 +77,6 @@ func arrayJobSubmissionController(jt *JobTracker, arrayjobid string, t drmaa2int
 						JobID:    jobid})
 				}
 			}
-			jt.ps.Unlock()
-			jt.Unlock()
 
 			if i == begin {
 				firstJobErrorCh <- nil
