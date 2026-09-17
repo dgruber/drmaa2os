@@ -1,6 +1,7 @@
 package dockertracker
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
-	"golang.org/x/net/context"
 )
 
 func runJob(jobsession string, cli *client.Client, jt drmaa2interface.JobTemplate) (string, error) {

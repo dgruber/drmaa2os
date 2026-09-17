@@ -116,10 +116,18 @@ If Docker is installed locally it will automatically detect it. For pointing to
 a different host environment variables needs to be set before the _SessionManager_
 is created.
 
-"Use DOCKER_HOST to set the url to the docker server.
- Use DOCKER_API_VERSION to set the version of the API to reach, leave empty for latest.
- Use DOCKER_CERT_PATH to load the TLS certificates from.
- Use DOCKER_TLS_VERIFY to enable or disable TLS verification, off by default."
+- `DOCKER_HOST`: URL of the Docker daemon (default: local socket).
+- `DOCKER_API_VERSION`: API version to use. When not set, the version is
+  negotiated with the daemon, so that older Docker engines work too. Set it
+  when a proxy in front of the daemon does not report an API version.
+- `DOCKER_CERT_PATH`: directory with `ca.pem`, `cert.pem`, and `key.pem`.
+  TLS is only used when this is set; `DOCKER_TLS_VERIFY` alone does not
+  enable TLS.
+- `DOCKER_TLS_VERIFY`: when set (to any value) the server certificate is
+  verified. Without it, the certificates are used but the server
+  certificate is not verified.
+
+Creating the session fails when the Docker daemon is not reachable.
 
 ```go
 

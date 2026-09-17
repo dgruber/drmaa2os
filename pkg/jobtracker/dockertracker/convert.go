@@ -12,7 +12,6 @@ import (
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
@@ -236,7 +235,7 @@ func jobTemplateToNetworkingConfig(jt drmaa2interface.JobTemplate) (*network.Net
 	return &nw, nil
 }
 
-func containersToJobList(jobsession string, containers []types.Container) []string {
+func containersToJobList(jobsession string, containers []container.Summary) []string {
 	out := make([]string, 0, len(containers))
 	for _, c := range containers {
 		if js, exists := c.Labels["drmaa2_jobsession"]; exists && js == jobsession {
@@ -246,7 +245,7 @@ func containersToJobList(jobsession string, containers []types.Container) []stri
 	return out
 }
 
-func containerToDRMAA2State(state *types.ContainerState) drmaa2interface.JobState {
+func containerToDRMAA2State(state *container.State) drmaa2interface.JobState {
 	// Status be one of "created", "running", "paused", "restarting", "removing", "exited", or "dead"
 	if state.Status == "exited" {
 		if state.ExitCode != 0 {
@@ -277,7 +276,7 @@ func containerToDRMAA2State(state *types.ContainerState) drmaa2interface.JobStat
 	return drmaa2interface.Undetermined
 }
 
-func containerToDRMAA2JobInfo(c types.ContainerJSON) (ji drmaa2interface.JobInfo, err error) {
+func containerToDRMAA2JobInfo(c container.InspectResponse) (ji drmaa2interface.JobInfo, err error) {
 	ji.ID = c.ID
 	ji.Slots = 1
 	if c.Config != nil {

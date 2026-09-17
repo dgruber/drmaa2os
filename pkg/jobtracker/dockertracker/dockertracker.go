@@ -1,7 +1,9 @@
 package dockertracker
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,8 +15,6 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
-
-	"golang.org/x/net/context"
 )
 
 // init registers the Docker tracker at the SessionManager
@@ -38,27 +38,39 @@ type DockerTracker struct {
 	cli        *client.Client
 }
 
-// New creates a new DockerTracker. How the Docker client
-// is configured can be influenced by (from the Docker
-// Documentation (https://github.com/moby/moby/blob/master/client/client.go)):
-// "Use DOCKER_HOST to set the url to the docker server.
+// New creates a new DockerTracker and fails if the Docker daemon is not
+// reachable. The Docker client is configured by environment variables
+// (see client.FromEnv in github.com/docker/docker/client):
 //
-//	Use DOCKER_API_VERSION to set the version of the API to reach.
-//	Use DOCKER_CERT_PATH to load the TLS certificates from.
-//	Use DOCKER_TLS_VERIFY to enable or disable TLS verification, off by default."
-//
-// When DOCKER_API_VERSION is not set the API version is negotiated with
-// the daemon, so that the tracker also works with older Docker engines.
+//	DOCKER_HOST: URL of the Docker daemon (default: local socket).
+//	DOCKER_API_VERSION: API version to use. When not set, the version is
+//	  negotiated with the daemon, so that older Docker engines work too.
+//	DOCKER_CERT_PATH: directory with ca.pem, cert.pem, and key.pem. TLS is
+//	  only used when this is set.
+//	DOCKER_TLS_VERIFY: when set (to any value) the server certificate is
+//	  verified. Without it, certificates from DOCKER_CERT_PATH are used
+//	  but the server certificate is not verified.
 func New(jobsession string) (*DockerTracker, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, err
 	}
-	_, errPing := cli.Ping(context.Background())
-	if errPing != nil {
-		return nil, err
+	ping, err := cli.Ping(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("connecting to Docker daemon: %w", err)
 	}
+	// negotiating here avoids a second ping on the first request
+	cli.NegotiateAPIVersionPing(ping)
 	return &DockerTracker{cli: cli, jobsession: jobsession}, nil
+}
+
+// Close implements the jobtracker.Closer interface. It releases idle
+// connections to the Docker daemon when the job session is closed.
+func (dt *DockerTracker) Close() error {
+	if err := dt.check(); err != nil {
+		return err
+	}
+	return dt.cli.Close()
 }
 
 func (dt *DockerTracker) ListJobs() ([]string, error) {

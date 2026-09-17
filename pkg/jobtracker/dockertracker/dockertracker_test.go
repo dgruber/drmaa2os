@@ -1,90 +1,114 @@
 package dockertracker_test
 
 import (
+	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/dockertracker"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
+	"github.com/docker/docker/api/types/container"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dgruber/drmaa2interface"
 )
 
-var _ = BeforeSuite(func() {
-	// pull required images
+var (
+	pullAlpineOnce sync.Once
+	pullAlpineErr  error
+)
 
-	// pull alpine
-	st := simpletracker.New("")
-	jobID, err := st.AddJob(drmaa2interface.JobTemplate{
-		RemoteCommand: "docker",
-		Args:          []string{"pull", "alpine"},
-	})
-	Ω(err).Should(BeNil())
-	err = st.Wait(jobID, time.Second*120, drmaa2interface.Done)
-	Ω(err).Should(BeNil())
-})
-
-var _ = Describe("Dockertracker", func() {
-
-	Context("Creation and destruction", func() {
-
-		It("should be possible to create a tracker when docker is available", func() {
-			tracker, err := New("")
-			Ω(err).Should(BeNil())
-			Ω(tracker).ShouldNot(BeNil())
+// pullAlpine pulls the alpine image required by the specs which run
+// containers. The image is pulled only once per test process.
+func pullAlpine() {
+	pullAlpineOnce.Do(func() {
+		st := simpletracker.New("")
+		jobID, err := st.AddJob(drmaa2interface.JobTemplate{
+			RemoteCommand: "docker",
+			Args:          []string{"pull", "alpine"},
 		})
-
+		if err != nil {
+			pullAlpineErr = err
+			return
+		}
+		pullAlpineErr = st.Wait(jobID, time.Second*120, drmaa2interface.Done)
 	})
+	Ω(pullAlpineErr).Should(BeNil())
+}
+
+// fakeDockerDaemon is an HTTP server which behaves like a Docker daemon
+// for the few API calls used in the specs.
+type fakeDockerDaemon struct {
+	server *httptest.Server
+	pings  atomic.Int32
+}
+
+// startFakeDockerDaemon reports reportedAPIVersion in its ping responses
+// but serves only requests for acceptedAPIVersion, like a daemon rejecting
+// API versions it does not support. Inspected containers have the given
+// labels.
+func startFakeDockerDaemon(reportedAPIVersion, acceptedAPIVersion string, containerLabels map[string]string) *fakeDockerDaemon {
+	daemon := &fakeDockerDaemon{}
+	versionPrefix := "/v" + acceptedAPIVersion + "/"
+	daemon.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer GinkgoRecover()
+		w.Header().Set("API-Version", reportedAPIVersion)
+		if r.URL.Path == "/_ping" {
+			daemon.pings.Add(1)
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if !strings.HasPrefix(r.URL.Path, versionPrefix) {
+			http.Error(w, "unsupported API version", http.StatusBadRequest)
+			return
+		}
+		var response interface{}
+		switch path := strings.TrimPrefix(r.URL.Path, versionPrefix); {
+		case path == "containers/json":
+			response = []container.Summary{}
+		case strings.HasPrefix(path, "containers/") && strings.HasSuffix(path, "/json"):
+			response = container.InspectResponse{
+				ContainerJSONBase: &container.ContainerJSONBase{
+					ID: strings.TrimSuffix(strings.TrimPrefix(path, "containers/"), "/json"),
+				},
+				Config: &container.Config{Labels: containerLabels},
+			}
+		default:
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		Ω(json.NewEncoder(w).Encode(response)).Should(Succeed())
+	}))
+	DeferCleanup(daemon.server.Close)
+	return daemon
+}
+
+// useDaemon points the Docker client configuration of the current
+// spec to the fake daemon. The Docker client treats empty variables
+// like unset ones.
+func (daemon *fakeDockerDaemon) useDaemon(apiVersion string) {
+	GinkgoT().Setenv("DOCKER_HOST", "tcp://"+daemon.server.Listener.Addr().String())
+	GinkgoT().Setenv("DOCKER_API_VERSION", apiVersion)
+	GinkgoT().Setenv("DOCKER_CERT_PATH", "")
+}
+
+var _ = Describe("Dockertracker without Docker daemon", func() {
 
 	Context("API version negotiation", func() {
 
-		const olderDaemonAPIVersion = "1.44"
-
-		// setTestEnv sets (or unsets for an empty value) an environment
-		// variable and restores its previous state after the spec.
-		setTestEnv := func(key, value string) {
-			previous, wasSet := os.LookupEnv(key)
-			if wasSet {
-				DeferCleanup(os.Setenv, key, previous)
-			} else {
-				DeferCleanup(os.Unsetenv, key)
-			}
-			if value == "" {
-				Ω(os.Unsetenv(key)).Should(Succeed())
-			} else {
-				Ω(os.Setenv(key, value)).Should(Succeed())
-			}
-		}
-
 		It("should work with a daemon which supports only an older API version", func() {
-			// fake daemon which rejects requests for any API version but its own
-			daemon := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				defer GinkgoRecover()
-				w.Header().Set("API-Version", olderDaemonAPIVersion)
-				switch r.URL.Path {
-				case "/_ping":
-					w.WriteHeader(http.StatusOK)
-				case "/v" + olderDaemonAPIVersion + "/containers/json":
-					w.Header().Set("Content-Type", "application/json")
-					_, err := w.Write([]byte("[]"))
-					Ω(err).Should(BeNil())
-				default:
-					http.Error(w, "client version is too new", http.StatusBadRequest)
-				}
-			}))
-			defer daemon.Close()
-
-			setTestEnv("DOCKER_HOST", "tcp://"+daemon.Listener.Addr().String())
-			setTestEnv("DOCKER_API_VERSION", "")
-			setTestEnv("DOCKER_TLS_VERIFY", "")
-			setTestEnv("DOCKER_CERT_PATH", "")
+			daemon := startFakeDockerDaemon("1.44", "1.44", nil)
+			daemon.useDaemon("")
 
 			tracker, err := New("")
 			Ω(err).Should(BeNil())
@@ -93,6 +117,79 @@ var _ = Describe("Dockertracker", func() {
 			jobs, err := tracker.ListJobs()
 			Ω(err).Should(BeNil())
 			Ω(jobs).Should(BeEmpty())
+		})
+
+		It("should ping the daemon only once", func() {
+			daemon := startFakeDockerDaemon("1.44", "1.44", nil)
+			daemon.useDaemon("")
+
+			tracker, err := New("")
+			Ω(err).Should(BeNil())
+			for i := 0; i < 3; i++ {
+				_, err = tracker.ListJobs()
+				Ω(err).Should(BeNil())
+			}
+			Ω(daemon.pings.Load()).Should(BeNumerically("==", 1))
+		})
+
+		It("should use DOCKER_API_VERSION instead of negotiating", func() {
+			// negotiating would pick the reported version 1.44
+			daemon := startFakeDockerDaemon("1.44", "1.43", nil)
+			daemon.useDaemon("1.43")
+
+			tracker, err := New("")
+			Ω(err).Should(BeNil())
+
+			jobs, err := tracker.ListJobs()
+			Ω(err).Should(BeNil())
+			Ω(jobs).Should(BeEmpty())
+		})
+
+	})
+
+	Context("Creation and destruction", func() {
+
+		It("should return an error when the daemon is not reachable", func() {
+			daemon := startFakeDockerDaemon("1.44", "1.44", nil)
+			daemon.useDaemon("")
+			daemon.server.Close()
+
+			tracker, err := New("")
+			Ω(err).ShouldNot(BeNil())
+			Ω(err.Error()).Should(ContainSubstring("connecting to Docker daemon"))
+			Ω(tracker).Should(BeNil())
+		})
+
+		It("should be closable by the job session", func() {
+			daemon := startFakeDockerDaemon("1.44", "1.44", nil)
+			daemon.useDaemon("")
+
+			tracker, err := New("")
+			Ω(err).Should(BeNil())
+
+			var closer jobtracker.Closer = tracker
+			Ω(closer.Close()).Should(Succeed())
+		})
+
+		It("should return an error when closing an uninitialized tracker", func() {
+			var tracker DockerTracker
+			Ω(tracker.Close()).ShouldNot(Succeed())
+		})
+
+	})
+
+})
+
+var _ = Describe("Dockertracker", Label("docker"), func() {
+
+	BeforeEach(pullAlpine)
+
+	Context("Creation and destruction", func() {
+
+		It("should be possible to create a tracker when docker is available", func() {
+			tracker, err := New("")
+			Ω(err).Should(BeNil())
+			Ω(tracker).ShouldNot(BeNil())
 		})
 
 	})
@@ -167,7 +264,7 @@ var _ = Describe("Dockertracker", func() {
 			Ω(id).ShouldNot(Equal(""))
 			err = tracker.Wait(id, drmaa2interface.InfiniteTime, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
-			content, err := ioutil.ReadFile("./testfile")
+			content, err := os.ReadFile("./testfile")
 			Ω(err).Should(BeNil())
 			Ω(string(content)).Should(ContainSubstring("prost"))
 			os.Remove("./testfile")
@@ -184,7 +281,7 @@ var _ = Describe("Dockertracker", func() {
 			Ω(id).ShouldNot(Equal(""))
 			err = tracker.Wait(id, 5*time.Second, drmaa2interface.Done, drmaa2interface.Failed)
 			Ω(err).Should(BeNil())
-			content, err := ioutil.ReadFile("./errtestfile")
+			content, err := os.ReadFile("./errtestfile")
 			Ω(err).Should(BeNil())
 			Ω(string(content)).Should(ContainSubstring("date: invalid date"))
 			os.Remove("./errtestfile")
@@ -382,7 +479,7 @@ var _ = Describe("Dockertracker", func() {
 			Ω(tracker).ShouldNot(BeNil())
 
 			// create temporary file
-			tmpFile, err := ioutil.TempFile("", "drmaa2os")
+			tmpFile, err := os.CreateTemp("", "drmaa2os")
 			Ω(err).Should(BeNil())
 			Ω(tmpFile).ShouldNot(BeNil())
 			tmpFile.Close()
@@ -403,7 +500,7 @@ var _ = Describe("Dockertracker", func() {
 			err = tracker.Wait(jobid, drmaa2interface.InfiniteTime, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 
-			output, err := ioutil.ReadFile(tmpFile.Name())
+			output, err := os.ReadFile(tmpFile.Name())
 			Ω(err).Should(BeNil())
 			Ω(string(output)).Should(Equal("test\n"))
 		})
@@ -414,7 +511,7 @@ var _ = Describe("Dockertracker", func() {
 			Ω(tracker).ShouldNot(BeNil())
 
 			// create temporary file
-			tmpFile, err := ioutil.TempFile("", "drmaa2os")
+			tmpFile, err := os.CreateTemp("", "drmaa2os")
 			Ω(err).Should(BeNil())
 			Ω(tmpFile).ShouldNot(BeNil())
 			tmpFile.Close()
@@ -435,7 +532,7 @@ var _ = Describe("Dockertracker", func() {
 			err = tracker.Wait(jobid, drmaa2interface.InfiniteTime, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 
-			output, err := ioutil.ReadFile(tmpFile.Name())
+			output, err := os.ReadFile(tmpFile.Name())
 			Ω(err).Should(BeNil())
 			Ω(string(output)).Should(Equal("test\n"))
 		})
@@ -446,7 +543,7 @@ var _ = Describe("Dockertracker", func() {
 			Ω(tracker).ShouldNot(BeNil())
 
 			// create temporary file 1
-			tmpFile, err := ioutil.TempFile("", "drmaa2os")
+			tmpFile, err := os.CreateTemp("", "drmaa2os")
 			Ω(err).Should(BeNil())
 			Ω(tmpFile).ShouldNot(BeNil())
 			tmpFile.Close()
@@ -454,7 +551,7 @@ var _ = Describe("Dockertracker", func() {
 			defer os.Remove(tmpFile.Name())
 
 			// create temporary file 2
-			tmpFile2, err := ioutil.TempFile("", "drmaa2os")
+			tmpFile2, err := os.CreateTemp("", "drmaa2os")
 			Ω(err).Should(BeNil())
 			Ω(tmpFile2).ShouldNot(BeNil())
 			tmpFile2.Close()
@@ -476,11 +573,11 @@ var _ = Describe("Dockertracker", func() {
 			err = tracker.Wait(jobid, drmaa2interface.InfiniteTime, drmaa2interface.Done)
 			Ω(err).Should(BeNil())
 
-			output, err := ioutil.ReadFile(tmpFile.Name())
+			output, err := os.ReadFile(tmpFile.Name())
 			Ω(err).Should(BeNil())
 			Ω(string(output)).Should(Equal("test\n"))
 
-			output, err = ioutil.ReadFile(tmpFile2.Name())
+			output, err = os.ReadFile(tmpFile2.Name())
 			Ω(err).Should(BeNil())
 			Ω(string(output)).Should(Equal("testtest\n"))
 		})
