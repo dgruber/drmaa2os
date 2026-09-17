@@ -3,7 +3,6 @@ package simpletracker_test
 import (
 	"fmt"
 
-	sigar "github.com/cloudfoundry/gosigar"
 	. "github.com/dgruber/drmaa2os/pkg/jobtracker/simpletracker"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,12 +15,6 @@ import (
 	"strings"
 	_ "time"
 )
-
-func exists(pid int) bool {
-	state := sigar.ProcState{}
-	err := state.Get(pid)
-	return err == nil
-}
 
 var _ = Describe("OS specific functionality", func() {
 

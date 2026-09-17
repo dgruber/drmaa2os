@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/dgruber/drmaa2interface"
-	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/load"
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
@@ -27,7 +27,9 @@ func GetLocalMachineInfo() (drmaa2interface.Machine, error) {
 
 	// "This attributes describes the 1-minute average load on the given machine"
 	avgStat, _ := load.Avg()
-	machine.Load = avgStat.Load1
+	if avgStat != nil {
+		machine.Load = avgStat.Load1
+	}
 
 	hostInfo, _ := host.Info()
 	if hostInfo != nil {

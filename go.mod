@@ -5,7 +5,6 @@ go 1.26.0
 require (
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20220930021109-9c4e6c59ccf1
-	github.com/cloudfoundry/gosigar v1.3.127
 	github.com/containers/podman/v3 v3.4.7
 	github.com/deepmap/oapi-codegen v1.16.3
 	github.com/dgruber/drmaa v1.0.0
@@ -20,9 +19,8 @@ require (
 	github.com/onsi/gomega v1.43.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/pkg/errors v0.9.1
-	github.com/shirou/gopsutil v3.21.11+incompatible
 	go.etcd.io/bbolt v1.5.0
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.59.0 // indirect
 	k8s.io/api v0.37.0
 	k8s.io/apimachinery v0.37.0
 	k8s.io/client-go v0.37.0
