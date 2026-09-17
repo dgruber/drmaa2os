@@ -15,7 +15,6 @@ import (
 	"github.com/dgruber/drmaa2interface"
 	"github.com/dgruber/drmaa2os/pkg/jobtracker"
 
-	"os"
 	"time"
 )
 
@@ -377,15 +376,12 @@ var _ = Describe("KubernetesTracker", func() {
 
 	Context("Standard error cases", func() {
 		WhenK8sIsAvailableIt("should fail to create a new tracker if k8s clientset can't be build", func() {
-			home := os.Getenv("HOME")
-			os.Setenv("HOME", os.TempDir())
-			kubeconfig := os.Getenv("KUBECONFIG")
-			os.Setenv("KUBECONFIG", os.TempDir())
+			GinkgoT().Setenv("HOME", GinkgoT().TempDir())
+			// a directory is not a valid kubernetes config file
+			GinkgoT().Setenv("KUBECONFIG", GinkgoT().TempDir())
 			track, err := New("", "default", nil)
 			Ω(err).ShouldNot(BeNil())
 			Ω(track).Should(BeNil())
-			os.Setenv("KUBECONFIG", kubeconfig)
-			os.Setenv("HOME", home)
 		})
 	})
 
