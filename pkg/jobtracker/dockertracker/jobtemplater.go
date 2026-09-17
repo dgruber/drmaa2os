@@ -1,34 +1,42 @@
 package dockertracker
 
 import (
+	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
-	"encoding/base64"
-
 	"github.com/dgruber/drmaa2interface"
 	"github.com/docker/docker/client"
-	"golang.org/x/net/context"
 )
 
 // JobTemplate returns the JobTemplate for the given jobID. This implements
 // the JobTemplater interface for the DockerTracker.
 func (dt *DockerTracker) JobTemplate(jobID string) (drmaa2interface.JobTemplate, error) {
-	return ReadJobTemplateFromLabel(jobID)
+	if err := dt.check(); err != nil {
+		return drmaa2interface.JobTemplate{}, err
+	}
+	return readJobTemplateFromLabel(dt.cli, jobID)
 }
 
 // ReadJobTemplateFromLabel reads the "drmaa2jobtemplate" label from
 // the specified container. Then it decodes the base64/json encoded
-// JobTemplate and returns it. Fo encoding see jobTemplateToContainerConfig().
+// JobTemplate and returns it. For encoding see jobTemplateToContainerConfig().
+// It creates its own Docker client; DockerTracker.JobTemplate reuses the
+// client of the tracker instead.
 func ReadJobTemplateFromLabel(containerID string) (drmaa2interface.JobTemplate, error) {
-	ctx := context.Background()
-	cli, err := client.NewEnvClient()
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return drmaa2interface.JobTemplate{}, err
 	}
+	// Close only releases idle connections and always returns nil
+	defer cli.Close()
+	return readJobTemplateFromLabel(cli, containerID)
+}
 
+func readJobTemplateFromLabel(cli *client.Client, containerID string) (drmaa2interface.JobTemplate, error) {
 	// Fetch the container's current configuration
-	inspect, err := cli.ContainerInspect(ctx, containerID)
+	inspect, err := cli.ContainerInspect(context.Background(), containerID)
 	if err != nil {
 		return drmaa2interface.JobTemplate{}, err
 	}

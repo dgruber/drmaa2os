@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Monitorer Interface of DockerTracker", func() {
+var _ = Describe("Monitorer Interface of DockerTracker", Label("docker"), func() {
 
 	Context("basic functionality", func() {
 

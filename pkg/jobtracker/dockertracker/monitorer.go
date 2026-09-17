@@ -1,12 +1,12 @@
 package dockertracker
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/dgruber/drmaa2interface"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	"golang.org/x/net/context"
 )
 
 // Implements the Monitorer interface on top of the JobTracker interface

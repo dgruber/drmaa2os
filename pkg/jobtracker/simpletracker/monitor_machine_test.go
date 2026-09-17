@@ -13,6 +13,7 @@ var _ = Describe("MonitorHost", func() {
 		machine, err := GetLocalMachineInfo()
 		Ω(err).Should(BeNil())
 		Ω(machine.Name).ShouldNot(Equal(""))
+		Expect(machine.Load).Should(BeNumerically(">=", 0))
 	})
 
 })

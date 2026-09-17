@@ -6,7 +6,7 @@ jobs:
   build:
     docker:
       # specify the version
-      - image: cimg/go:1.21
+      - image: cimg/go:1.26
      
      # 4GB let compiling fail from time to time / trying with -p 1
     resource_class: large 
@@ -20,13 +20,14 @@ jobs:
       - checkout
       - run: sudo apt-get update
       - run: sudo apt-get install -y libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev
-      - run: go build -v -p 1
-      - run: go install github.com/onsi/ginkgo/v2/ginkgo
-      - run: ginkgo -v
-      - run: ginkgo -v ./pkg/d2hlp
-      - run: ginkgo -v ./pkg/helper
-      - run: ginkgo -v ./pkg/storage/...
-      - run: ginkgo -v ./pkg/jobtracker/simpletracker/...
+      # builds and vets all packages except libdrmaa (needs Grid Engine) and podman (see Makefile)
+      - run: go vet -p 1 $(go list ./... | grep -v -e /libdrmaa -e podman)
+      - run: go tool ginkgo -v
+      - run: go tool ginkgo -v ./pkg/d2hlp
+      - run: go tool ginkgo -v ./pkg/helper
+      - run: go tool ginkgo -v ./pkg/storage/...
+      - run: go tool ginkgo -v ./pkg/jobtracker/simpletracker/...
+      - run: go tool ginkgo -v --label-filter='!docker' ./pkg/jobtracker/dockertracker
       - run:
           name: Code coverage file
           command: go test ./ ./pkg/helper ./pkg/d2hlp ./pkg/storage ./pkg/jobtracker/simpletracker -race -coverprofile=coverage.txt -covermode=atomic

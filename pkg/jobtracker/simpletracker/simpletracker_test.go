@@ -799,4 +799,36 @@ var _ = Describe("Simpletracker", func() {
 
 	})
 
+	Context("Terminating job array tasks while they are started", func() {
+
+		It("should not deadlock", func() {
+			tracker := New("terminatewhilestarting")
+			finished := make(chan struct{})
+
+			go func() {
+				defer GinkgoRecover()
+				defer close(finished)
+				for i := 0; i < 20; i++ {
+					arrayJobID, err := tracker.AddArrayJob(drmaa2interface.JobTemplate{
+						RemoteCommand: "/bin/sleep",
+						Args:          []string{"1"},
+					}, 1, 10, 1, 0)
+					Expect(err).To(BeNil())
+
+					jobs, err := tracker.ListArrayJobs(arrayJobID)
+					Expect(err).To(BeNil())
+
+					for _, jobID := range jobs {
+						// tasks which are not started yet return an error
+						// ("no PID"); only a hanging call is a failure here
+						_ = tracker.JobControl(jobID, jobtracker.JobControlTerminate)
+					}
+				}
+			}()
+
+			Eventually(finished).WithTimeout(time.Minute).Should(BeClosed())
+		})
+
+	})
+
 })

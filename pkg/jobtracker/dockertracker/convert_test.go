@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/dgruber/drmaa2interface"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 
@@ -202,7 +201,7 @@ var _ = Describe("Convert", func() {
 	})
 
 	Context("JobState converter", func() {
-		killed := &types.ContainerState{
+		killed := &container.State{
 			OOMKilled:  true,
 			Dead:       false,
 			ExitCode:   0,
@@ -211,7 +210,7 @@ var _ = Describe("Convert", func() {
 			Restarting: false,
 		}
 
-		dead := &types.ContainerState{
+		dead := &container.State{
 			OOMKilled:  false,
 			Dead:       true,
 			ExitCode:   1,
@@ -220,7 +219,7 @@ var _ = Describe("Convert", func() {
 			Restarting: false,
 		}
 
-		exit0 := &types.ContainerState{
+		exit0 := &container.State{
 			Status:     "exited",
 			OOMKilled:  false,
 			Dead:       true,
@@ -230,7 +229,7 @@ var _ = Describe("Convert", func() {
 			Restarting: false,
 		}
 
-		exit1 := &types.ContainerState{
+		exit1 := &container.State{
 			Status:     "exited",
 			OOMKilled:  false,
 			Dead:       true,
@@ -240,7 +239,7 @@ var _ = Describe("Convert", func() {
 			Restarting: false,
 		}
 
-		paused := &types.ContainerState{
+		paused := &container.State{
 			OOMKilled:  false,
 			Dead:       false,
 			ExitCode:   0,
@@ -249,7 +248,7 @@ var _ = Describe("Convert", func() {
 			Restarting: false,
 		}
 
-		restarting := &types.ContainerState{
+		restarting := &container.State{
 			OOMKilled:  false,
 			Dead:       false,
 			ExitCode:   0,
@@ -258,7 +257,7 @@ var _ = Describe("Convert", func() {
 			Restarting: true,
 		}
 
-		running := &types.ContainerState{
+		running := &container.State{
 			OOMKilled:  false,
 			Dead:       false,
 			ExitCode:   0,
@@ -281,8 +280,8 @@ var _ = Describe("Convert", func() {
 	Context("Container to JobInfo", func() {
 
 		It("should convert basic information", func() {
-			c := types.ContainerJSON{}
-			c.ContainerJSONBase = &types.ContainerJSONBase{}
+			c := container.InspectResponse{}
+			c.ContainerJSONBase = &container.ContainerJSONBase{}
 			c.ID = "jobid"
 			c.Config = &container.Config{
 				Hostname: "hostname",
@@ -295,7 +294,7 @@ var _ = Describe("Convert", func() {
 			created, err := time.Parse(time.RFC3339Nano, "2015-01-06T15:47:31.485331387Z")
 			Ω(err).Should(BeNil())
 
-			c.State = &types.ContainerState{
+			c.State = &container.State{
 				Status:     "exited",
 				ExitCode:   13,
 				FinishedAt: finished.Format(time.RFC3339Nano),
