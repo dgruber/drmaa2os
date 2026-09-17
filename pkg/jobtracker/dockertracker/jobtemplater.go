@@ -22,7 +22,7 @@ func (dt *DockerTracker) JobTemplate(jobID string) (drmaa2interface.JobTemplate,
 // JobTemplate and returns it. Fo encoding see jobTemplateToContainerConfig().
 func ReadJobTemplateFromLabel(containerID string) (drmaa2interface.JobTemplate, error) {
 	ctx := context.Background()
-	cli, err := client.NewEnvClient()
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return drmaa2interface.JobTemplate{}, err
 	}

@@ -9,6 +9,8 @@ import (
 
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"time"
 
@@ -37,6 +39,60 @@ var _ = Describe("Dockertracker", func() {
 			tracker, err := New("")
 			Ω(err).Should(BeNil())
 			Ω(tracker).ShouldNot(BeNil())
+		})
+
+	})
+
+	Context("API version negotiation", func() {
+
+		const olderDaemonAPIVersion = "1.44"
+
+		// setTestEnv sets (or unsets for an empty value) an environment
+		// variable and restores its previous state after the spec.
+		setTestEnv := func(key, value string) {
+			previous, wasSet := os.LookupEnv(key)
+			if wasSet {
+				DeferCleanup(os.Setenv, key, previous)
+			} else {
+				DeferCleanup(os.Unsetenv, key)
+			}
+			if value == "" {
+				Ω(os.Unsetenv(key)).Should(Succeed())
+			} else {
+				Ω(os.Setenv(key, value)).Should(Succeed())
+			}
+		}
+
+		It("should work with a daemon which supports only an older API version", func() {
+			// fake daemon which rejects requests for any API version but its own
+			daemon := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				defer GinkgoRecover()
+				w.Header().Set("API-Version", olderDaemonAPIVersion)
+				switch r.URL.Path {
+				case "/_ping":
+					w.WriteHeader(http.StatusOK)
+				case "/v" + olderDaemonAPIVersion + "/containers/json":
+					w.Header().Set("Content-Type", "application/json")
+					_, err := w.Write([]byte("[]"))
+					Ω(err).Should(BeNil())
+				default:
+					http.Error(w, "client version is too new", http.StatusBadRequest)
+				}
+			}))
+			defer daemon.Close()
+
+			setTestEnv("DOCKER_HOST", "tcp://"+daemon.Listener.Addr().String())
+			setTestEnv("DOCKER_API_VERSION", "")
+			setTestEnv("DOCKER_TLS_VERIFY", "")
+			setTestEnv("DOCKER_CERT_PATH", "")
+
+			tracker, err := New("")
+			Ω(err).Should(BeNil())
+			Ω(tracker).ShouldNot(BeNil())
+
+			jobs, err := tracker.ListJobs()
+			Ω(err).Should(BeNil())
+			Ω(jobs).Should(BeEmpty())
 		})
 
 	})
