@@ -4,8 +4,7 @@
 
 _DRMAA2 for OS processes and more_
 
-[![CircleCI](https://circleci.com/gh/dgruber/drmaa2os.svg?style=svg)](https://circleci.com/gh/dgruber/drmaa2os)
-[![codecov](https://codecov.io/gh/dgruber/drmaa2os/branch/master/graph/badge.svg)](https://codecov.io/gh/dgruber/drmaa2os)
+[![CI](https://github.com/dgruber/drmaa2os/actions/workflows/ci.yml/badge.svg)](https://github.com/dgruber/drmaa2os/actions/workflows/ci.yml)
 
 > _Update_: The Go DRMAA2 interface and the implementation based on the JobTracker
 > interface are now decoupled. In order to use a specific backend, like Docker,

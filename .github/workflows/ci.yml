@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      # libdrmaa (needs Grid Engine) and podman are excluded, see Makefile
+      - name: Vet
+        run: make vet
+
+      - name: Test drmaa2os
+        run: go tool ginkgo -v
+
+      - name: Test d2hlp
+        run: go tool ginkgo -v ./pkg/d2hlp
+
+      - name: Test helper
+        run: go tool ginkgo -v ./pkg/helper
+
+      - name: Test storage
+        run: go tool ginkgo -v ./pkg/storage/...
+
+      - name: Test simpletracker
+        run: go tool ginkgo -v ./pkg/jobtracker/simpletracker/...
+
+      - name: Test dockertracker without Docker daemon
+        run: go tool ginkgo -v --label-filter='!docker' ./pkg/jobtracker/dockertracker
+
+      - name: Race detector
+        run: go test -race ./ ./pkg/helper ./pkg/d2hlp ./pkg/storage ./pkg/jobtracker/simpletracker

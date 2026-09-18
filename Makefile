@@ -7,6 +7,10 @@ BUILDABLE_PACKAGES = $$(go list ./... | grep -v -e /libdrmaa -e podman)
 vet:
 	go vet $(BUILDABLE_PACKAGES)
 
+### Builds all packages in BUILDABLE_PACKAGES (used by the CodeQL workflow).
+build:
+	go build $(BUILDABLE_PACKAGES)
+
 ### Runs the DRMAA job tracker tests in a Docker container.
 test/libdrmaa:
 	docker build -t drmaa/drmaajobtrackertest:latest -f ./Dockerfiles/libdrmaa/Dockerfile .
@@ -36,5 +40,5 @@ test/kubernetes:
 ### Runs the main job tracker tests.
 test: test/process test/docker test/kubernetes
 
-.PHONY: vet test/libdrmaa libdrmaashell test/process test/docker test/docker/nodaemon test/kubernetes test/tracker
+.PHONY: vet build test/libdrmaa libdrmaashell test/process test/docker test/docker/nodaemon test/kubernetes test/tracker
 
