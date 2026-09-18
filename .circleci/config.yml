@@ -1,7 +1,7 @@
-# Golang CircleCI 2.0 configuration file
+# Golang CircleCI 2.1 configuration file
 #
-# Check https://circleci.com/docs/2.0/language-go/ for more details
-version: 2
+# Check https://circleci.com/docs/language-go/ for more details
+version: 2.1
 jobs:
   build:
     docker:
@@ -67,7 +67,6 @@ jobs:
             go mod download
             go test -v .
 workflows:
-  version: 2
   build_and_test:
     jobs:
       - build
